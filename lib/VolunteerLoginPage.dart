@@ -13,176 +13,175 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 6, 117, 196), // Light background for a sky-like effect
-      body: Column(
-        children: [ 
-          // Upper Container (Logo/Title)
-          Expanded(
+      backgroundColor: Colors.white, // Background color
+      body: Stack(
+        children: [
+          Positioned(
+            top: 0, // Adjust this value to position the image correctly under the text
+            left: 0,
+            right: 0,
             child: Container(
-              width: MediaQuery.of(context).size.width,
-              
-             
-             
-              
+              height: MediaQuery.of(context).size.height * 0.35, // 25% of the screen height
               decoration: BoxDecoration(
-                color: Colors.white,
-            
-                image: DecorationImage(image: AssetImage('userphoto.jpg',),fit: BoxFit.cover),
-            
-                
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 100),
-                    child: Text('Voluntier',style: TextStyle(fontFamily: 'proxima',fontWeight: FontWeight.w700,fontSize: 40),),
-                  ),
-                  Text('edfghhhh'),
-                  
+                color: const Color.fromARGB(255, 7, 135, 255),
                
-                
-              
-                
-              
-              
-                  
-              
-                ],
+                borderRadius: BorderRadius.circular(15), // Optional: rounded corners
               ),
-            
-            
             ),
           ),
 
-          
-          
-          const SizedBox(height: 60), // Spacer between containers
-
-          // Middle Container (Login Form)
-          Expanded(
-            child: SingleChildScrollView(
-              child: Container(
-                padding: const EdgeInsets.all(30),
-                margin: const EdgeInsets.symmetric(horizontal: 30),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 15,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
+          // Welcome Message (Positioned at the top)
+          Positioned(
+            top: 100,
+            left: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Welcome Back!!',
+                  style: TextStyle(
+                    fontSize: 55,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Enter your email and password to continue.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
+                SizedBox(height: 20),
+                Text(
+                  'Welcome back, you\'ve been missed!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Color.fromARGB(255, 255, 255, 255),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-                    // Email Field
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: const Icon(Icons.email),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Password Field
-                    TextField(
-                      obscureText: !_isPasswordVisible,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isPasswordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Forgot Password
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          // Handle Forgot Password
-                        },
-                        child: const Text(
-                          'Forgot password?',
-                          style: TextStyle(
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+          // Image under "Welcome back" text (covering 25% of the screen height)
+          
+          // Username Field
+          Positioned(
+            top: 365,
+            left: 30,
+            right: 30,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(15), // Circular border
+              ),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Enter Username',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  prefixIcon: const Icon(Icons.person, color: Colors.grey),
+                  border: InputBorder.none, // Remove default border
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 ),
               ),
             ),
           ),
 
-          // Lower Container (Login Button)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
+          // Password Field
+          Positioned(
+            top: 440,
+            left: 30,
+            right: 30,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(15), // Circular border
+              ),
+              child: TextField(
+                obscureText: !_isPasswordVisible,
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                   hintStyle: TextStyle(color: const Color.fromARGB(255, 168, 168, 168)),
+                  prefixIcon: const Icon(Icons.lock, color: Colors.grey),
+                  border: InputBorder.none, // Remove default border
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
               ),
             ),
+          ),
+
+          // Recovery Password Link
+          Positioned(
+            top: 500,
+            right: 30,
+            child: TextButton(
+              onPressed: () {
+                // Handle recovery password
+              },
+              child: const Text(
+                'Recovery Password',
+                style: TextStyle(
+                  color: Colors.blue,
+                ),
+              ),
+            ),
+          ),
+
+          // Sign In Button
+          Positioned(
+            top: 600,
+            left: 30,
+            right: 30,
             child: ElevatedButton(
               onPressed: () {
-                // Handle Login Button Press
+                // Handle sign-in
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 120,
-                  vertical: 15,
-                ),
+                backgroundColor: const Color(0xFF6495ED), // Cornflower Blue
+                padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(15),
                 ),
               ),
               child: const Text(
-                'Get Started',
+                'Sign In',
                 style: TextStyle(
                   fontSize: 18,
                   color: Colors.white,
                 ),
               ),
+            ),
+          ),
+
+          // Register Now Section
+          Positioned(
+            bottom: 50,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Not a member?',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Handle register now
+                  },
+                  child: const Text(
+                    'Register now',
+                    style: TextStyle(
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

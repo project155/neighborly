@@ -76,7 +76,7 @@ class LoginUser extends StatelessWidget {
                 ),
                 child: const Text(
                   'Log In',
-                  style: TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: 18, ),
                 ),
               ),
               const SizedBox(height: 20),
