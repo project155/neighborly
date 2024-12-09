@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:neighborly/choosescreen.dart';
+import 'package:neighborly/UserSelectionPage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       
       debugShowCheckedModeBanner: false,
-      home:Choosescreen(),
+      home:UserSelectionPage(),
     );
   }
 }
