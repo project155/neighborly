@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:neighborly/VolunteerLoginPage.dart';
 import 'package:neighborly/loginuser.dart';
-import 'package:neighborly/samplepage.dart';
+//import 'package:neighborly/samplepage.dart';
 
 class Choosescreen extends StatelessWidget {
   const Choosescreen({super.key});
@@ -45,7 +45,7 @@ class Choosescreen extends StatelessWidget {
                   width: 180,
                   height: 180,
                   decoration: BoxDecoration(
-                    color: Color.fromARGB(255, 248, 248, 248),
+                    color: Color.fromARGB(255, 59, 134, 255),
                     borderRadius: BorderRadius.circular(70),
                     image: DecorationImage(
                       image: AssetImage('assets/userimage.png'),
@@ -71,7 +71,7 @@ class Choosescreen extends StatelessWidget {
                 child: Text(
                   'USER',
                   style: TextStyle(
-                    fontSize: 20,color:Colors.white
+                    fontSize: 20,color:const Color.fromARGB(255, 49, 166, 255)
                   ),
                 ),
               ),
@@ -93,7 +93,7 @@ class Choosescreen extends StatelessWidget {
                   width: 180,
                   height: 180,
                   decoration: BoxDecoration(
-                    color: Color.fromARGB(255, 249, 249, 249),
+                    color: Color.fromARGB(255, 0, 187, 255),
                     borderRadius: BorderRadius.circular(70),
                     boxShadow: [
                       BoxShadow(
@@ -114,7 +114,7 @@ class Choosescreen extends StatelessWidget {
               child: Container(
                 child: Text(
                   'VOLUNTEER',
-                  style: TextStyle(fontSize: 20,color:Colors.white ),
+                  style: TextStyle(fontSize: 20,color:const Color.fromARGB(255, 255, 26, 26) ),
                 ),
               ),
             ),
