@@ -3,13 +3,6 @@ import 'package:neighborly/VolunteerLoginPage.dart';
 import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/userhome.dart';
 
-
-
-
-
-
-
-
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -54,8 +47,13 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                 color: const Color.fromARGB(255, 170, 237, 255),
                 title: 'USER',
                 description: 'Login as a regular user to explore the app.',
-                image: 'assets/user.png',
+                image: 'userimage.png',
                 titlePosition: Offset(10, 400),
+                imagePosition: Offset(0.25, 0.15),
+                imageWidth: 350,
+                imageHeight: 500,
+                descriptionPosition: Offset(0.1, 0.6),
+                buttonPosition: Offset(0.3, 0.75),
                 onProceed: () {
                   Navigator.push(
                     context,
@@ -67,10 +65,15 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                 color: const Color.fromARGB(255, 174, 218, 255),
                 title: 'VOLUNTEER',
                 description: 'Login as a volunteer to contribute and assist.',
-                image: 'assets/volunteer.png',
+                image: 'volunteer.png',
                 titlePosition: Offset(10, 220),
+                imagePosition: Offset(0.2, 0.2),
+                imageWidth: 180,
+                imageHeight: 250,
+                descriptionPosition: Offset(0.1, 0.6),
+                buttonPosition: Offset(0.3, 0.75),
                 onProceed: () {
-                Navigator.push(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => VolunteerLoginPage()),
                   );
@@ -82,10 +85,15 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                 description: 'Login as an admin to manage the platform.',
                 image: 'assets/authority.png',
                 titlePosition: Offset(5, 200),
+                imagePosition: Offset(0.25, 0.25),
+                imageWidth: 220,
+                imageHeight: 320,
+                descriptionPosition: Offset(0.1, 0.6),
+                buttonPosition: Offset(0.3, 0.75),
                 onProceed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) =>Userhome()),
+                    MaterialPageRoute(builder: (context) => Userhome()),
                   );
                 },
               ),
@@ -125,6 +133,11 @@ class UserTypePage extends StatelessWidget {
   final String description;
   final String image;
   final Offset titlePosition;
+  final Offset imagePosition;
+  final double imageWidth;
+  final double imageHeight;
+  final Offset descriptionPosition;
+  final Offset buttonPosition;
   final VoidCallback onProceed;
 
   UserTypePage({
@@ -133,6 +146,11 @@ class UserTypePage extends StatelessWidget {
     required this.description,
     required this.image,
     required this.titlePosition,
+    required this.imagePosition,
+    required this.imageWidth,
+    required this.imageHeight,
+    required this.descriptionPosition,
+    required this.buttonPosition,
     required this.onProceed,
   });
 
@@ -158,52 +176,52 @@ class UserTypePage extends StatelessWidget {
               ),
             ),
           ),
-          // Image on top of text
+          // Image with separate positioning, width, and height
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.15,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Image.asset(
-                image,
-                height: MediaQuery.of(context).size.height * 0.4,
-                width: MediaQuery.of(context).size.height * 0.4,
-                fit: BoxFit.cover,
+            top:100,
+            left: MediaQuery.of(context).size.width * imagePosition.dx,
+            child: Image.asset(
+              image,
+              width: imageWidth,
+              height: imageHeight,
+              fit: BoxFit.contain,
+            ),
+          ),
+          // Description with separate positioning
+          Positioned(
+            top: 600,
+            left: 100,
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.8, // Optional: Adjust width
+              child: Text(
+                description,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: const Color.fromARGB(255, 255, 255, 255),
+                  fontFamily: 'proxima',
+                ),
               ),
             ),
           ),
-          // Description and button below
+          // Proceed button with separate positioning
           Positioned(
-            bottom: MediaQuery.of(context).size.height * 0.2,
-            left: 20,
-            right: 20,
-            child: Column(
-              children: [
-                Text(
-                  description,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                  ),
+            top: MediaQuery.of(context).size.height * buttonPosition.dy,
+            left: MediaQuery.of(context).size.width * buttonPosition.dx,
+            child: ElevatedButton(
+              onPressed: onProceed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: color,
+                padding: EdgeInsets.symmetric(horizontal: 80, vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: onProceed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: color,
-                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    'Proceed',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
-              ],
+              ),
+              child: Text(
+                'Proceed',
+                style: TextStyle(fontSize: 16),
+              ),
             ),
           ),
         ],
@@ -211,21 +229,3 @@ class UserTypePage extends StatelessWidget {
     );
   }
 }
-
-// // LoginUser Page
-// class LoginUser extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('User Login'),
-//       ),
-//       body: Center(
-//         child: Text(
-//           'Welcome to User Login Page',
-//           style: TextStyle(fontSize: 24),
-//         ),
-//       ),
-//     );
-//   }
-// }
