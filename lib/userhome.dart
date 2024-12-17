@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:neighborly/loginuser.dart';
+import 'package:neighborly/sexualissues.dart';
 
 void main() => runApp(MyApp());
 
@@ -21,7 +22,7 @@ class Userhome extends StatefulWidget {
 
 class _userhomeState extends State<Userhome> {
   final List<String> disasterTypes = ["Flood", "Fire", "Drought", "Landslide"];
-  final List<String> newCategoryItems = ["XYZ", "Example Feature 1", "Example Feature 2", "Help"];
+  final List<String> newCategoryItems = ["XYZ", "Example Feature 1", "Example Feature 2", "Help", "ABC"];
   final List<String> noticeImages = [
     'assets/notice1.jpg', // Replace with your actual image paths
     'assets/notice2.jpg',
@@ -64,6 +65,7 @@ class _userhomeState extends State<Userhome> {
             child: Icon(Icons.notifications),
           ),
         ],
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -75,16 +77,17 @@ class _userhomeState extends State<Userhome> {
               // First Section: Report Disaster with a white container
               _buildSection("Report Disaster", disasterTypes),
               // Second Section: New Category (XYZ and Features)
-              _buildSection("Report Disaster XYZ", newCategoryItems),
+              _buildSection("Report public issues", newCategoryItems),
+              _buildSection("Report public issue", newCategoryItems),
             ],
           ),
         ),
       ),
       bottomSheet: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 70,
+        width: MediaQuery.of(context).size.width * double.infinity,
+        height: 80,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 188, 188, 188),
+          color: const Color.fromARGB(255, 95, 156, 255),
           borderRadius: BorderRadius.all(Radius.circular(35)),
           boxShadow: [
             BoxShadow(
@@ -102,25 +105,25 @@ class _userhomeState extends State<Userhome> {
               IconButton(
                 icon: Icon(Icons.home, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
               ),
               IconButton(
                 icon: Icon(Icons.person, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => ProfilePage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
               ),
               IconButton(
                 icon: Icon(Icons.camera_alt, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => CameraPage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
               ),
               IconButton(
-                icon: Icon(Icons.map, color: Colors.white),
+                icon: Icon(Icons.sos_outlined, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => MapPage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
               ),
             ],
@@ -186,12 +189,20 @@ class _userhomeState extends State<Userhome> {
             children: [
               Text(heading, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
-              // Use Row to display items in a single row with 4 buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: items.map((item) {
-                  return _buildServiceItem(item);
-                }).toList(),
+              // Use GridView to display items in 4 columns
+              GridView.builder(
+                shrinkWrap: true, // Prevent GridView from taking up unnecessary space
+                physics: NeverScrollableScrollPhysics(), // Disable scrolling in GridView
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4, // 4 items per row
+                  crossAxisSpacing: 10, // Spacing between columns
+                  mainAxisSpacing: 10, // Spacing between rows
+                  childAspectRatio: 1, // Ensure the items are square-shaped
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  return _buildServiceItem(items[index]);
+                },
               ),
             ],
           ),
@@ -200,26 +211,46 @@ class _userhomeState extends State<Userhome> {
     );
   }
 
-  // Helper method to create a clickable service item
+  // Helper method to create a clickable service item with PNG images
   Widget _buildServiceItem(String title) {
+    // Define a mapping of titles to image paths
+    final Map<String, String> imageMapping = {
+      "Flood": 'userimage.png',
+      "Fire": 'upperimage.png',
+      "Drought": 'assets/images/drought.png',
+      "Landslide": 'assets/images/landslide.png',
+      "XYZ": 'assets/images/xyz.png',
+      "Example Feature 1": 'assets/images/feature1.png',
+      "Example Feature 2": 'assets/images/feature2.png',
+      "Help": 'assets/images/help.png',
+      "ABC": 'assets/images/abc.png', // Add image for ABC category
+    };
+
     return GestureDetector(
       onTap: () {
         // Navigate to the respective page when the item is clicked
-        if (title == "Flood" || title == "Fire" || title == "Drought" || title == "Landslide") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
+        if (title == "Flood") {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FloodPage()));
+        } else if (title == "Fire") {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FirePage()));
+        } else if (title == "Drought") {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => DroughtPage()));
+        } else if (title == "Landslide") {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => SexualIssuesReportsPage()));
         } else if (title == "XYZ") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => XYZPage()));
         } else if (title == "Example Feature 1") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => ExampleFeaturePage1()));
         } else if (title == "Example Feature 2") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => ExampleFeaturePage2()));
-        }  else if (title == "Help") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
+        } else if (title == "Help") {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => HelpPage()));
+        } else if (title == "ABC") {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => ABCPage()));
         }
-        
       },
       child: Container(
-        width: (MediaQuery.of(context).size.width - 65) / 4,  // Adjust width for 4 buttons
+        width: (MediaQuery.of(context).size.width - 65) / 4, // Adjust width for 4 buttons
         height: 150,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -239,7 +270,10 @@ class _userhomeState extends State<Userhome> {
                   ),
                 ],
               ),
-              child: Icon(Icons.warning, size: 55, color: const Color.fromARGB(255, 255, 64, 64)),
+              child: Image.asset(
+                imageMapping[title] ?? 'assets/images/default.png', // Use the mapped image or a default image
+                fit: BoxFit.contain,
+              ),
             ),
             SizedBox(height: 5),
             Text(
@@ -256,43 +290,43 @@ class _userhomeState extends State<Userhome> {
   }
 }
 
-// Define the new pages for navigation
-class HomePage extends StatelessWidget {
+// Example pages (you can customize these)
+class FloodPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Home Page')),
-      body: Center(child: Text('This is the Home Page')),
+      appBar: AppBar(title: Text('Flood Report')),
+      body: Center(child: Text('Flood report page content here')),
     );
   }
 }
 
-class ProfilePage extends StatelessWidget {
+class FirePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Profile Page')),
-      body: Center(child: Text('This is the Profile Page')),
+      appBar: AppBar(title: Text('Fire Report')),
+      body: Center(child: Text('Fire report page content here')),
     );
   }
 }
 
-class CameraPage extends StatelessWidget {
+class DroughtPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Camera Page')),
-      body: Center(child: Text('This is the Camera Page')),
+      appBar: AppBar(title: Text('Drought Report')),
+      body: Center(child: Text('Drought report page content here')),
     );
   }
 }
 
-class MapPage extends StatelessWidget {
+class LandslidePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Map Page')),
-      body: Center(child: Text('This is the Map Page')),
+      appBar: AppBar(title: Text('Landslide Report')),
+      body: Center(child: Text('Landslide report page content here')),
     );
   }
 }
@@ -301,8 +335,8 @@ class XYZPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('XYZ Page')),
-      body: Center(child: Text('This is the XYZ Page')),
+      appBar: AppBar(title: Text('XYZ Report')),
+      body: Center(child: Text('XYZ report page content here')),
     );
   }
 }
@@ -311,8 +345,8 @@ class ExampleFeaturePage1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Example Feature 1')),
-      body: Center(child: Text('This is Example Feature 1')),
+      appBar: AppBar(title: Text('Feature 1')),
+      body: Center(child: Text('Feature 1 content here')),
     );
   }
 }
@@ -321,8 +355,28 @@ class ExampleFeaturePage2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Example Feature 2')),
-      body: Center(child: Text('This is Example Feature 2')),
+      appBar: AppBar(title: Text('Feature 2')),
+      body: Center(child: Text('Feature 2 content here')),
+    );
+  }
+}
+
+class HelpPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Help')),
+      body: Center(child: Text('Help page content here')),
+    );
+  }
+}
+
+class ABCPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('ABC Report')),
+      body: Center(child: Text('ABC report page content here')),
     );
   }
 }

@@ -80,7 +80,7 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                 },
               ),
               UserTypePage(
-                color: Colors.teal,
+                color: const Color.fromARGB(255, 255, 21, 21),
                 title: 'AUTHORITY',
                 description: 'Login as an admin to manage the platform.',
                 image: 'assets/authority.png',
