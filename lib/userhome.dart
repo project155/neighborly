@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:neighborly/loginuser.dart';
+import 'package:neighborly/newreport.dart';
 import 'package:neighborly/sexualissues.dart';
 
 void main() => runApp(MyApp());
@@ -21,7 +22,7 @@ class Userhome extends StatefulWidget {
 }
 
 class _userhomeState extends State<Userhome> {
-  final List<String> disasterTypes = ["Flood", "Fire", "Drought", "Landslide"];
+  final List<String> disasterTypes = ["Flood", "Fire", "dhhhrought", "sexual assault"];
   final List<String> newCategoryItems = ["XYZ", "Example Feature 1", "Example Feature 2", "Help", "ABC"];
   final List<String> noticeImages = [
     'assets/notice1.jpg', // Replace with your actual image paths
@@ -56,17 +57,26 @@ class _userhomeState extends State<Userhome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Neighborly", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color.fromARGB(255, 54, 178, 255),
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: 15),
-            child: Icon(Icons.notifications),
-          ),
-        ],
-        automaticallyImplyLeading: false,
-      ),
+      appBar: PreferredSize(
+  preferredSize: Size.fromHeight(65),
+  child: ClipRRect(
+    borderRadius: BorderRadius.only(
+      bottomLeft: Radius.circular(30),
+      bottomRight: Radius.circular(30),
+    ),
+    child: AppBar(
+      title: Text("Neighborly", style: TextStyle(color: Colors.white)),
+      backgroundColor: const Color.fromARGB(255, 95, 156, 255),
+      actions: [
+        Padding(
+          padding: EdgeInsets.only(right: 15),
+          child: Icon(Icons.notifications_active_rounded),
+        ),
+      ],
+      automaticallyImplyLeading: false,
+    ),
+  ),
+),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(bottom: 100),
@@ -115,13 +125,19 @@ class _userhomeState extends State<Userhome> {
                 },
               ),
               IconButton(
+                icon: Icon(Icons.post_add_rounded, color: const Color.fromARGB(255, 255, 255, 255)),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => CreateReportPage()));
+                },
+              ),
+              IconButton(
                 icon: Icon(Icons.camera_alt, color: Colors.white),
                 onPressed: () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
               ),
               IconButton(
-                icon: Icon(Icons.sos_outlined, color: Colors.white),
+                icon: Icon(Icons.sos_sharp, color: Colors.white),
                 onPressed: () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
@@ -281,7 +297,7 @@ class _userhomeState extends State<Userhome> {
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 0, 0, 0)),
             ),
           ],
         ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:neighborly/loginuser.dart'; // Import the login user page for navigation
+//import 'package:neighborly/loginuser.dart'; // Import the login user page for navigation
 
 class SexualIssuesReportsPage extends StatefulWidget {
   @override
@@ -8,26 +8,41 @@ class SexualIssuesReportsPage extends StatefulWidget {
 }
 
 class _SexualIssuesReportsPageState extends State<SexualIssuesReportsPage> {
-  // List of sample reports (this would usually be fetched from your backend)
-  List<Map<String, String>> reports = [
-    {
-      "title": "Harassment Incident at Park",
-      "location": "Central Park",
-      "category": "Harassment",
-      "timestamp": "2024-12-17 10:30 AM",
-      "imageUrl": "https://example.com/sample-image.jpg",
-      "description": "A harassment incident was reported at Central Park, where a person was harassed by an individual in the vicinity."
-    },
-    {
-      "title": "Assault Near School",
-      "location": "Riverdale School",
-      "category": "Assault",
-      "timestamp": "2024-12-15 08:00 AM",
-      "imageUrl": "https://www.pdfgear.com/pdf-converter/img/how-to-convert-jpg-to-pdf-on-mac-1.png",
-      "description": "An assault occurred near Riverdale School, and the authorities are currently investigating the situation."
-    },
-    // Add more sample reports as needed
-  ];
+  // List of reports fetched from the backend (this would usually be populated dynamically)
+  List<Map<String, dynamic>> reports = []; // Initially empty; fetch data dynamically
+
+  @override
+  void initState() {
+    super.initState();
+    fetchReports(); // Fetch data when the widget initializes
+  }
+
+  // Simulated function to fetch reports from the backend
+  void fetchReports() async {
+    // Replace this with your actual backend call
+    await Future.delayed(Duration(seconds: 2)); // Simulate network delay
+    setState(() {
+      reports = [
+        {
+          "title": "Incident Reported",
+          "images": [
+            "https://www.pdfgear.com/pdf-converter/img/how-to-convert-jpg-to-pdf-on-mac-1.png",
+            "https://via.placeholder.com/300.png/09f/fff",
+            "https://via.placeholder.com/300.png/021/aaa"
+          ],
+          "description": "A detailed description of the incident reported by the user."
+        },
+        {
+          "title": "Another Incident",
+          "images": [
+            "https://via.placeholder.com/300.png/09f/fff",
+            "https://via.placeholder.com/300.png/021/aaa"
+          ],
+          "description": "Another description provided by the user for a different incident."
+        },
+      ];
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,69 +50,73 @@ class _SexualIssuesReportsPageState extends State<SexualIssuesReportsPage> {
       appBar: AppBar(
         title: Text('Sexual Issues Reports'),
       ),
-      body: ListView.builder(
-        itemCount: reports.length,
-        itemBuilder: (context, index) {
-          var report = reports[index];
+      body: reports.isEmpty
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: reports.length,
+              itemBuilder: (context, index) {
+                var report = reports[index];
 
-          return Card(
-            margin: EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image at the top of the report
-                Image.network(
-                  report["imageUrl"]!,
-                  width: double.infinity,
-                  height: 200,
-                  fit: BoxFit.cover,
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    report["title"]!,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text(
-                    '${report["location"]} | ${report["timestamp"]} | Category: ${report["category"]}',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    report["description"]!,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Divider(),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
+                return Card(
+                  margin: EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.thumb_up_alt_outlined, color: Colors.blue),
-                      SizedBox(width: 10),
-                      Text('Like'),
-                      SizedBox(width: 20),
-                      Icon(Icons.comment_outlined, color: Colors.blue),
-                      SizedBox(width: 10),
-                      Text('Comment'),
+                      // Image slider at the top of the report using PageView
+                      if (report["images"] != null && report["images"].isNotEmpty)
+                        SizedBox(
+                          height: 200,
+                          child: PageView.builder(
+                            itemCount: report["images"].length,
+                            itemBuilder: (context, imageIndex) {
+                              return Image.network(
+                                report["images"][imageIndex],
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          report["title"] ?? "Untitled",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          report["description"] ?? "No description available.",
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Divider(),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.thumb_up_alt_outlined, color: Colors.blue),
+                            SizedBox(width: 10),
+                            Text('Like'),
+                            SizedBox(width: 20),
+                            Icon(Icons.comment_outlined, color: Colors.blue),
+                            SizedBox(width: 10),
+                            Text('Comment'),
+                          ],
+                        ),
+                      ),
+                      Divider(),
                     ],
                   ),
-                ),
-                Divider(),
-              ],
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }
