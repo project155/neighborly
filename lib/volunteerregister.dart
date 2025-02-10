@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class volunteerregister extends StatefulWidget {
   const volunteerregister({super.key});
 
   @override
-  _volunteerregisterState createState() => _volunteerregisterState();
+  _VolunteerRegisterState createState() => _VolunteerRegisterState();
 }
 
-class _volunteerregisterState extends State<volunteerregister> {
+class _VolunteerRegisterState extends State<volunteerregister> {
   bool _isPasswordVisible = false;
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -21,59 +25,18 @@ class _volunteerregisterState extends State<volunteerregister> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-    // Ensure the keyboard doesn't cover the inputs
       body: Column(
         children: [
-          Expanded(
-            
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.35,
-              width:  MediaQuery.of(context).size.width * 1.00,
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 7, 135, 255),
-                borderRadius: BorderRadius.circular(15),
-
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text(
-                      'Welcome!',
-                      style: TextStyle(
-                        fontSize: 55,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: 25),
-                    Text(
-                      'Join us as a Volunteer!',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-         
+          _buildHeader(),
           Expanded(
             flex: 2,
-      
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(
-                20, // Add more space for keyboard
-              ),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  _buildTextField(_nameController, ' Name', Icons.person),
+                  _buildTextField(_nameController, 'Name', Icons.person),
                   const SizedBox(height: 10),
-                  _buildTextField(_emailController, ' Email', Icons.email),
+                  _buildTextField(_emailController, 'Email', Icons.email),
                   const SizedBox(height: 10),
                   _buildTextField(
                     _phoneController,
@@ -125,7 +88,32 @@ class _volunteerregisterState extends State<volunteerregister> {
     );
   }
 
-  // Modified _buildTextField method for better spacing and height
+  Widget _buildHeader() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.35,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 7, 135, 255),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Text(
+              'Welcome!',
+              style: TextStyle(fontSize: 55, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            SizedBox(height: 25),
+            Text('Join us as a Volunteer!', style: TextStyle(fontSize: 20, color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTextField(
     TextEditingController controller,
     String hint,
@@ -136,11 +124,8 @@ class _volunteerregisterState extends State<volunteerregister> {
     List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
-      height: 55, // Fixed height for all text fields
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(25),
-      ),
+      height: 55,
+      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(25)),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
@@ -160,15 +145,12 @@ class _volunteerregisterState extends State<volunteerregister> {
   Widget _buildRoleDisplay() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(15),
-      ),
+      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(15)),
       child: Row(
         children: const [
           Icon(Icons.volunteer_activism, color: Colors.grey),
-          SizedBox(width: 10,),
-          Text('Role: Volunteer', style: TextStyle(color: Color.fromARGB(255, 6, 6, 6))),
+          SizedBox(width: 10),
+          Text('Role: Volunteer', style: TextStyle(color: Colors.black)),
         ],
       ),
     );
@@ -176,10 +158,7 @@ class _volunteerregisterState extends State<volunteerregister> {
 
   Widget _buildPasswordVisibilityIcon() {
     return IconButton(
-      icon: Icon(
-        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-        color: Colors.grey,
-      ),
+      icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.grey),
       onPressed: () {
         setState(() {
           _isPasswordVisible = !_isPasswordVisible;
@@ -188,7 +167,7 @@ class _volunteerregisterState extends State<volunteerregister> {
     );
   }
 
-  void _register() {
+  Future<void> _register() async {
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
     String phone = _phoneController.text.trim();
@@ -204,14 +183,27 @@ class _volunteerregisterState extends State<volunteerregister> {
       _showError('Passwords do not match.');
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Registration Successful!')),
-    );
+    try {
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      await _firestore.collection('volunteers').doc(userCredential.user!.uid).set({
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'location': location,
+        'role': 'Volunteer',
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration Successful!')),
+      );
+    } catch (e) {
+      _showError(e.toString());
+    }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }

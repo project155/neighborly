@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:neighborly/authority.dart';
 import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/newreport.dart';
 import 'package:neighborly/sexualissues.dart';
+
+
 
 void main() => runApp(MyApp());
 
@@ -250,7 +253,8 @@ class _userhomeState extends State<Userhome> {
         } else if (title == "Fire") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => FirePage()));
         } else if (title == "Drought") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => DroughtPage()));
+         
+          Navigator.push(context, MaterialPageRoute(builder: (context) => AuthorityPage()));
         } else if (title == "Landslide") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => SexualIssuesReportsPage()));
         } else if (title == "XYZ") {
@@ -260,7 +264,7 @@ class _userhomeState extends State<Userhome> {
         } else if (title == "Example Feature 2") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => ExampleFeaturePage2()));
         } else if (title == "Help") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => HelpPage()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => AuthorityPage()));
         } else if (title == "ABC") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => ABCPage()));
         }
