@@ -3,9 +3,9 @@ import 'package:cloudinary/cloudinary.dart';
 Future<String?>  getClodinaryUrl(String image) async {
 
   final cloudinary = Cloudinary.signedConfig(
-    cloudName: 'dob1wjjvc',
-    apiKey: '615959474599611',
-    apiSecret: 'jtw3DhqbBURDSKLERJ9tMMFAhr8',
+    cloudName: 'dkwnu8zei',
+    apiKey: '298339343829723',
+    apiSecret: 'T9q3BURXE2-Rj6Uv4Dk9bSzd7rY',
   );
 
    final response = await cloudinary.upload(

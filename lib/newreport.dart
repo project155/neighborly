@@ -233,7 +233,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 child: Row(
                   children: [
                     Icon(Icons.access_time, color: Colors.blueAccent),
-                    SizedBox(width: 15),
+                    SizedBox(width: 25),
                     Expanded(
                       child: ListTile(
                         title: Text('Time', textAlign: TextAlign.left),

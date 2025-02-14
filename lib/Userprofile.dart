@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:neighborly/clodinary_upload.dart';
 
 class Userprofile extends StatefulWidget {
   @override
@@ -19,9 +20,8 @@ class _UserprofileState extends State<Userprofile> {
   String? userName;
   String? userEmail;
   String? userPhone;
-  String? userPlace;
-
-  bool isLoading = true; // Show loading indicator while fetching data
+  String? userLocation;
+  bool isLoading = true; // Loading indicator
 
   @override
   void initState() {
@@ -29,7 +29,7 @@ class _UserprofileState extends State<Userprofile> {
     _fetchUserData();
   }
 
-  // Fetch user data from Firestore ("volunteers" collection)
+  // Fetch user data from Firestore
   Future<void> _fetchUserData() async {
     User? user = _auth.currentUser;
     if (user != null) {
@@ -42,9 +42,9 @@ class _UserprofileState extends State<Userprofile> {
             userName = userDoc.get('name') ?? 'No Name';
             userEmail = userDoc.get('email') ?? 'No Email';
             userPhone = userDoc.get('phone') ?? 'No Phone';
-            userPlace = userDoc.get('place') ?? 'No Place';
+            userLocation = userDoc.get('location') ?? 'No Place';
             profileImageUrl = userDoc.get('profileImage') ?? '';
-            isLoading = false; // Data fetched, hide loading indicator
+            isLoading = false;
           });
         } else {
           print("No user found in volunteers collection.");
@@ -55,30 +55,16 @@ class _UserprofileState extends State<Userprofile> {
       } catch (e) {
         print("Error fetching user data: $e");
         setState(() {
-          isLoading = false; // Hide loading indicator even if there's an error
+          isLoading = false;
         });
       }
     }
   }
 
-  // Upload image to Cloudinary (or another server)
+  // Upload image to Cloudinary
   Future<void> _uploadImage(File imageFile) async {
-    final cloudinaryUrl =
-        'https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload';
-    final uploadPreset = 'YOUR_UPLOAD_PRESET';
-
-    var request = http.MultipartRequest('POST', Uri.parse(cloudinaryUrl));
-    request.fields['upload_preset'] = uploadPreset;
-    request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-
-    var response = await request.send();
-    if (response.statusCode == 200) {
-      var responseData = await response.stream.bytesToString();
-      var jsonData = json.decode(responseData);
-      String imageUrl = jsonData['secure_url'];
-
-      _updateProfileImage(imageUrl);
-    }
+    final imageUrl = await getClodinaryUrl(imageFile.path);
+    _updateProfileImage(imageUrl ?? '');
   }
 
   // Update profile image in Firestore
@@ -104,36 +90,91 @@ class _UserprofileState extends State<Userprofile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100], // Light background color
       appBar: AppBar(title: Text('User Profile')),
       body: isLoading
           ? Center(child: CircularProgressIndicator()) // Show loading while fetching data
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
+          : SingleChildScrollView(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
-                        ? NetworkImage(profileImageUrl!)
-                        : AssetImage('assets/default_profile.png') as ImageProvider,
+                  SizedBox(height: 40),
+
+                  // Profile Image (Large & Centered)
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 80,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
+                              ? NetworkImage(profileImageUrl!)
+                              : AssetImage('assets/default_profile.png') as ImageProvider,
+                        ),
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: InkWell(
+                            onTap: _pickImage,
+                            child: CircleAvatar(
+                              backgroundColor: Colors.blueAccent,
+                              radius: 20,
+                              child: Icon(Icons.camera_alt, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+
                   SizedBox(height: 20),
-                  Text(userName ?? "No Name", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 10),
-                  Text("📍 $userPlace", style: TextStyle(fontSize: 18, color: Colors.grey[700])),
-                  SizedBox(height: 10),
-                  Text("📧 $userEmail", style: TextStyle(fontSize: 18, color: Colors.grey[700])),
-                  SizedBox(height: 10),
-                  Text("📞 $userPhone", style: TextStyle(fontSize: 18, color: Colors.grey[700])),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _pickImage,
-                    child: Text('Change Profile Picture'),
+
+                  // User Details
+                  Card(
+                    margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    elevation: 5,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            userName ?? "No Name",
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            "📍 $userLocation",
+                            style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+                          ),
+                          Divider(thickness: 1, height: 30),
+
+                          _buildDetailRow(Icons.email, "Email", userEmail),
+                          SizedBox(height: 10),
+                          _buildDetailRow(Icons.phone, "Phone", userPhone),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
+    );
+  }
+
+  // Widget for detail rows
+  Widget _buildDetailRow(IconData icon, String label, String? value) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.blueAccent, size: 28),
+        SizedBox(width: 15),
+        Expanded(
+          child: Text(
+            value ?? "Not Available",
+            style: TextStyle(fontSize: 18, color: Colors.black87),
+          ),
+        ),
+      ],
     );
   }
 }
