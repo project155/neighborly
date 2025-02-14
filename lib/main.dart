@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:neighborly/UserSelectionPage.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:neighborly/firebase_options.dart';
 
-void main() {
+void main() async {
+   WidgetsFlutterBinding.ensureInitialized(); // Ensures proper initialization
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); 
   runApp(const MyApp());
 }
 

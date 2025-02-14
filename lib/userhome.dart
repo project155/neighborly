@@ -4,6 +4,8 @@ import 'package:neighborly/authority.dart';
 import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/newreport.dart';
 import 'package:neighborly/sexualissues.dart';
+import 'package:neighborly/Userprofile.dart';
+
 
 
 
@@ -23,6 +25,7 @@ class Userhome extends StatefulWidget {
   @override
   _userhomeState createState() => _userhomeState();
 }
+
 
 class _userhomeState extends State<Userhome> {
   final List<String> disasterTypes = ["Flood", "Fire", "dhhhrought", "sexual assault"];
@@ -124,7 +127,7 @@ class _userhomeState extends State<Userhome> {
               IconButton(
                 icon: Icon(Icons.person, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => Userprofile()));
                 },
               ),
               IconButton(

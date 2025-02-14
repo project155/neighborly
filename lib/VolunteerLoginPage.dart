@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:neighborly/volunteerregister.dart';
+import 'package:neighborly/userhome.dart'; // Import the homepage
 
 class VolunteerLoginPage extends StatefulWidget {
   const VolunteerLoginPage({super.key});
@@ -9,23 +12,48 @@ class VolunteerLoginPage extends StatefulWidget {
 }
 
 class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
-  bool _isPasswordVisible = false; // Track password visibility
+  bool _isPasswordVisible = false;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  void _signIn() async {
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (userCredential.user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Login Successful")),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => Userhome()), // Navigate to homepage
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.toString()}")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Background color
-      body: SingleChildScrollView( // Make the screen scrollable
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
         child: Column(
-          
           children: [
             Container(
               height: MediaQuery.of(context).size.height * 0.35,
-               width: MediaQuery.of(context).size.width * 1.00, // 45% of the screen height
+              width: MediaQuery.of(context).size.width * 1.00,
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 7, 135, 255),
-                borderRadius: BorderRadius.circular(15), 
-                // Optional: rounded corners
+                borderRadius: BorderRadius.circular(15),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(40),
@@ -52,68 +80,51 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                 ),
               ),
             ),
-            SizedBox(height: 50,),
-            // Username Field
+            SizedBox(height: 50),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(25), // Circular border
-                ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Enter Username',
-                    hintStyle: TextStyle(color: Colors.grey),
-                    prefixIcon: const Icon(Icons.person, color: Colors.grey),
-                    border: InputBorder.none, // Remove default border
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                  ),
+              child: TextField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  hintText: 'Enter Email',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  prefixIcon: const Icon(Icons.email, color: Colors.grey),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 ),
               ),
             ),
-
-            // Password Field
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(25), // Circular border
-                ),
-                child: TextField(
-                  obscureText: !_isPasswordVisible,
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    hintStyle: TextStyle(color: const Color.fromARGB(255, 168, 168, 168)),
-                    prefixIcon: const Icon(Icons.lock, color: Colors.grey),
-                    border: InputBorder.none, // Remove default border
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
+              child: TextField(
+                controller: _passwordController,
+                obscureText: !_isPasswordVisible,
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                  hintStyle: TextStyle(color: const Color.fromARGB(255, 168, 168, 168)),
+                  prefixIcon: const Icon(Icons.lock, color: Colors.grey),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      color: Colors.grey,
                     ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
                   ),
                 ),
               ),
             ),
-
-            // Recovery Password Link
             Align(
               alignment: Alignment.centerRight,
-              child: Padding(padding: const EdgeInsets.only( right: 35, ),
-             
+              child: Padding(
+                padding: const EdgeInsets.only(right: 35),
                 child: TextButton(
-                  onPressed: () {
-                    // Handle recovery password
-                  },
+                  onPressed: () {},
                   child: const Text(
                     'Recovery Password',
                     style: TextStyle(
@@ -123,16 +134,12 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                 ),
               ),
             ),
-
-            // Sign In Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
               child: ElevatedButton(
-                onPressed: () {
-                  // Handle sign-in
-                },
+                onPressed: _signIn,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6495ED), // Cornflower Blue
+                  backgroundColor: const Color(0xFF6495ED),
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(5),
@@ -147,8 +154,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                 ),
               ),
             ),
-            SizedBox(height: 200,),
-            // Register Now Section
+            SizedBox(height: 200),
             Padding(
               padding: const EdgeInsets.only(bottom: 50),
               child: Row(
@@ -160,7 +166,6 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                   ),
                   TextButton(
                     onPressed: () {
-                      // Navigate to the RegisterPage
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => volunteerregister()),
