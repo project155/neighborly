@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:neighborly/clodinary_upload.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
 
 class CreateReportPage extends StatefulWidget {
   @override
@@ -13,10 +16,11 @@ class _CreateReportPageState extends State<CreateReportPage> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   String? _selectedCategory;
-  DateTime _dateTime = DateTime.now();
+  String? _urgencyLevel;
+  DateTime? _dateTime;
+  TimeOfDay? _timeOfDay;
   Position? _location;
   XFile? _image;
-  String? _urgencyLevel;
 
   final List<String> _categories = [
     'Accident',
@@ -27,344 +31,224 @@ class _CreateReportPageState extends State<CreateReportPage> {
     'Public Hazards',
   ];
 
+  final List<String> _urgencyLevels = ['Low', 'Medium', 'High'];
+
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
   }
 
-  Future<void> _getCurrentLocation() async {
-    var status = await Permission.location.request();
-    if (status.isGranted) {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      setState(() {
-        _location = position;
-      });
-    } else {
-      setState(() {
-        _location = null;
-      });
+ Future<void> _getCurrentLocation() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    return;
+  }
+
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      return;
     }
   }
+
+  if (permission == LocationPermission.deniedForever) {
+    return;
+  }
+
+  Position position = await Geolocator.getCurrentPosition(
+    desiredAccuracy: LocationAccuracy.high,
+  );
+
+  setState(() {
+    _location = position;
+  });
+}
+
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-    setState(() {
-      if (pickedFile != null) {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
         _image = pickedFile;
-      }
-    });
-  }
-
-  void _submitReport() {
-    if (_formKey.currentState!.validate()) {
-      print('Report Submitted: $_selectedCategory, ${_titleController.text}, ${_descriptionController.text}, $_dateTime, $_location, $_urgencyLevel');
+      });
     }
   }
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
+  void _submitReport() async {
+    if (_formKey.currentState!.validate()) {
+      String? imageUrl;
+      if (_image != null) {
+        imageUrl = await getClodinaryUrl(_image!.path);
+      }
 
-  Widget _buildTextField({
-    required IconData icon,
-    required String hintText,
-    required TextEditingController controller,
-    required String? Function(String?) validator,
-    int maxLines = 1,
-    TextAlign textAlign = TextAlign.left,
-  }) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 12),
-      padding: EdgeInsets.all(15),
-      height: 60,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        crossAxisAlignment: maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.blueAccent),
-          SizedBox(width: 15),
-          Expanded(
-            child: TextFormField(
-              controller: controller,
-              maxLines: maxLines,
-              textAlign: textAlign,
-              decoration: InputDecoration.collapsed(hintText: hintText),
-              validator: validator,
-              onChanged: (value) {
-                setState(() {
-                  _formKey.currentState?.validate();
-                });
-              },
-            ),
-          ),
-        ],
-      ),
-    );
+      await FirebaseFirestore.instance.collection('reports').add({
+        'category': _selectedCategory,
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+        'date': _dateTime?.toIso8601String(),
+        'time': _timeOfDay != null ? _timeOfDay!.format(context) : null,
+        'location': _location != null
+            ? {'latitude': _location!.latitude, 'longitude': _location!.longitude}
+            : null,
+        'urgency': _urgencyLevel,
+        'imageUrl': imageUrl,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Report submitted successfully!')),
+      );
+
+      _formKey.currentState!.reset();
+      setState(() {
+        _selectedCategory = null;
+        _urgencyLevel = null;
+        _dateTime = null;
+        _timeOfDay = null;
+        _location = null;
+        _image = null;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Create Report'),
-        backgroundColor: Colors.blueAccent,
+     appBar: AppBar(
+  title: Text(
+    'Create Report',
+    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+  ),
+  centerTitle: true,
+  flexibleSpace: Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Colors.blueAccent, Colors.lightBlueAccent],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
+    ),
+  ),
+  leading: IconButton(
+    icon: Icon(Icons.arrow_back_ios, color: Colors.white), // Custom back button
+    onPressed: () {
+      Navigator.of(context).pop(); // Navigate back
+    },
+  ),
+),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              // Category Dropdown
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 12),
-                padding: EdgeInsets.all(15),
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.category, color: Colors.blueAccent),
-                    SizedBox(width: 15),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedCategory,
-                        decoration: InputDecoration.collapsed(hintText: 'Select Category'),
-                        items: _categories.map((category) {
-                          return DropdownMenuItem<String>(value: category, child: Text(category));
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCategory = value;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Please select a category';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+            DropdownButtonFormField<String>(
+  value: _selectedCategory,
+  decoration: InputDecoration(
+    hintText: 'Select Category',
+    filled: true,
+    fillColor: Colors.grey[200],
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(15),
+      borderSide: BorderSide.none,
+    ),
+    prefixIcon: Icon(Icons.category), // Add an icon here
+  ),
+  items: _categories.map((category) => DropdownMenuItem<String>(
+    value: category,
+    child: Text(category),
+  )).toList(),
+  onChanged: (value) => setState(() => _selectedCategory = value),
+  validator: (value) => value == null ? 'Please select a category' : null,
+),
+              SizedBox(height: 12),
+
+              DropdownButtonFormField<String>(
+                value: _urgencyLevel,
+                decoration: InputDecoration(hintText: 'Select Urgency Level', filled: true, fillColor: Colors.grey[200], border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)),
+                items: _urgencyLevels.map((level) => DropdownMenuItem<String>(value: level, child: Text(level))).toList(),
+                onChanged: (value) => setState(() => _urgencyLevel = value),
+                validator: (value) => value == null ? 'Please select urgency level' : null,
               ),
 
-              // Title Input
-              _buildTextField(
-                icon: Icons.title,
-                hintText: 'Enter Title',
-                controller: _titleController,
-                validator: (value) => value == null || value.isEmpty ? 'Please enter a title' : null,
+              SizedBox(height: 12),
+
+              TextFormField(controller: _titleController, decoration: InputDecoration(hintText: 'Enter Title', filled: true, fillColor: Colors.grey[200], border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)), validator: (value) => value == null || value.isEmpty ? 'Please enter a title' : null),
+
+              SizedBox(height: 12),
+
+              TextFormField(controller: _descriptionController, maxLines: 4, decoration: InputDecoration(hintText: 'Enter Description', filled: true, fillColor: Colors.grey[200], border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)), validator: (value) => value == null || value.isEmpty ? 'Please provide a description' : null),
+
+              SizedBox(height: 12),
+
+              ListTile(
+                tileColor: Colors.grey[200],
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                leading: Icon(Icons.lock_clock_rounded, color: Colors.blueAccent),
+                title: Text(_dateTime == null ? 'Select Date' : '${_dateTime!.toLocal()}'.split(' ')[0]),
+                onTap: () async {
+                  final DateTime? picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2020), lastDate: DateTime(2101));
+                  if (picked != null) setState(() => _dateTime = picked);
+                },
               ),
 
-              // Description Input
-              _buildTextField(
-                icon: Icons.description,
-                hintText: 'Enter Description',
-                controller: _descriptionController,
-                maxLines: 4,
-                validator: (value) => value == null || value.isEmpty ? 'Please provide a description' : null,
-              ),
+              SizedBox(height: 12),
 
-              // Date Picker
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 12),
-                padding: EdgeInsets.all(5),
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.date_range, color: Colors.blueAccent),
-                    SizedBox(width: 15),
-                    Expanded(
-                      child: ListTile(
-                        title: Text('Date', textAlign: TextAlign.left),
-                        subtitle: Text('${_dateTime.toLocal()}', textAlign: TextAlign.left),
-                        onTap: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: _dateTime,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2101),
-                          );
-                          if (picked != null && picked != _dateTime) {
-                            setState(() {
-                              _dateTime = DateTime(
-                                picked.year,
-                                picked.month,
-                                picked.day,
-                                _dateTime.hour,
-                                _dateTime.minute,
-                              );
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+              ListTile(
+                tileColor: Colors.grey[200],
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                leading: Icon(Icons.location_on, color: Colors.blueAccent),
+                title: Text(_timeOfDay == null ? 'Select Time' : _timeOfDay!.format(context)),
+                onTap: () async {
+                  final TimeOfDay? picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                  if (picked != null) setState(() => _timeOfDay = picked);
+                },
               ),
+              SizedBox(height: 12),
+               ListTile(
+  tileColor: Colors.grey[200],
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(10),
+  ),
+  leading: Icon(Icons.location_on, color: Colors.blueAccent), // Add an icon here
+  title: Text(
+    _location == null
+        ? 'Fetch Current Location'
+        : 'Location: ${_location!.latitude}, ${_location!.longitude}',
+  ),
+  onTap: _getCurrentLocation, // Fetch location when tapped
+),
+              SizedBox(height: 12),
 
-              // Time Picker
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 12),
-                padding: EdgeInsets.all(5),
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.access_time, color: Colors.blueAccent),
-                    SizedBox(width: 25),
-                    Expanded(
-                      child: ListTile(
-                        title: Text('Time', textAlign: TextAlign.left),
-                        subtitle: Text('${_dateTime.hour}:${_dateTime.minute}', textAlign: TextAlign.left),
-                        onTap: () async {
-                          final TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.fromDateTime(_dateTime),
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              _dateTime = DateTime(
-                                _dateTime.year,
-                                _dateTime.month,
-                                _dateTime.day,
-                                picked.hour,
-                                picked.minute,
-                              );
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+             ElevatedButton(
+  onPressed: _pickImage,
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.blueAccent, // Button background color
+    foregroundColor: Colors.white, // Text and icon color
+    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), // Padding
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10), // Rounded corners
+    ),
+  ),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Icon(Icons.image, size: 20), // Add an icon
+      SizedBox(width: 8), // Space between icon and text
+      Text('Attach Image'),
+    ],
+  ),
+),
 
-              // Location Display
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 12),
-                padding: EdgeInsets.all(5),
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.location_on, color: Colors.blueAccent),
-                    SizedBox(width: 15),
-                    Expanded(
-                      child: ListTile(
-                        title: Text('Location', textAlign: TextAlign.left),
-                        subtitle: _location != null
-                            ? Text('Lat: ${_location!.latitude}, Lon: ${_location!.longitude}', textAlign: TextAlign.left)
-                            : Text('Fetching location...', textAlign: TextAlign.left),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              SizedBox(height: 12),
 
-              // Attachments (Photo) - Container as Button
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  margin: EdgeInsets.symmetric(vertical: 12),
-                  padding: EdgeInsets.all(15),
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 200, 200, 200),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.camera_alt, color: Colors.white),
-                      SizedBox(width: 15),
-                      Expanded(
-                        child: Text(
-                          'Attach Photo',
-                          style: TextStyle(color: Colors.white),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              if (_image != null) Text('Image selected: ${_image!.name}'),
-
-              // Urgency Level Dropdown
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 12),
-                padding: EdgeInsets.all(15),
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning, color: Colors.blueAccent),
-                    SizedBox(width: 15),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _urgencyLevel,
-                        hint: Text('Select Urgency Level'),
-                        decoration: InputDecoration.collapsed(hintText: 'Select Urgency Level'),
-                        items: ['Low', 'Medium', 'High'].map((level) {
-                          return DropdownMenuItem<String>(
-                            value: level,
-                            child: Text(level),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _urgencyLevel = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Submit Button
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
-                child: ElevatedButton(
-                  onPressed: _submitReport,
-                  child: Text('Submit Report'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 15),
-                  ),
-                ),
-              ),
+              ElevatedButton(onPressed: _submitReport, child: Text('Submit Report')),
             ],
           ),
         ),

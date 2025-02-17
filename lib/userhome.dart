@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:neighborly/authority.dart';
+import 'package:neighborly/flood.dart';
 import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/newreport.dart';
 import 'package:neighborly/sexualissues.dart';
@@ -145,7 +146,7 @@ class _userhomeState extends State<Userhome> {
               IconButton(
                 icon: Icon(Icons.sos_sharp, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => FloodPage()));
                 },
               ),
             ],
@@ -314,15 +315,7 @@ class _userhomeState extends State<Userhome> {
 }
 
 // Example pages (you can customize these)
-class FloodPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Flood Report')),
-      body: Center(child: Text('Flood report page content here')),
-    );
-  }
-}
+
 
 class FirePage extends StatelessWidget {
   @override
