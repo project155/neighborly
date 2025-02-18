@@ -6,6 +6,7 @@ import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/newreport.dart';
 import 'package:neighborly/sexualissues.dart';
 import 'package:neighborly/Userprofile.dart';
+import 'package:neighborly/wildfire.dart';
 
 
 
@@ -33,7 +34,7 @@ class _userhomeState extends State<Userhome> {
   final List<String> newCategoryItems = ["XYZ", "Example Feature 1", "Example Feature 2", "Help", "ABC"];
   final List<String> noticeImages = [
     'assets/notice1.jpg', // Replace with your actual image paths
-    'assets/notice2.jpg',
+    'C:/Users/arsh/Documents/neighborly/assets/notice1.jpg',
     'assets/notice3.jpg',
   ];
   late PageController _pageController;
@@ -128,7 +129,7 @@ class _userhomeState extends State<Userhome> {
               IconButton(
                 icon: Icon(Icons.person, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => Userprofile()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfile()));
                 },
               ),
               IconButton(
@@ -270,7 +271,7 @@ class _userhomeState extends State<Userhome> {
         } else if (title == "Help") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => AuthorityPage()));
         } else if (title == "ABC") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => ABCPage()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => WildfireReportPage()));
         }
       },
       child: Container(

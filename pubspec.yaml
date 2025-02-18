@@ -45,6 +45,8 @@ dependencies:
   cloudinary: ^1.2.0
   carousel_slider: ^5.0.0
   share_plus: ^10.1.4
+  geocoding: ^2.1.0  # Ensure this is added
+
  
 
 dev_dependencies:

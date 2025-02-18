@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -44,8 +45,15 @@ class _FloodPageState extends State<FloodPage> {
               var report = reports[index];
               var data = report.data() as Map<String, dynamic>? ?? {};
 
-              // If the 'imageUrl' is stored as a string in Firestore
-              String imageUrl = data['imageUrl'] ?? "";
+              // Convert the Firestore field into a list of image URLs.
+              // If the field is stored as a single string, wrap it in a list.
+              List<String> imageUrls = [];
+              if (data['imageUrl'] is List) {
+                imageUrls = List<String>.from(data['imageUrl']);
+              } else if (data['imageUrl'] is String && (data['imageUrl'] as String).isNotEmpty) {
+                imageUrls = [data['imageUrl']];
+              }
+
               String title = data['title'] ?? "No Title";
               String description = data['description'] ?? "No Description";
               String category = data['category'] ?? "Unknown";
@@ -65,20 +73,30 @@ class _FloodPageState extends State<FloodPage> {
                 margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                 elevation: 5,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Display the image directly if imageUrl is not empty
-                    if (imageUrl.isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
+                    // Display multiple images using CarouselSlider if available
+                    if (imageUrls.isNotEmpty)
+                      CarouselSlider(
+                        options: CarouselOptions(
                           height: 250,
+                          enableInfiniteScroll: false,
+                          enlargeCenterPage: true,
                         ),
+                        items: imageUrls.map((image) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              image,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: 250,
+                            ),
+                          );
+                        }).toList(),
                       ),
 
                     // Report Details
@@ -91,9 +109,10 @@ class _FloodPageState extends State<FloodPage> {
                               style: TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
                           SizedBox(height: 5),
-                          Text(description,
-                              style: TextStyle(
-                                  fontSize: 14, color: Colors.grey[700])),
+                          Text(
+                            description,
+                            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                          ),
                           SizedBox(height: 5),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -125,16 +144,12 @@ class _FloodPageState extends State<FloodPage> {
                                   style: TextStyle(color: Colors.blue)),
                               SizedBox(width: 10),
                               IconButton(
-                                icon: Icon(Icons.comment_outlined,
-                                    color: Colors.green),
-                                onPressed: () =>
-                                    _showComments(context, reportId, comments),
+                                icon: Icon(Icons.comment_outlined, color: Colors.green),
+                                onPressed: () => _showComments(context, reportId, comments),
                               ),
                               IconButton(
-                                icon: Icon(Icons.share_outlined,
-                                    color: Colors.orange),
-                                onPressed: () =>
-                                    _shareReport(title, description),
+                                icon: Icon(Icons.share_outlined, color: Colors.orange),
+                                onPressed: () => _shareReport(title, description),
                               ),
                             ],
                           )
@@ -187,8 +202,9 @@ class _FloodPageState extends State<FloodPage> {
             children: [
               Expanded(
                 child: ListView(
-                  children:
-                      comments.map((comment) => ListTile(title: Text(comment))).toList(),
+                  children: comments
+                      .map((comment) => ListTile(title: Text(comment)))
+                      .toList(),
                 ),
               ),
               TextField(

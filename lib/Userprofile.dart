@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import 'dart:io';
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
 import 'package:neighborly/clodinary_upload.dart';
 
-class Userprofile extends StatefulWidget {
+class UserProfile extends StatefulWidget {
+  const UserProfile({super.key});
+  
   @override
-  _UserprofileState createState() => _UserprofileState();
+  _UserProfileState createState() => _UserProfileState();
 }
 
-class _UserprofileState extends State<Userprofile> {
+class _UserProfileState extends State<UserProfile> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -21,7 +21,9 @@ class _UserprofileState extends State<Userprofile> {
   String? userEmail;
   String? userPhone;
   String? userLocation;
+  String? userRole;
   bool isLoading = true; // Loading indicator
+  late String collectionName;
 
   @override
   void initState() {
@@ -34,20 +36,36 @@ class _UserprofileState extends State<Userprofile> {
     User? user = _auth.currentUser;
     if (user != null) {
       try {
-        DocumentSnapshot userDoc =
-            await _firestore.collection('volunteers').doc(user.uid).get();
+        // First, try fetching from a general "users" collection
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+        // If the document doesn't exist in "users", check "volunteers"
+        if (!userDoc.exists) {
+          userDoc = await _firestore.collection('volunteers').doc(user.uid).get();
+          collectionName = 'volunteers';
+        } else {
+          collectionName = 'users';
+        }
 
         if (userDoc.exists) {
+          // Log the entire document to see all available fields
+          print("User data: ${userDoc.data()}");
+
+          // Check if role exists in the fetched document
+          var roleData = userDoc.get('role');
+          print("Fetched role: $roleData");
+
           setState(() {
             userName = userDoc.get('name') ?? 'No Name';
             userEmail = userDoc.get('email') ?? 'No Email';
             userPhone = userDoc.get('phone') ?? 'No Phone';
-            userLocation = userDoc.get('location') ?? 'No Place';
+            userLocation = userDoc.get('location') ?? 'No Location';
             profileImageUrl = userDoc.get('profileImage') ?? '';
+            userRole = roleData ?? 'User'; // Default to 'User' if role is not available
             isLoading = false;
           });
         } else {
-          print("No user found in volunteers collection.");
+          print("No user found in either collection.");
           setState(() {
             isLoading = false;
           });
@@ -71,7 +89,7 @@ class _UserprofileState extends State<Userprofile> {
   Future<void> _updateProfileImage(String imageUrl) async {
     User? user = _auth.currentUser;
     if (user != null) {
-      await _firestore.collection('volunteers').doc(user.uid).update({'profileImage': imageUrl});
+      await _firestore.collection(collectionName).doc(user.uid).update({'profileImage': imageUrl});
       setState(() {
         profileImageUrl = imageUrl;
       });
@@ -91,14 +109,13 @@ class _UserprofileState extends State<Userprofile> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100], // Light background color
-      appBar: AppBar(title: Text('User Profile')),
+      appBar: AppBar(title: const Text('User Profile')),
       body: isLoading
-          ? Center(child: CircularProgressIndicator()) // Show loading while fetching data
+          ? const Center(child: CircularProgressIndicator()) // Show loading while fetching data
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  SizedBox(height: 40),
-
+                  const SizedBox(height: 40),
                   // Profile Image (Large & Centered)
                   Center(
                     child: Stack(
@@ -108,14 +125,14 @@ class _UserprofileState extends State<Userprofile> {
                           backgroundColor: Colors.grey[300],
                           backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
                               ? NetworkImage(profileImageUrl!)
-                              : AssetImage('assets/default_profile.png') as ImageProvider,
+                              : const AssetImage('assets/default_profile.png') as ImageProvider,
                         ),
                         Positioned(
                           bottom: 8,
                           right: 8,
                           child: InkWell(
                             onTap: _pickImage,
-                            child: CircleAvatar(
+                            child: const CircleAvatar(
                               backgroundColor: Colors.blueAccent,
                               radius: 20,
                               child: Icon(Icons.camera_alt, color: Colors.white),
@@ -125,12 +142,10 @@ class _UserprofileState extends State<Userprofile> {
                       ],
                     ),
                   ),
-
-                  SizedBox(height: 20),
-
+                  const SizedBox(height: 20),
                   // User Details
                   Card(
-                    margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     elevation: 5,
                     child: Padding(
@@ -140,18 +155,19 @@ class _UserprofileState extends State<Userprofile> {
                         children: [
                           Text(
                             userName ?? "No Name",
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(height: 5),
+                          const SizedBox(height: 5),
                           Text(
                             "📍 $userLocation",
                             style: TextStyle(fontSize: 18, color: Colors.grey[700]),
                           ),
-                          Divider(thickness: 1, height: 30),
-
+                          const Divider(thickness: 1, height: 30),
                           _buildDetailRow(Icons.email, "Email", userEmail),
-                          SizedBox(height: 10),
+                          const SizedBox(height: 10),
                           _buildDetailRow(Icons.phone, "Phone", userPhone),
+                          const SizedBox(height: 10),
+                          _buildDetailRow(Icons.person, "Role", userRole),
                         ],
                       ),
                     ),
@@ -167,11 +183,11 @@ class _UserprofileState extends State<Userprofile> {
     return Row(
       children: [
         Icon(icon, color: Colors.blueAccent, size: 28),
-        SizedBox(width: 15),
+        const SizedBox(width: 15),
         Expanded(
           child: Text(
             value ?? "Not Available",
-            style: TextStyle(fontSize: 18, color: Colors.black87),
+            style: const TextStyle(fontSize: 18, color: Colors.black87),
           ),
         ),
       ],
