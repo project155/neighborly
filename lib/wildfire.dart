@@ -51,10 +51,14 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
       });
 
       // Add markers to the map
+      _markers.clear();  // Clear existing markers
       for (var report in _reports) {
         if (report['location'] != null) {
           double lat = (report['location']['latitude'] ?? 0).toDouble();
           double lng = (report['location']['longitude'] ?? 0).toDouble();
+
+          print("Report Location: Lat: $lat, Lng: $lng");  // Debug log
+
           _markers.add(
             Marker(
               markerId: MarkerId(report['id']),
@@ -64,6 +68,17 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
           );
         }
       }
+
+      // Dynamically center map based on the first report (if available)
+      if (_markers.isNotEmpty) {
+        var firstReport = _reports.first;
+        double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
+        double lng = (firstReport['location']['longitude'] ?? 0).toDouble();
+        _mapController.animateCamera(
+          CameraUpdate.newLatLng(LatLng(lat, lng)),
+        );
+      }
+
     } catch (e) {
       print("Error fetching reports: $e");
       setState(() {
@@ -85,29 +100,29 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
           : _reports.isEmpty
               ? Center(child: Text("No reports available"))
               : Column(
-                children: [
-
-                  Expanded(child: Container(
-                            width: double.infinity,
-                            height: 300,
-                            child: GoogleMap(
-                              onMapCreated: _onMapCreated,
-                              initialCameraPosition: CameraPosition(
-                                target: _initialLocation,
-                                zoom: 15,
-                              ),
-                              mapType: MapType.normal,
-                              myLocationEnabled: true,
-                              zoomControlsEnabled: true,
-                              markers: _markers,
-                            ),
+                  children: [
+                    // Map Display
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        height: 300,
+                        child: GoogleMap(
+                          onMapCreated: _onMapCreated,
+                          initialCameraPosition: CameraPosition(
+                            target: _initialLocation,
+                            zoom: 15,
                           ),
-                  ),
+                          mapType: MapType.normal,
+                          myLocationEnabled: true,
+                          zoomControlsEnabled: true,
+                          markers: _markers,
+                        ),
+                      ),
+                    ),
 
-
-
-                  Expanded(
-                    child: ListView.builder(
+                    // Reports List
+                    Expanded(
+                      child: ListView.builder(
                         itemCount: _reports.length,
                         itemBuilder: (context, index) {
                           var report = _reports[index];
@@ -117,7 +132,7 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
                           } else if (report['imageUrl'] is String && report['imageUrl'].isNotEmpty) {
                             imageUrls = [report['imageUrl']];
                           }
-                    
+
                           String reportId = report['id'];
                           String title = report['title'] ?? "No Title";
                           String description = report['description'] ?? "No Description";
@@ -127,11 +142,11 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
                           String? longitude = report['location']?['longitude']?.toString();
                           int likes = report['likes'] ?? 0;
                           List comments = report['comments'] ?? [];
-                    
+
                           String userId = _auth.currentUser?.uid ?? "";
                           List likedBy = List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(userId);
-                    
+
                           return Card(
                             margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                             elevation: 5,
@@ -141,7 +156,6 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                
                                 if (imageUrls.isNotEmpty)
                                   CarouselSlider(
                                     options: CarouselOptions(
@@ -216,9 +230,9 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
                           );
                         },
                       ),
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
     );
   }
 

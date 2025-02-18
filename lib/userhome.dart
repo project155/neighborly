@@ -147,7 +147,7 @@ class _userhomeState extends State<Userhome> {
               IconButton(
                 icon: Icon(Icons.sos_sharp, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => FloodPage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
               ),
             ],
@@ -254,7 +254,7 @@ class _userhomeState extends State<Userhome> {
       onTap: () {
         // Navigate to the respective page when the item is clicked
         if (title == "Flood") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FloodPage()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FloodReportPage()));
         } else if (title == "Fire") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => FirePage()));
         } else if (title == "Drought") {

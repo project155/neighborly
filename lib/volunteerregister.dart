@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:neighborly/incidentlocation.dart';
+import 'incidentlocation.dart'; // Import the SelectLocation screen
 
-class volunteerregister extends StatefulWidget {
-  const volunteerregister({super.key});
+class VolunteerRegister extends StatefulWidget {
+  const VolunteerRegister({super.key});
 
   @override
   _VolunteerRegisterState createState() => _VolunteerRegisterState();
 }
 
-class _VolunteerRegisterState extends State<volunteerregister> {
+class _VolunteerRegisterState extends State<VolunteerRegister> {
   bool _isPasswordVisible = false;
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
@@ -19,7 +21,7 @@ class _VolunteerRegisterState extends State<volunteerregister> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _locationController = TextEditingController();
+  String _selectedLocation = "Select Location"; // Default location text
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +63,7 @@ class _VolunteerRegisterState extends State<volunteerregister> {
                     obscureText: true,
                   ),
                   const SizedBox(height: 10),
-                  _buildTextField(_locationController, 'Location', Icons.location_on),
+                  _buildLocationSelector(),  // Location field
                   const SizedBox(height: 20),
                   _buildRoleDisplay(),
                   const SizedBox(height: 30),
@@ -142,6 +144,40 @@ class _VolunteerRegisterState extends State<volunteerregister> {
     );
   }
 
+  Widget _buildLocationSelector() {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PickLocationPage()),
+        );
+        if (result != null && result is String) {
+          setState(() {
+            _selectedLocation = result; // Update the selected location
+          });
+        }
+      },
+      child: Container(
+        height: 55,
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(25)),
+        child: Row(
+          children: [
+            const Icon(Icons.location_on, color: Colors.grey),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _selectedLocation, // Display the selected location
+                style: TextStyle(color: _selectedLocation == "Select Location" ? Colors.grey : Colors.black),
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildRoleDisplay() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
@@ -173,9 +209,8 @@ class _VolunteerRegisterState extends State<volunteerregister> {
     String phone = _phoneController.text.trim();
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
-    String location = _locationController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty || confirmPassword.isEmpty || location.isEmpty) {
+    if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty || confirmPassword.isEmpty || _selectedLocation == "Select Location") {
       _showError('All fields are required.');
       return;
     }
@@ -192,12 +227,15 @@ class _VolunteerRegisterState extends State<volunteerregister> {
         'name': name,
         'email': email,
         'phone': phone,
-        'location': location,
+        'location': _selectedLocation,
         'role': 'Volunteer',
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration Successful!')),
       );
+
+      Navigator.pop(context); // Go back to the previous page after success
     } catch (e) {
       _showError(e.toString());
     }

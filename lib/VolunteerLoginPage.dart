@@ -168,7 +168,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => volunteerregister()),
+                        MaterialPageRoute(builder: (context) => VolunteerRegister()),
                       );
                     },
                     child: const Text(

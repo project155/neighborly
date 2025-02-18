@@ -6,6 +6,7 @@ import 'package:neighborly/clodinary_upload.dart';
 import 'package:neighborly/incidentlocation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class CreateReportPage extends StatefulWidget {
   @override
@@ -20,7 +21,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
   String? _urgencyLevel;
   DateTime? _dateTime;
   TimeOfDay? _timeOfDay;
-  Position? _location;
+  // This variable holds the fetched current location (as a Position)
+  Position? _currentLocation;
+  // This variable holds the location selected from the map (as a LatLng)
+  LatLng? _selectedLatLng;
   List<XFile> _images = [];
 
   final List<String> _categories = [
@@ -30,6 +34,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
     'Hygiene Issue',
     'Sexual Harassment',
     'Wildfire',
+    'flood',
   ];
 
   final List<String> _urgencyLevels = ['Low', 'Medium', 'High'];
@@ -66,7 +71,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
     );
 
     setState(() {
-      _location = position;
+      _currentLocation = position;
+      // Optionally, if no location has been selected yet, use the current location
+      _selectedLatLng ??= LatLng(position.latitude, position.longitude);
     });
   }
 
@@ -101,10 +108,11 @@ class _CreateReportPageState extends State<CreateReportPage> {
         'description': _descriptionController.text,
         'date': _dateTime?.toIso8601String(),
         'time': _timeOfDay != null ? _timeOfDay!.format(context) : null,
-        'location': _location != null
+        // Use the selected location if available, otherwise use the current location.
+        'location': _selectedLatLng != null
             ? {
-                'latitude': _location!.latitude,
-                'longitude': _location!.longitude,
+                'latitude': _selectedLatLng!.latitude,
+                'longitude': _selectedLatLng!.longitude,
               }
             : null,
         'urgency': _urgencyLevel,
@@ -117,21 +125,27 @@ class _CreateReportPageState extends State<CreateReportPage> {
         SnackBar(content: Text('Report submitted successfully!')),
       );
 
-      // Clear the form and reset the selected images
+      // Clear the form and reset the selected images and selected location.
       _formKey.currentState!.reset();
       setState(() {
         _selectedCategory = null;
         _urgencyLevel = null;
         _dateTime = null;
         _timeOfDay = null;
-        _location = null;
         _images = [];
+        // Optionally reset selected location
+        _selectedLatLng = null;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Build location text from _selectedLatLng
+    String locationText = _selectedLatLng != null
+        ? 'Selected Location: ${_selectedLatLng!.latitude.toStringAsFixed(4)}, ${_selectedLatLng!.longitude.toStringAsFixed(4)}'
+        : 'No location selected';
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -234,9 +248,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Please provide a description'
-                    : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Please provide a description' : null,
               ),
               SizedBox(height: 12),
               ListTile(
@@ -284,12 +297,59 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 ),
                 leading: Icon(Icons.location_on, color: Colors.blueAccent),
                 title: Text(
-                  _location == null
+                  _currentLocation == null
                       ? 'Fetch Current Location'
-                      : 'Location: ${_location!.latitude}, ${_location!.longitude}',
+                      : 'Current Location: ${_currentLocation!.latitude}, ${_currentLocation!.longitude}',
                 ),
                 onTap: _getCurrentLocation,
               ),
+              SizedBox(height: 12),
+              // Combined box for showing and picking location.
+              // Combined box for showing and picking location.
+InkWell(
+  onTap: () async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PickLocationPage(),
+      ),
+    );
+    if (result != null && result is LatLng) {
+      setState(() {
+        _selectedLatLng = result;
+      });
+    }
+  },
+  child: Container(
+    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    decoration: BoxDecoration(
+      color: Colors.grey.shade200, // Light grey background (like current location box)
+      borderRadius: BorderRadius.circular(8), // Subtle rounding
+    ),
+    child: Row(
+      children: [
+        Icon(Icons.location_history, color: Colors.blueAccent, size: 22), // Location icon
+        SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            _selectedLatLng != null
+                ? 'Incident Location: ${_selectedLatLng!.latitude.toStringAsFixed(4)}, ${_selectedLatLng!.longitude.toStringAsFixed(4)}'
+                : "Incident Location",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: _selectedLatLng != null ? Colors.black : Colors.grey.shade600,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24), // Downward arrow
+      ],
+    ),
+  ),
+),
+
+
               SizedBox(height: 12),
               ElevatedButton(
                 onPressed: _pickImages,
@@ -336,14 +396,26 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 ),
               SizedBox(height: 12),
               ElevatedButton(
-                onPressed: _submitReport,
-                child: Text('Submit Report'),
-              ),
-               SizedBox(height: 12),
-              ElevatedButton(
-                onPressed:PickLocationPage.new ,
-                child: Text('map'),
-              ),
+  onPressed: _submitReport,
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.blueAccent, // Change color to fit your theme
+    foregroundColor: Colors.white, // Text color
+    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12), // Smooth rounded corners
+    ),
+    elevation: 2, // Subtle shadow effect
+  ),
+  child: Text(
+    'Submit Report',
+    style: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.5,
+    ),
+  ),
+),
+
             ],
           ),
         ),
