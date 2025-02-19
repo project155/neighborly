@@ -33,7 +33,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
     'Road Issue',
     'Hygiene Issue',
     'Sexual Harassment',
-    'Wildfire',
+    'Fire',
     'flood',
   ];
 
@@ -88,7 +88,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
     }
   }
 
-  void _submitReport() async {
+  Future<void> _submitReport() async {
     if (_formKey.currentState!.validate()) {
       // Upload each image and collect the returned URLs
       List<String> imageUrls = [];
@@ -121,21 +121,13 @@ class _CreateReportPageState extends State<CreateReportPage> {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Report submitted successfully!')),
       );
 
-      // Clear the form and reset the selected images and selected location.
-      _formKey.currentState!.reset();
-      setState(() {
-        _selectedCategory = null;
-        _urgencyLevel = null;
-        _dateTime = null;
-        _timeOfDay = null;
-        _images = [];
-        // Optionally reset selected location
-        _selectedLatLng = null;
-      });
+      // Return to the homepage (pop the current page)
+      Navigator.of(context).pop();
     }
   }
 
@@ -304,52 +296,48 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 onTap: _getCurrentLocation,
               ),
               SizedBox(height: 12),
-              // Combined box for showing and picking location.
-              // Combined box for showing and picking location.
-InkWell(
-  onTap: () async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PickLocationPage(),
-      ),
-    );
-    if (result != null && result is LatLng) {
-      setState(() {
-        _selectedLatLng = result;
-      });
-    }
-  },
-  child: Container(
-    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    decoration: BoxDecoration(
-      color: Colors.grey.shade200, // Light grey background (like current location box)
-      borderRadius: BorderRadius.circular(8), // Subtle rounding
-    ),
-    child: Row(
-      children: [
-        Icon(Icons.location_history, color: Colors.blueAccent, size: 22), // Location icon
-        SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            _selectedLatLng != null
-                ? 'Incident Location: ${_selectedLatLng!.latitude.toStringAsFixed(4)}, ${_selectedLatLng!.longitude.toStringAsFixed(4)}'
-                : "Incident Location",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: _selectedLatLng != null ? Colors.black : Colors.grey.shade600,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24), // Downward arrow
-      ],
-    ),
-  ),
-),
-
-
+              InkWell(
+                onTap: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PickLocationPage(),
+                    ),
+                  );
+                  if (result != null && result is LatLng) {
+                    setState(() {
+                      _selectedLatLng = result;
+                    });
+                  }
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.location_history, color: Colors.blueAccent, size: 22),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _selectedLatLng != null
+                              ? 'Incident Location: ${_selectedLatLng!.latitude.toStringAsFixed(4)}, ${_selectedLatLng!.longitude.toStringAsFixed(4)}'
+                              : "Incident Location",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: _selectedLatLng != null ? Colors.black : Colors.grey.shade600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24),
+                    ],
+                  ),
+                ),
+              ),
               SizedBox(height: 12),
               ElevatedButton(
                 onPressed: _pickImages,
@@ -371,7 +359,6 @@ InkWell(
                 ),
               ),
               SizedBox(height: 12),
-              // Display selected images if available
               if (_images.isNotEmpty)
                 Container(
                   height: 100,
@@ -396,26 +383,25 @@ InkWell(
                 ),
               SizedBox(height: 12),
               ElevatedButton(
-  onPressed: _submitReport,
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blueAccent, // Change color to fit your theme
-    foregroundColor: Colors.white, // Text color
-    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12), // Smooth rounded corners
-    ),
-    elevation: 2, // Subtle shadow effect
-  ),
-  child: Text(
-    'Submit Report',
-    style: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.5,
-    ),
-  ),
-),
-
+                onPressed: _submitReport,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                child: Text(
+                  'Submit Report',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

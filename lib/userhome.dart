@@ -30,7 +30,7 @@ class Userhome extends StatefulWidget {
 
 
 class _userhomeState extends State<Userhome> {
-  final List<String> disasterTypes = ["Flood", "Fire", "dhhhrought", "sexual assault"];
+  final List<String> disasterTypes = ["Flood/Rainfall", "Fire", "Landslide", "Drought"];
   final List<String> newCategoryItems = ["XYZ", "Example Feature 1", "Example Feature 2", "Help", "ABC"];
   final List<String> noticeImages = [
     'assets/notice1.jpg', // Replace with your actual image paths
@@ -253,10 +253,10 @@ class _userhomeState extends State<Userhome> {
     return GestureDetector(
       onTap: () {
         // Navigate to the respective page when the item is clicked
-        if (title == "Flood") {
+        if (title == "Flood/Rainfall") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => FloodReportPage()));
         } else if (title == "Fire") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FirePage()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => WildfireReportPage()));
         } else if (title == "Drought") {
          
           Navigator.push(context, MaterialPageRoute(builder: (context) => AuthorityPage()));

@@ -11,7 +11,8 @@ class WildfireReportPage extends StatefulWidget {
   _WildfireReportPageState createState() => _WildfireReportPageState();
 }
 
-class _WildfireReportPageState extends State<WildfireReportPage> {
+class _WildfireReportPageState extends State<WildfireReportPage>
+    with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late GoogleMapController _mapController;
@@ -19,7 +20,8 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
   List<Map<String, dynamic>> _reports = [];
   bool _isLoading = true;
 
-  final LatLng _initialLocation = LatLng(11.194249397596916, 75.85098108272076);
+  final LatLng _initialLocation =
+      LatLng(11.194249397596916, 75.85098108272076);
 
   @override
   void initState() {
@@ -37,7 +39,7 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
     try {
       var snapshot = await _firestore
           .collection('reports')
-          .where('category', isEqualTo: 'Wildfire')
+          .where('category', isEqualTo: 'Fire')
           .orderBy('timestamp', descending: true)
           .get();
 
@@ -51,25 +53,24 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
       });
 
       // Add markers to the map
-      _markers.clear();  // Clear existing markers
+      _markers.clear();
       for (var report in _reports) {
         if (report['location'] != null) {
           double lat = (report['location']['latitude'] ?? 0).toDouble();
           double lng = (report['location']['longitude'] ?? 0).toDouble();
-
-          print("Report Location: Lat: $lat, Lng: $lng");  // Debug log
-
+          print("Report Location: Lat: $lat, Lng: $lng");
           _markers.add(
             Marker(
               markerId: MarkerId(report['id']),
               position: LatLng(lat, lng),
-              infoWindow: InfoWindow(title: report['title'], snippet: report['description']),
+              infoWindow: InfoWindow(
+                  title: report['title'], snippet: report['description']),
             ),
           );
         }
       }
 
-      // Dynamically center map based on the first report (if available)
+      // Center map based on the first report (if available)
       if (_markers.isNotEmpty) {
         var firstReport = _reports.first;
         double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
@@ -78,7 +79,6 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
           CameraUpdate.newLatLng(LatLng(lat, lng)),
         );
       }
-
     } catch (e) {
       print("Error fetching reports: $e");
       setState(() {
@@ -87,68 +87,210 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
     }
   }
 
+  // Animated Snackbar Method (same as before)
+  void _showAnimatedSnackbar(String message) {
+    AnimationController controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300),
+    );
+    Animation<Offset> offsetAnimation = Tween<Offset>(
+      begin: Offset(0, -1),
+      end: Offset(0, 0),
+    ).animate(
+      CurvedAnimation(parent: controller, curve: Curves.easeOut),
+    );
+
+    OverlayEntry overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 50,
+        left: 20,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: SlideTransition(
+            position: offsetAnimation,
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orangeAccent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.white),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context)!.insert(overlayEntry);
+    controller.forward();
+
+    Future.delayed(Duration(seconds: 3), () async {
+      await controller.reverse();
+      overlayEntry.remove();
+      controller.dispose();
+    });
+  }
+
+  // Floating AppBar as an elongated cylinder overlapping the map.
+  Widget _buildFloatingAppBar() {
+    return Positioned(
+      top: 40,
+      left: 20,
+      right: 20,
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            )
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Back Button
+            IconButton(
+              icon: Icon(Icons.arrow_back, color: Colors.black87),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            // Title with Wildfire Icon and Text
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.local_fire_department,
+                    size: 30, color: Colors.redAccent),
+                SizedBox(width: 8),
+                Text(
+                  "Fire Reports",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            // Search Button which triggers search
+            IconButton(
+              icon: Icon(Icons.search, color: Colors.black87),
+              onPressed: () {
+                showSearch(
+                  context: context,
+                  delegate: WildfireReportSearchDelegate(reports: _reports),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Instead of using zoomable InteractiveViewer, we open a full-screen image on tap.
+  Widget _buildTappableImage(String imageUrl) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
+        );
+      },
+      child: Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 250,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Wildfire Reports"),
-        centerTitle: true,
-        backgroundColor: Colors.redAccent,
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _reports.isEmpty
-              ? Center(child: Text("No reports available"))
-              : Column(
-                  children: [
-                    // Map Display
-                    Expanded(
-                      child: Container(
-                        width: double.infinity,
-                        height: 300,
-                        child: GoogleMap(
-                          onMapCreated: _onMapCreated,
-                          initialCameraPosition: CameraPosition(
-                            target: _initialLocation,
-                            zoom: 15,
-                          ),
-                          mapType: MapType.normal,
-                          myLocationEnabled: true,
-                          zoomControlsEnabled: true,
-                          markers: _markers,
-                        ),
-                      ),
-                    ),
-
-                    // Reports List
-                    Expanded(
-                      child: ListView.builder(
+      // No traditional appBar; using a Stack to overlay a floating bar on the map.
+      body: Column(
+        children: [
+          // Map section with floating AppBar on top.
+          Expanded(
+            flex: 1,
+            child: Stack(
+              children: [
+                GoogleMap(
+                  onMapCreated: _onMapCreated,
+                  initialCameraPosition: CameraPosition(
+                    target: _initialLocation,
+                    zoom: 15,
+                  ),
+                  mapType: MapType.normal,
+                  myLocationEnabled: true,
+                  zoomControlsEnabled: true,
+                  markers: _markers,
+                ),
+                _buildFloatingAppBar(),
+              ],
+            ),
+          ),
+          // Reports List section.
+          Expanded(
+            flex: 1,
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : _reports.isEmpty
+                    ? Center(child: Text("No reports available"))
+                    : ListView.builder(
                         itemCount: _reports.length,
                         itemBuilder: (context, index) {
                           var report = _reports[index];
                           List<String> imageUrls = [];
                           if (report['imageUrl'] is List) {
                             imageUrls = List<String>.from(report['imageUrl']);
-                          } else if (report['imageUrl'] is String && report['imageUrl'].isNotEmpty) {
+                          } else if (report['imageUrl'] is String &&
+                              report['imageUrl'].isNotEmpty) {
                             imageUrls = [report['imageUrl']];
                           }
 
                           String reportId = report['id'];
                           String title = report['title'] ?? "No Title";
-                          String description = report['description'] ?? "No Description";
+                          String description =
+                              report['description'] ?? "No Description";
                           String category = report['category'] ?? "Unknown";
                           String urgency = report['urgency'] ?? "Normal";
-                          String? latitude = report['location']?['latitude']?.toString();
-                          String? longitude = report['location']?['longitude']?.toString();
+                          String? latitude =
+                              report['location']?['latitude']?.toString();
+                          String? longitude =
+                              report['location']?['longitude']?.toString();
                           int likes = report['likes'] ?? 0;
                           List comments = report['comments'] ?? [];
 
                           String userId = _auth.currentUser?.uid ?? "";
-                          List likedBy = List<String>.from(report['likedBy'] ?? []);
+                          List likedBy =
+                              List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(userId);
 
                           return Card(
-                            margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                            margin: EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 16),
                             elevation: 5,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -157,68 +299,73 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (imageUrls.isNotEmpty)
-                                  CarouselSlider(
-                                    options: CarouselOptions(
-                                      height: 250,
-                                      enableInfiniteScroll: false,
-                                      enlargeCenterPage: true,
-                                    ),
-                                    items: imageUrls.map((image) {
-                                      return ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Image.network(
-                                          image,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: 250,
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
+                                  ImageCarousel(imageUrls: imageUrls),
                                 Padding(
                                   padding: EdgeInsets.all(10),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(title,
                                           style: TextStyle(
-                                              fontSize: 18, fontWeight: FontWeight.bold)),
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold)),
                                       SizedBox(height: 5),
                                       Text(
                                         description,
-                                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[700]),
                                       ),
                                       SizedBox(height: 5),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text("Category: $category",
-                                              style: TextStyle(fontWeight: FontWeight.bold)),
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold)),
                                           Text("Urgency: $urgency",
-                                              style: TextStyle(color: Colors.redAccent)),
+                                              style: TextStyle(
+                                                  color: Colors.redAccent)),
                                         ],
                                       ),
-                                      if (latitude != null && longitude != null)
+                                      if (latitude != null &&
+                                          longitude != null)
                                         Text("Location: $latitude, $longitude",
-                                            style: TextStyle(color: Colors.blueGrey)),
+                                            style: TextStyle(
+                                                color: Colors.blueGrey)),
                                       SizedBox(height: 10),
                                       Row(
                                         children: [
                                           IconButton(
                                             icon: Icon(
-                                              isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                                              isLiked
+                                                  ? Icons.thumb_up
+                                                  : Icons.thumb_up_alt_outlined,
                                               color: Colors.blue,
                                             ),
-                                            onPressed: () => _handleLike(reportId, isLiked),
+                                            onPressed: () {
+                                              _handleLike(reportId, isLiked);
+                                              _showAnimatedSnackbar(isLiked
+                                                  ? "Like removed!"
+                                                  : "Liked!");
+                                            },
                                           ),
-                                          Text("$likes Likes", style: TextStyle(color: Colors.blue)),
+                                          Text("$likes Likes",
+                                              style:
+                                                  TextStyle(color: Colors.blue)),
                                           IconButton(
-                                            icon: Icon(Icons.comment_outlined, color: Colors.green),
-                                            onPressed: () => _showComments(context, reportId, comments),
+                                            icon: Icon(Icons.comment_outlined,
+                                                color: Colors.green),
+                                            onPressed: () =>
+                                                _showComments(context, reportId, comments),
                                           ),
                                           IconButton(
-                                            icon: Icon(Icons.share_outlined, color: Colors.orange),
-                                            onPressed: () => _shareReport(title, description),
+                                            icon: Icon(Icons.share_outlined,
+                                                color: Colors.orange),
+                                            onPressed: () =>
+                                                _shareReport(title, description),
                                           ),
                                         ],
                                       )
@@ -230,19 +377,20 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
                           );
                         },
                       ),
-                    ),
-                  ],
-                ),
+          ),
+        ],
+      ),
     );
   }
 
   void _handleLike(String docId, bool isLiked) {
     String userId = _auth.currentUser?.uid ?? "";
     if (userId.isEmpty) return;
-
     _firestore.collection('reports').doc(docId).update({
       'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
-      'likedBy': isLiked ? FieldValue.arrayRemove([userId]) : FieldValue.arrayUnion([userId]),
+      'likedBy': isLiked
+          ? FieldValue.arrayRemove([userId])
+          : FieldValue.arrayUnion([userId]),
     });
   }
 
@@ -252,7 +400,6 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
 
   void _showComments(BuildContext context, String docId, List comments) {
     TextEditingController commentController = TextEditingController();
-
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -262,7 +409,21 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
             children: [
               Expanded(
                 child: ListView(
-                  children: comments.map((comment) => ListTile(title: Text(comment))).toList(),
+                  children: comments.map((comment) {
+                    // Expecting each comment to be a map with 'name' and 'comment'
+                    if (comment is Map && comment.containsKey('name')) {
+                      return ListTile(
+                        title: Text(
+                          comment['name'],
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(comment['comment'] ?? ""),
+                      );
+                    } else {
+                      // If comment is not a map, just display the text.
+                      return ListTile(title: Text(comment.toString()));
+                    }
+                  }).toList(),
                 ),
               ),
               TextField(
@@ -270,8 +431,11 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
                 decoration: InputDecoration(hintText: "Add a comment..."),
                 onSubmitted: (text) {
                   if (text.isNotEmpty) {
+                    // For demonstration, we'll add a dummy name. In real apps, use the user's name.
                     _firestore.collection('reports').doc(docId).update({
-                      'comments': FieldValue.arrayUnion([text]),
+                      'comments': FieldValue.arrayUnion([
+                        {'name': 'Anonymous', 'comment': text}
+                      ]),
                     });
                     Navigator.pop(context);
                   }
@@ -281,6 +445,249 @@ class _WildfireReportPageState extends State<WildfireReportPage> {
           ),
         );
       },
+    );
+  }
+}
+
+// A new widget for the carousel with dot indicators.
+class ImageCarousel extends StatefulWidget {
+  final List<String> imageUrls;
+  ImageCarousel({required this.imageUrls});
+  @override
+  _ImageCarouselState createState() => _ImageCarouselState();
+}
+
+class _ImageCarouselState extends State<ImageCarousel> {
+  int _current = 0;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        CarouselSlider(
+          options: CarouselOptions(
+            height: 250,
+            enableInfiniteScroll: false,
+            enlargeCenterPage: true,
+            onPageChanged: (index, reason) {
+              setState(() {
+                _current = index;
+              });
+            },
+          ),
+          items: widget.imageUrls.map((image) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            FullScreenImagePage(imageUrl: image)),
+                  );
+                },
+                child: Image.network(
+                  image,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 250,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: widget.imageUrls.asMap().entries.map((entry) {
+            return Container(
+              width: 8.0,
+              height: 8.0,
+              margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _current == entry.key
+                    ? Colors.redAccent
+                    : Colors.grey.shade400,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+// Custom SearchDelegate for wildfire reports.
+class WildfireReportSearchDelegate extends SearchDelegate {
+  final List<Map<String, dynamic>> reports;
+
+  WildfireReportSearchDelegate({required this.reports});
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      if (query.isNotEmpty)
+        IconButton(
+          icon: Icon(Icons.clear),
+          onPressed: () {
+            query = '';
+          },
+        )
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, null); // Close search delegate
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    final results = reports.where((report) {
+      final title = report['title']?.toLowerCase() ?? '';
+      return title.contains(query.toLowerCase());
+    }).toList();
+
+    return ListView.builder(
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final report = results[index];
+        return ListTile(
+          leading: Icon(Icons.local_fire_department, color: Colors.redAccent),
+          title: Text(report['title'] ?? "No Title"),
+          subtitle: Text(report['description'] ?? "No Description"),
+          onTap: () {
+            close(context, null);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    WildfireReportDetailPage(report: report),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final suggestions = reports.where((report) {
+      final title = report['title']?.toLowerCase() ?? '';
+      return title.contains(query.toLowerCase());
+    }).toList();
+
+    return ListView.builder(
+      itemCount: suggestions.length,
+      itemBuilder: (context, index) {
+        final report = suggestions[index];
+        return ListTile(
+          leading: Icon(Icons.local_fire_department, color: Colors.redAccent),
+          title: Text(report['title'] ?? "No Title"),
+          onTap: () {
+            query = report['title'] ?? "";
+            showResults(context);
+          },
+        );
+      },
+    );
+  }
+}
+
+// A basic detail page for a wildfire report.
+class WildfireReportDetailPage extends StatelessWidget {
+  final Map<String, dynamic> report;
+
+  WildfireReportDetailPage({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
+    List<String> imageUrls = [];
+    if (report['imageUrl'] is List) {
+      imageUrls = List<String>.from(report['imageUrl']);
+    } else if (report['imageUrl'] is String &&
+        report['imageUrl'].isNotEmpty) {
+      imageUrls = [report['imageUrl']];
+    }
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.redAccent,
+        title: Text(report['title'] ?? "Report Details"),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (imageUrls.isNotEmpty)
+              ImageCarousel(imageUrls: imageUrls),
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    report['title'] ?? "No Title",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    report['description'] ?? "No Description",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    "Category: ${report['category'] ?? "Unknown"}",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    "Urgency: ${report['urgency'] ?? "Normal"}",
+                    style: TextStyle(fontSize: 16, color: Colors.redAccent),
+                  ),
+                  // Add additional details as needed...
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Full screen image view page.
+class FullScreenImagePage extends StatelessWidget {
+  final String imageUrl;
+
+  FullScreenImagePage({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
     );
   }
 }
