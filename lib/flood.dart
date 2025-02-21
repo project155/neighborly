@@ -37,6 +37,7 @@ class _FloodReportPageState extends State<FloodReportPage>
 
   Future<void> _fetchReports() async {
     try {
+      // Change category filter to 'Flood'
       var snapshot = await _firestore
           .collection('reports')
           .where('category', isEqualTo: 'flood')
@@ -112,12 +113,12 @@ class _FloodReportPageState extends State<FloodReportPage>
             child: Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orangeAccent,
+                color: Colors.lightBlueAccent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning, color: Colors.white),
+                  Icon(Icons.water_drop, color: Colors.white),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -177,7 +178,7 @@ class _FloodReportPageState extends State<FloodReportPage>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.water_damage, size: 30, color: Colors.black87),
+                Icon(Icons.water_drop, size: 30, color: Colors.blueAccent),
                 SizedBox(width: 8),
                 Text(
                   "Flood Reports",
@@ -189,7 +190,7 @@ class _FloodReportPageState extends State<FloodReportPage>
                 ),
               ],
             ),
-            // Search Button triggers search
+            // Search Button which triggers search
             IconButton(
               icon: Icon(Icons.search, color: Colors.black87),
               onPressed: () {
@@ -201,6 +202,25 @@ class _FloodReportPageState extends State<FloodReportPage>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Instead of using zoomable InteractiveViewer, we open a full-screen image on tap.
+  Widget _buildTappableImage(String imageUrl) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
+        );
+      },
+      child: Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 250,
       ),
     );
   }
@@ -262,6 +282,7 @@ class _FloodReportPageState extends State<FloodReportPage>
                               report['location']?['longitude']?.toString();
                           int likes = report['likes'] ?? 0;
                           List comments = report['comments'] ?? [];
+
                           String userId = _auth.currentUser?.uid ?? "";
                           List likedBy =
                               List<String>.from(report['likedBy'] ?? []);
@@ -278,24 +299,7 @@ class _FloodReportPageState extends State<FloodReportPage>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (imageUrls.isNotEmpty)
-                                  CarouselSlider(
-                                    options: CarouselOptions(
-                                      height: 250,
-                                      enableInfiniteScroll: false,
-                                      enlargeCenterPage: true,
-                                    ),
-                                    items: imageUrls.map((image) {
-                                      return ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Image.network(
-                                          image,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: 250,
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
+                                  ImageCarousel(imageUrls: imageUrls),
                                 Padding(
                                   padding: EdgeInsets.all(10),
                                   child: Column(
@@ -349,8 +353,8 @@ class _FloodReportPageState extends State<FloodReportPage>
                                             },
                                           ),
                                           Text("$likes Likes",
-                                              style:
-                                                  TextStyle(color: Colors.blue)),
+                                              style: TextStyle(
+                                                  color: Colors.blue)),
                                           IconButton(
                                             icon: Icon(Icons.comment_outlined,
                                                 color: Colors.green),
@@ -405,9 +409,21 @@ class _FloodReportPageState extends State<FloodReportPage>
             children: [
               Expanded(
                 child: ListView(
-                  children: comments
-                      .map((comment) => ListTile(title: Text(comment)))
-                      .toList(),
+                  children: comments.map((comment) {
+                    // Expecting each comment to be a map with 'name' and 'comment'
+                    if (comment is Map && comment.containsKey('name')) {
+                      return ListTile(
+                        title: Text(
+                          comment['name'],
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(comment['comment'] ?? ""),
+                      );
+                    } else {
+                      // If comment is not a map, just display the text.
+                      return ListTile(title: Text(comment.toString()));
+                    }
+                  }).toList(),
                 ),
               ),
               TextField(
@@ -415,8 +431,11 @@ class _FloodReportPageState extends State<FloodReportPage>
                 decoration: InputDecoration(hintText: "Add a comment..."),
                 onSubmitted: (text) {
                   if (text.isNotEmpty) {
+                    // For demonstration, we'll add a dummy name. In real apps, use the user's name.
                     _firestore.collection('reports').doc(docId).update({
-                      'comments': FieldValue.arrayUnion([text]),
+                      'comments': FieldValue.arrayUnion([
+                        {'name': 'Anonymous', 'comment': text}
+                      ]),
                     });
                     Navigator.pop(context);
                   }
@@ -426,6 +445,75 @@ class _FloodReportPageState extends State<FloodReportPage>
           ),
         );
       },
+    );
+  }
+}
+
+// A new widget for the carousel with dot indicators.
+class ImageCarousel extends StatefulWidget {
+  final List<String> imageUrls;
+  ImageCarousel({required this.imageUrls});
+  @override
+  _ImageCarouselState createState() => _ImageCarouselState();
+}
+
+class _ImageCarouselState extends State<ImageCarousel> {
+  int _current = 0;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        CarouselSlider(
+          options: CarouselOptions(
+            height: 250,
+            enableInfiniteScroll: false,
+            enlargeCenterPage: true,
+            onPageChanged: (index, reason) {
+              setState(() {
+                _current = index;
+              });
+            },
+          ),
+          items: widget.imageUrls.map((image) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            FullScreenImagePage(imageUrl: image)),
+                  );
+                },
+                child: Image.network(
+                  image,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 250,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: widget.imageUrls.asMap().entries.map((entry) {
+            return Container(
+              width: 8.0,
+              height: 8.0,
+              margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _current == entry.key
+                    ? Colors.blueAccent
+                    : Colors.grey.shade400,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
@@ -471,11 +559,11 @@ class FloodReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = results[index];
         return ListTile(
-          leading: Icon(Icons.water_damage, color: Colors.black87),
+          leading: Icon(Icons.water_drop, color: Colors.blueAccent),
           title: Text(report['title'] ?? "No Title"),
           subtitle: Text(report['description'] ?? "No Description"),
           onTap: () {
-            close(context, null); // Close search delegate
+            close(context, null);
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -501,7 +589,7 @@ class FloodReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = suggestions[index];
         return ListTile(
-          leading: Icon(Icons.water_damage, color: Colors.black87),
+          leading: Icon(Icons.water_drop, color: Colors.blueAccent),
           title: Text(report['title'] ?? "No Title"),
           onTap: () {
             query = report['title'] ?? "";
@@ -530,6 +618,7 @@ class FloodReportDetailPage extends StatelessWidget {
     }
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.blueAccent,
         title: Text(report['title'] ?? "Report Details"),
       ),
       body: SingleChildScrollView(
@@ -537,24 +626,7 @@ class FloodReportDetailPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (imageUrls.isNotEmpty)
-              CarouselSlider(
-                options: CarouselOptions(
-                  height: 250,
-                  enableInfiniteScroll: false,
-                  enlargeCenterPage: true,
-                ),
-                items: imageUrls.map((image) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      image,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: 250,
-                    ),
-                  );
-                }).toList(),
-              ),
+              ImageCarousel(imageUrls: imageUrls),
             Padding(
               padding: EdgeInsets.all(16),
               child: Column(
@@ -587,6 +659,33 @@ class FloodReportDetailPage extends StatelessWidget {
               ),
             )
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Full screen image view page.
+class FullScreenImagePage extends StatelessWidget {
+  final String imageUrl;
+
+  FullScreenImagePage({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:neighborly/UserSelectionPage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:neighborly/firebase_options.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 
 void main() async {
