@@ -31,7 +31,9 @@ class Userhome extends StatefulWidget {
 
 class _userhomeState extends State<Userhome> {
   final List<String> disasterTypes = ["Flood/Rainfall", "Fire", "Landslide", "Drought"];
-  final List<String> newCategoryItems = ["XYZ", "Example Feature 1", "Example Feature 2", "Help", "ABC"];
+  final List<String> newCategoryItems = ["Sexual Abuse", "Narcotics", "Road Incidents", "Eco hazard", "Alchohol","Animal Abuse","bribery","Food Safety","Hygiene Issues"];
+    final List<String> helpandrecover = ["XYZ", "Example Feature 1", "Example Feature 2", ];
+
   final List<String> noticeImages = [
     'assets/notice1.jpg', // Replace with your actual image paths
     'C:/Users/arsh/Documents/neighborly/assets/notice1.jpg',
@@ -96,7 +98,7 @@ class _userhomeState extends State<Userhome> {
               _buildSection("Report Disaster", disasterTypes),
               // Second Section: New Category (XYZ and Features)
               _buildSection("Report public issues", newCategoryItems),
-              _buildSection("Report public issue", newCategoryItems),
+               _buildSection("Help And Recover", helpandrecover),
             ],
           ),
         ),
@@ -247,7 +249,8 @@ class _userhomeState extends State<Userhome> {
       "Example Feature 1": 'assets/images/feature1.png',
       "Example Feature 2": 'assets/images/feature2.png',
       "Help": 'assets/images/help.png',
-      "ABC": 'assets/images/abc.png', // Add image for ABC category
+      "ABC": 'assets/images/abc.png',
+       // Add image for ABC category
     };
 
     return GestureDetector(
@@ -264,7 +267,7 @@ class _userhomeState extends State<Userhome> {
           Navigator.push(context, MaterialPageRoute(builder: (context) => SexualIssuesReportsPage()));
         } else if (title == "XYZ") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => XYZPage()));
-        } else if (title == "Example Feature 1") {
+        } else if (title == "Examp 33") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => ExampleFeaturePage1()));
         } else if (title == "Example Feature 2") {
           Navigator.push(context, MaterialPageRoute(builder: (context) => ExampleFeaturePage2()));

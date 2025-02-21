@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import 'package:neighborly/clodinary_upload.dart';
+import 'package:neighborly/Userlogin.dart'; // Import the login page
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -36,10 +37,10 @@ class _UserProfileState extends State<UserProfile> {
     User? user = _auth.currentUser;
     if (user != null) {
       try {
-        // First, try fetching from a general "users" collection
+        // Check "users" collection first
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
 
-        // If the document doesn't exist in "users", check "volunteers"
+        // If not found, check "volunteers" collection
         if (!userDoc.exists) {
           userDoc = await _firestore.collection('volunteers').doc(user.uid).get();
           collectionName = 'volunteers';
@@ -48,24 +49,16 @@ class _UserProfileState extends State<UserProfile> {
         }
 
         if (userDoc.exists) {
-          // Log the entire document to see all available fields
-          print("User data: ${userDoc.data()}");
-
-          // Check if role exists in the fetched document
-          var roleData = userDoc.get('role');
-          print("Fetched role: $roleData");
-
           setState(() {
             userName = userDoc.get('name') ?? 'No Name';
             userEmail = userDoc.get('email') ?? 'No Email';
             userPhone = userDoc.get('phone') ?? 'No Phone';
             userLocation = userDoc.get('location') ?? 'No Location';
             profileImageUrl = userDoc.get('profileImage') ?? '';
-            userRole = roleData ?? 'User'; // Default to 'User' if role is not available
+            userRole = userDoc.get('role') ?? 'User';
             isLoading = false;
           });
         } else {
-          print("No user found in either collection.");
           setState(() {
             isLoading = false;
           });
@@ -103,6 +96,15 @@ class _UserProfileState extends State<UserProfile> {
       File imageFile = File(pickedFile.path);
       _uploadImage(imageFile);
     }
+  }
+
+  // Sign out and return to login page
+  Future<void> _signOut() async {
+    await _auth.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const UserLoginPage()),
+    );
   }
 
   @override
@@ -172,6 +174,24 @@ class _UserProfileState extends State<UserProfile> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  // Sign Out Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: ElevatedButton.icon(
+                      onPressed: _signOut,
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      label: const Text("Sign Out", style: TextStyle(fontSize: 18, color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 30),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),

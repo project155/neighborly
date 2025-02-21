@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:neighborly/volunteerregister.dart';
-import 'package:neighborly/userhome.dart'; // Import the homepage
+import 'package:neighborly/userhome.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart'; // Import the homepage
 
 class VolunteerLoginPage extends StatefulWidget {
   const VolunteerLoginPage({super.key});
@@ -19,27 +20,40 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   void _signIn() async {
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+  try {
+    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    if (userCredential.user != null) {
+      String uid = userCredential.user!.uid;
+
+      // Get OneSignal Player ID
+      String? playerid = await OneSignal.User.pushSubscription.id;
+
+      // Store in Firestore
+      await FirebaseFirestore.instance.collection('volunteers').doc(uid).update({
+       
+        'playerid': playerid,                 // Save OneSignal Player ID
+       
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Login Successful")),
       );
 
-      if (userCredential.user != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login Successful")),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => Userhome()), // Navigate to homepage
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}")),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Userhome()), // Navigate to homepage
       );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: ${e.toString()}")),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {

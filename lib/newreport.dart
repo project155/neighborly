@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:neighborly/clodinary_upload.dart';
 import 'package:neighborly/incidentlocation.dart';
+import 'package:neighborly/notification.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -120,6 +121,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
         'imageUrl': imageUrls,
         'timestamp': FieldValue.serverTimestamp(),
       });
+
+      sendNotificationToDevice('ggagga', 'gggggg');
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(

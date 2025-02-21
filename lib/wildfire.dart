@@ -281,11 +281,9 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                           String? longitude =
                               report['location']?['longitude']?.toString();
                           int likes = report['likes'] ?? 0;
-                          List comments = report['comments'] ?? [];
-
+                          // For likes, get the likedBy list and check if the current user is included.
+                          List likedBy = List<String>.from(report['likedBy'] ?? []);
                           String userId = _auth.currentUser?.uid ?? "";
-                          List likedBy =
-                              List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(userId);
 
                           return Card(
@@ -358,8 +356,9 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                                           IconButton(
                                             icon: Icon(Icons.comment_outlined,
                                                 color: Colors.green),
+                                            // Updated: Removed the extra comments parameter
                                             onPressed: () =>
-                                                _showComments(context, reportId, comments),
+                                                _showComments(context, reportId),
                                           ),
                                           IconButton(
                                             icon: Icon(Icons.share_outlined,
@@ -383,9 +382,27 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     );
   }
 
+  // --- Updated _handleLike method with optimistic UI update ---
   void _handleLike(String docId, bool isLiked) {
     String userId = _auth.currentUser?.uid ?? "";
     if (userId.isEmpty) return;
+
+    int index = _reports.indexWhere((report) => report['id'] == docId);
+    if (index != -1) {
+      setState(() {
+        if (isLiked) {
+          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) - 1;
+          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
+          likedBy.remove(userId);
+          _reports[index]['likedBy'] = likedBy;
+        } else {
+          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) + 1;
+          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
+          likedBy.add(userId);
+          _reports[index]['likedBy'] = likedBy;
+        }
+      });
+    }
     _firestore.collection('reports').doc(docId).update({
       'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
       'likedBy': isLiked
@@ -394,58 +411,83 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     });
   }
 
-  void _shareReport(String title, String description) {
-    Share.share('$title\n\n$description');
-  }
-
-  void _showComments(BuildContext context, String docId, List comments) {
+  // --- Updated _showComments method for immediate comment updates ---
+  void _showComments(BuildContext context, String docId) {
+    // Find the report index and get its comments list.
+    int reportIndex = _reports.indexWhere((report) => report['id'] == docId);
+    List<dynamic> comments = reportIndex != -1
+        ? List.from(_reports[reportIndex]['comments'] ?? [])
+        : [];
     TextEditingController commentController = TextEditingController();
+
     showModalBottomSheet(
       context: context,
       builder: (context) {
-        return Container(
-          padding: EdgeInsets.all(10),
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  children: comments.map((comment) {
-                    // Expecting each comment to be a map with 'name' and 'comment'
-                    if (comment is Map && comment.containsKey('name')) {
-                      return ListTile(
-                        title: Text(
-                          comment['name'],
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(comment['comment'] ?? ""),
-                      );
-                    } else {
-                      // If comment is not a map, just display the text.
-                      return ListTile(title: Text(comment.toString()));
-                    }
-                  }).toList(),
-                ),
+        // Using StatefulBuilder to update the bottom sheet UI instantly.
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: EdgeInsets.all(10),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      children: comments.map((comment) {
+                        if (comment is Map && comment.containsKey('name')) {
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: AssetImage(
+                                  'assets/images/anonymous_avatar.png'),
+                            ),
+                            title: Text(
+                              comment['name'],
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(comment['comment'] ?? ""),
+                          );
+                        } else {
+                          return ListTile(title: Text(comment.toString()));
+                        }
+                      }).toList(),
+                    ),
+                  ),
+                  TextField(
+                    controller: commentController,
+                    decoration: InputDecoration(hintText: "Add a comment..."),
+                    onSubmitted: (text) {
+                      if (text.isNotEmpty) {
+                        var newComment = {'name': 'Anonymous', 'comment': text};
+                        // Update the bottom sheet UI immediately.
+                        setModalState(() {
+                          comments.add(newComment);
+                        });
+                        // Also update the local _reports list.
+                        if (reportIndex != -1) {
+                          setState(() {
+                            _reports[reportIndex]['comments'] =
+                                List.from(_reports[reportIndex]['comments'] ?? [])
+                                  ..add(newComment);
+                          });
+                        }
+                        // Update Firestore.
+                        _firestore.collection('reports').doc(docId).update({
+                          'comments': FieldValue.arrayUnion([newComment]),
+                        });
+                        commentController.clear();
+                      }
+                    },
+                  ),
+                ],
               ),
-              TextField(
-                controller: commentController,
-                decoration: InputDecoration(hintText: "Add a comment..."),
-                onSubmitted: (text) {
-                  if (text.isNotEmpty) {
-                    // For demonstration, we'll add a dummy name. In real apps, use the user's name.
-                    _firestore.collection('reports').doc(docId).update({
-                      'comments': FieldValue.arrayUnion([
-                        {'name': 'Anonymous', 'comment': text}
-                      ]),
-                    });
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
+  }
+
+  void _shareReport(String title, String description) {
+    Share.share('$title\n\n$description');
   }
 }
 
