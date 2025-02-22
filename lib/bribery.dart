@@ -6,12 +6,12 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-class WildfireReportPage extends StatefulWidget {
+class BriberyReportPage extends StatefulWidget {
   @override
-  _WildfireReportPageState createState() => _WildfireReportPageState();
+  _BriberyReportPageState createState() => _BriberyReportPageState();
 }
 
-class _WildfireReportPageState extends State<WildfireReportPage>
+class _BriberyReportPageState extends State<BriberyReportPage>
     with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -20,7 +20,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
   List<Map<String, dynamic>> _reports = [];
   bool _isLoading = true;
 
-  // For debugging; set to true to force the trash icon to appear
+  // For debugging; set to true to force the trash icon to appear.
   bool forceShowTrashIcon = false;
 
   final LatLng _initialLocation =
@@ -42,7 +42,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     try {
       var snapshot = await _firestore
           .collection('reports')
-          .where('category', isEqualTo: 'Fire')
+          .where('category', isEqualTo: 'Bribery')
           .orderBy('timestamp', descending: true)
           .get();
 
@@ -56,7 +56,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
         _isLoading = false;
       });
 
-      // Add markers to the map
+      // Add markers to the map.
       _markers.clear();
       for (var report in _reports) {
         if (report['location'] != null) {
@@ -74,7 +74,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
         }
       }
 
-      // Center map based on the first report (if available)
+      // Center map based on the first report (if available).
       if (_markers.isNotEmpty) {
         var firstReport = _reports.first;
         double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
@@ -121,13 +121,13 @@ class _WildfireReportPageState extends State<WildfireReportPage>
               ),
               child: Row(
                 children: [
-                  Icon(Icons.local_fire_department, color: Colors.white),
+                  Icon(Icons.monetization_on, color: Colors.white),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       message,
-                      style:
-                          TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -177,14 +177,14 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                 Navigator.of(context).pop();
               },
             ),
-            // Title with Wildfire Icon and Text.
+            // Title with Bribery Icon and Text.
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.local_fire_department, size: 30, color: Colors.redAccent),
+                Icon(Icons.monetization_on, size: 30, color: Colors.redAccent),
                 SizedBox(width: 8),
                 Text(
-                  "Fire Reports",
+                  "Bribery Reports",
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -198,7 +198,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
               onPressed: () {
                 showSearch(
                   context: context,
-                  delegate: WildfireReportSearchDelegate(reports: _reports),
+                  delegate: BriberyReportSearchDelegate(reports: _reports),
                 );
               },
             ),
@@ -214,7 +214,8 @@ class _WildfireReportPageState extends State<WildfireReportPage>
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
+          MaterialPageRoute(
+              builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
         );
       },
       child: Image.network(
@@ -275,12 +276,14 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     if (index != -1) {
       setState(() {
         if (isLiked) {
-          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) - 1;
+          _reports[index]['likes'] =
+              ((_reports[index]['likes'] ?? 0) as int) - 1;
           List likedBy = List.from(_reports[index]['likedBy'] ?? []);
           likedBy.remove(userId);
           _reports[index]['likedBy'] = likedBy;
         } else {
-          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) + 1;
+          _reports[index]['likes'] =
+              ((_reports[index]['likes'] ?? 0) as int) + 1;
           List likedBy = List.from(_reports[index]['likedBy'] ?? []);
           likedBy.add(userId);
           _reports[index]['likedBy'] = likedBy;
@@ -318,7 +321,8 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                         if (comment is Map && comment.containsKey('name')) {
                           return ListTile(
                             leading: CircleAvatar(
-                              backgroundImage: AssetImage('assets/images/anonymous_avatar.png'),
+                              backgroundImage: AssetImage(
+                                  'assets/images/anonymous_avatar.png'),
                             ),
                             title: Text(
                               comment['name'],
@@ -348,7 +352,10 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                                   ..add(newComment);
                           });
                         }
-                        _firestore.collection('reports').doc(docId).update({
+                        _firestore
+                            .collection('reports')
+                            .doc(docId)
+                            .update({
                           'comments': FieldValue.arrayUnion([newComment]),
                         });
                         commentController.clear();
@@ -365,8 +372,10 @@ class _WildfireReportPageState extends State<WildfireReportPage>
   }
 
   // Share report using share_plus.
-  void _shareReport(String title, String description, String category, String location) {
-    Share.share('$title\n\n$description\n\nCategory: $category\nLocation: $location');
+  void _shareReport(
+      String title, String description, String category, String location) {
+    Share.share(
+        '$title\n\n$description\n\nCategory: $category\nLocation: $location');
   }
 
   @override
@@ -407,7 +416,8 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                         itemBuilder: (context, index) {
                           var report = _reports[index];
                           // For deletion, use 'userId' or fallback to 'uid'
-                          String reportUserId = report['userId'] ?? report['uid'] ?? "none";
+                          String reportUserId =
+                              report['userId'] ?? report['uid'] ?? "none";
                           print("Report id: ${report['id']}, report userId: $reportUserId, current user id: $currentUserId");
 
                           List<String> imageUrls = [];
@@ -420,18 +430,23 @@ class _WildfireReportPageState extends State<WildfireReportPage>
 
                           String reportId = report['id'];
                           String title = report['title'] ?? "No Title";
-                          String description = report['description'] ?? "No Description";
+                          String description =
+                              report['description'] ?? "No Description";
                           String category = report['category'] ?? "Unknown";
                           String urgency = report['urgency'] ?? "Normal";
-                          String? latitude = report['location']?['latitude']?.toString();
-                          String? longitude = report['location']?['longitude']?.toString();
+                          String? latitude =
+                              report['location']?['latitude']?.toString();
+                          String? longitude =
+                              report['location']?['longitude']?.toString();
                           int likes = report['likes'] ?? 0;
 
-                          List likedBy = List<String>.from(report['likedBy'] ?? []);
+                          List likedBy =
+                              List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(currentUserId);
 
                           return Card(
-                            margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                            margin: EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 16),
                             elevation: 5,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -444,7 +459,8 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                                 Padding(
                                   padding: EdgeInsets.all(10),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(title,
                                           style: TextStyle(
@@ -459,7 +475,8 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                                       ),
                                       SizedBox(height: 5),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text("Category: $category",
                                               style: TextStyle(
@@ -491,28 +508,36 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                                             },
                                           ),
                                           Text("$likes Likes",
-                                              style: TextStyle(color: Colors.blue)),
+                                              style:
+                                                  TextStyle(color: Colors.blue)),
                                           IconButton(
                                             icon: Icon(Icons.comment_outlined,
                                                 color: Colors.green),
-                                            onPressed: () => _showComments(context, reportId),
+                                            onPressed: () =>
+                                                _showComments(context, reportId),
                                           ),
                                           IconButton(
                                             icon: Icon(Icons.share_outlined,
                                                 color: Colors.orange),
                                             onPressed: () {
-                                              String locationText = (latitude != null && longitude != null)
-                                                  ? '$latitude, $longitude'
-                                                  : 'Location not available';
-                                              _shareReport(title, description, category, locationText);
+                                              String locationText =
+                                                  (latitude != null &&
+                                                          longitude != null)
+                                                      ? '$latitude, $longitude'
+                                                      : 'Location not available';
+                                              _shareReport(title, description,
+                                                  category, locationText);
                                             },
                                           ),
-                                          // Show trash icon if forced or if report owner matches current user.
                                           if (forceShowTrashIcon ||
-                                              ((report['userId'] ?? report['uid']) == currentUserId))
+                                              ((report['userId'] ??
+                                                      report['uid']) ==
+                                                  currentUserId))
                                             IconButton(
-                                              icon: Icon(Icons.delete, color: Colors.red),
-                                              onPressed: () => _confirmDelete(reportId),
+                                              icon: Icon(Icons.delete,
+                                                  color: Colors.red),
+                                              onPressed: () =>
+                                                  _confirmDelete(reportId),
                                             ),
                                         ],
                                       )
@@ -584,7 +609,8 @@ class _ImageCarouselState extends State<ImageCarousel> {
             return Container(
               width: 8.0,
               height: 8.0,
-              margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+              margin:
+                  EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _current == entry.key
@@ -599,11 +625,11 @@ class _ImageCarouselState extends State<ImageCarousel> {
   }
 }
 
-// Custom SearchDelegate for wildfire reports.
-class WildfireReportSearchDelegate extends SearchDelegate {
+// Custom SearchDelegate for bribery reports.
+class BriberyReportSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> reports;
 
-  WildfireReportSearchDelegate({required this.reports});
+  BriberyReportSearchDelegate({required this.reports});
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -640,7 +666,8 @@ class WildfireReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = results[index];
         return ListTile(
-          leading: Icon(Icons.local_fire_department, color: Colors.redAccent),
+          leading:
+              Icon(Icons.monetization_on, color: Colors.redAccent),
           title: Text(report['title'] ?? "No Title"),
           subtitle: Text(report['description'] ?? "No Description"),
           onTap: () {
@@ -649,7 +676,7 @@ class WildfireReportSearchDelegate extends SearchDelegate {
               context,
               MaterialPageRoute(
                 builder: (context) =>
-                    WildfireReportDetailPage(report: report),
+                    BriberyReportDetailPage(report: report),
               ),
             );
           },
@@ -670,7 +697,8 @@ class WildfireReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = suggestions[index];
         return ListTile(
-          leading: Icon(Icons.local_fire_department, color: Colors.redAccent),
+          leading:
+              Icon(Icons.monetization_on, color: Colors.redAccent),
           title: Text(report['title'] ?? "No Title"),
           onTap: () {
             query = report['title'] ?? "";
@@ -682,11 +710,11 @@ class WildfireReportSearchDelegate extends SearchDelegate {
   }
 }
 
-// Detail page for a wildfire report.
-class WildfireReportDetailPage extends StatelessWidget {
+// Detail page for a bribery report.
+class BriberyReportDetailPage extends StatelessWidget {
   final Map<String, dynamic> report;
 
-  WildfireReportDetailPage({required this.report});
+  BriberyReportDetailPage({required this.report});
 
   @override
   Widget build(BuildContext context) {
@@ -728,12 +756,14 @@ class WildfireReportDetailPage extends StatelessWidget {
                   SizedBox(height: 10),
                   Text(
                     "Category: ${report['category'] ?? "Unknown"}",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                   SizedBox(height: 5),
                   Text(
                     "Urgency: ${report['urgency'] ?? "Normal"}",
-                    style: TextStyle(fontSize: 16, color: Colors.redAccent),
+                    style: TextStyle(
+                        fontSize: 16, color: Colors.redAccent),
                   ),
                 ],
               ),

@@ -2,13 +2,23 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:neighborly/Animalabuse.dart';
 import 'package:neighborly/Drought.dart';
+import 'package:neighborly/Ecohazard.dart';
+import 'package:neighborly/Fooddonation.dart';
+import 'package:neighborly/Foodsafety.dart';
+import 'package:neighborly/Hygieneissues.dart';
 import 'package:neighborly/Landslide.dart';
+import 'package:neighborly/Narcotics.dart';
+import 'package:neighborly/Notificationpage.dart';
+import 'package:neighborly/Roadincidents.dart';
+import 'package:neighborly/alcohol.dart';
 import 'package:neighborly/authority.dart';
+import 'package:neighborly/bribery.dart';
 import 'package:neighborly/flood.dart';
 import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/newreport.dart';
-import 'package:neighborly/sexualissues.dart';
+import 'package:neighborly/Sexualabuse.dart';
 import 'package:neighborly/Userprofile.dart';
 import 'package:neighborly/wildfire.dart';
 
@@ -40,16 +50,16 @@ class _UserhomeState extends State<Userhome> {
     "Sexual Abuse",
     "Narcotics",
     "Road Incidents",
-    "Eco hazard",
-    "Alchohol",
+    "Eco Hazard",
+    "Alcohol",
     "Animal Abuse",
-    "bribery",
+    "Bribery",
     "Food Safety",
     "Hygiene Issues"
   ];
   final List<String> helpandrecover = [
-    "XYZ",
-    "Example Feature 1",
+    "Food Donation",
+    "Lost & Found",
     "Example Feature 2",
   ];
 
@@ -152,97 +162,94 @@ class _UserhomeState extends State<Userhome> {
             title: Text("Neighborly", style: TextStyle(color: Colors.white)),
             backgroundColor: const Color.fromARGB(255, 95, 156, 255),
             actions: [
-              Padding(
-                padding: EdgeInsets.only(right: 15),
-                child: Icon(Icons.notifications_active_rounded),
+              // Updated bell icon to navigate to NotificationPage.
+              IconButton(
+                icon: Icon(Icons.notifications_active_rounded, color: Colors.white),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationPage()));
+                },
               ),
             ],
             automaticallyImplyLeading: false,
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 100),
-          child: Column(
-            children: [
-              // Notice slider section.
-              _buildNoticeSection(),
-              // Sections for different features.
-              _buildSection("Report Disaster", disasterTypes),
-              _buildSection("Report public issues", newCategoryItems),
-              _buildSection("Help And Recover", helpandrecover),
-            ],
-          ),
-        ),
-      ),
-      bottomSheet: Container(
-        width: MediaQuery.of(context).size.width,
-        height: 80,
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 95, 156, 255),
-          borderRadius: BorderRadius.all(Radius.circular(35)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              offset: Offset(0, -4),
-              blurRadius: 6,
+      backgroundColor: Colors.grey[200],
+      body: Stack(
+        children: [
+          // Main content
+          SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: 100),
+            child: Column(
+              children: [
+                _buildNoticeSection(),
+                _buildSection("Report Disaster", disasterTypes),
+                _buildSection("Report public issues", newCategoryItems),
+                _buildSection("Help And Recover", helpandrecover),
+              ],
             ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              IconButton(
-                icon: Icon(Icons.home, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => LoginUser()));
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.person, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => UserProfile()));
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.post_add_rounded, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => CreateReportPage()));
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.camera_alt, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => LoginUser()));
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.sos_sharp, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => LoginUser()));
-                },
-              ),
-            ],
           ),
-        ),
+          // Floating, elongated bottom navigation bar.
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 20,
+            child: Container(
+              height: 70,
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 95, 156, 255),
+                borderRadius: BorderRadius.circular(35),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.home, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => LoginUser()));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.person, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => UserProfile()));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.post_add_rounded, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => CreateReportPage()));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.camera_alt, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => LoginUser()));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.sos_sharp, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => LoginUser()));
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -271,7 +278,6 @@ class _UserhomeState extends State<Userhome> {
                 controller: _pageController,
                 itemCount: noticeImages.length,
                 itemBuilder: (context, index) {
-                  // Load as network image if URL starts with "http"; otherwise, as asset.
                   if (noticeImages[index].startsWith("http")) {
                     return Image.network(
                       noticeImages[index],
@@ -363,21 +369,36 @@ class _UserhomeState extends State<Userhome> {
         } else if (title == "Landslide") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => LandSlideReportPage()));
-        } else if (title == "XYZ") {
+        } else if (title == "Sexual Abuse") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => XYZPage()));
-        } else if (title == "Examp 33") {
+              MaterialPageRoute(builder: (context) => SexualabuseReportPage()));
+        } else if (title == "Narcotics") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => ExampleFeaturePage1()));
-        } else if (title == "Example Feature 2") {
+              MaterialPageRoute(builder: (context) => NarcoticsReportPage()));
+        } else if (title == "Road Incidents") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => ExampleFeaturePage2()));
-        } else if (title == "Help") {
+              MaterialPageRoute(builder: (context) => RoadIncidentsReportPage()));
+        } else if (title == "Animal Abuse") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => AuthorityPage()));
-        } else if (title == "ABC") {
+              MaterialPageRoute(builder: (context) => AnimalabuseReportPage()));
+        } else if (title == "Bribery") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => WildfireReportPage()));
+              MaterialPageRoute(builder: (context) => BriberyReportPage()));
+        } else if (title == "Food Safety") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => FoodsafetyReportPage()));
+        } else if (title == "Hygiene Issues") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => HygieneissuesReportPage()));
+        } else if (title == "Food Donation") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => FoodDonationPage()));
+        } else if (title == "Eco Hazard") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => EcohazardReportPage()));
+        } else if (title == "Alcohol") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => AlcoholReportPage()));
         }
       },
       child: Container(
@@ -425,47 +446,111 @@ class _UserhomeState extends State<Userhome> {
   }
 }
 
-// Example pages (customize these as needed)
+// ---------------- Notification Page ----------------
 
-class FloodReportPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Flood Report')),
-      body: Center(child: Text('Flood report page content here')),
-    );
-  }
-}
+// Model for a notification item.
+// class NotificationItem {
+//   final String title;
+//   final String message;
+//   final String sender; // "Volunteer" or "Authority"
+//   final DateTime dateTime;
 
-class WildfireReportPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Wildfire Report')),
-      body: Center(child: Text('Wildfire report page content here')),
-    );
-  }
-}
+//   NotificationItem({
+//     required this.title,
+//     required this.message,
+//     required this.sender,
+//     required this.dateTime,
+//   });
+// }
 
-class DroughtReportPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Drought Report')),
-      body: Center(child: Text('Drought report page content here')),
-    );
-  }
-}
+// class Notificationage extends StatelessWidget {
+//   // Sample notifications list.
+//   final List<NotificationItem> notifications = [
+//     NotificationItem(
+//       title: "Volunteer Message",
+//       message: "A volunteer has updated you regarding your report. Please check the details.",
+//       sender: "Volunteer",
+//       dateTime: DateTime.now().subtract(Duration(minutes: 5)),
+//     ),
+//     NotificationItem(
+//       title: "Authority Update",
+//       message: "Authorities have updated the status of your report.",
+//       sender: "Authority",
+//       dateTime: DateTime.now().subtract(Duration(hours: 1)),
+//     ),
+//     NotificationItem(
+//       title: "Volunteer Reminder",
+//       message: "Don't forget to follow up on your recent report.",
+//       sender: "Volunteer",
+//       dateTime: DateTime.now().subtract(Duration(hours: 2)),
+//     ),
+//     NotificationItem(
+//       title: "Authority Notice",
+//       message: "Local authority has posted a new alert in your area.",
+//       sender: "Authority",
+//       dateTime: DateTime.now().subtract(Duration(days: 1)),
+//     ),
+//   ];
 
-class LandSlideReportPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Landslide Report')),
-      body: Center(child: Text('Landslide report page content here')),
-    );
-  }
-}
+  // Formats time difference.
+//   String _formatDateTime(DateTime dateTime) {
+//     final now = DateTime.now();
+//     final difference = now.difference(dateTime);
+//     if (difference.inMinutes < 60) {
+//       return "${difference.inMinutes} min ago";
+//     } else if (difference.inHours < 24) {
+//       return "${difference.inHours} hrs ago";
+//     } else {
+//       return "${difference.inDays} days ago";
+//     }
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: Text("Notifications"),
+//         backgroundColor: const Color.fromARGB(255, 95, 156, 255),
+//       ),
+//       body: notifications.isEmpty
+//           ? Center(child: Text("No notifications available."))
+//           : ListView.builder(
+//               itemCount: notifications.length,
+//               itemBuilder: (context, index) {
+//                 final notification = notifications[index];
+//                 return Card(
+//                   margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+//                   child: ListTile(
+//                     leading: Icon(
+//                       notification.sender == "Volunteer"
+//                           ? Icons.volunteer_activism
+//                           : Icons.account_balance,
+//                       color: notification.sender == "Volunteer"
+//                           ? Colors.green
+//                           : Colors.blue,
+//                       size: 30,
+//                     ),
+//                     title: Text(
+//                       notification.title,
+//                       style: TextStyle(fontWeight: FontWeight.bold),
+//                     ),
+//                     subtitle: Text(notification.message),
+//                     trailing: Text(
+//                       _formatDateTime(notification.dateTime),
+//                       style: TextStyle(fontSize: 12, color: Colors.grey),
+//                     ),
+//                     onTap: () {
+//                       // Add navigation to detailed notification page if needed.
+//                     },
+//                   ),
+//                 );
+//               },
+//             ),
+//     );
+//   }
+// }
+
+// ---------------- Example Pages ----------------
 
 class XYZPage extends StatelessWidget {
   @override

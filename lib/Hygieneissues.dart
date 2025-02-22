@@ -6,12 +6,12 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-class WildfireReportPage extends StatefulWidget {
+class HygieneissuesReportPage extends StatefulWidget {
   @override
-  _WildfireReportPageState createState() => _WildfireReportPageState();
+  _HygieneissuesReportPageState createState() => _HygieneissuesReportPageState();
 }
 
-class _WildfireReportPageState extends State<WildfireReportPage>
+class _HygieneissuesReportPageState extends State<HygieneissuesReportPage>
     with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -19,12 +19,8 @@ class _WildfireReportPageState extends State<WildfireReportPage>
   Set<Marker> _markers = Set();
   List<Map<String, dynamic>> _reports = [];
   bool _isLoading = true;
-
-  // For debugging; set to true to force the trash icon to appear
   bool forceShowTrashIcon = false;
-
-  final LatLng _initialLocation =
-      LatLng(11.194249397596916, 75.85098108272076);
+  final LatLng _initialLocation = LatLng(11.194249397596916, 75.85098108272076);
 
   @override
   void initState() {
@@ -42,7 +38,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     try {
       var snapshot = await _firestore
           .collection('reports')
-          .where('category', isEqualTo: 'Fire')
+          .where('category', isEqualTo: 'Hygiene Issues')
           .orderBy('timestamp', descending: true)
           .get();
 
@@ -50,19 +46,16 @@ class _WildfireReportPageState extends State<WildfireReportPage>
         _reports = snapshot.docs.map((doc) {
           var data = doc.data();
           data['id'] = doc.id;
-          // Document is expected to include "userId" (or fallback "uid")
           return data;
         }).toList();
         _isLoading = false;
       });
 
-      // Add markers to the map
       _markers.clear();
       for (var report in _reports) {
         if (report['location'] != null) {
           double lat = (report['location']['latitude'] ?? 0).toDouble();
           double lng = (report['location']['longitude'] ?? 0).toDouble();
-          print("Report Location: Lat: $lat, Lng: $lng");
           _markers.add(
             Marker(
               markerId: MarkerId(report['id']),
@@ -74,7 +67,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
         }
       }
 
-      // Center map based on the first report (if available)
       if (_markers.isNotEmpty) {
         var firstReport = _reports.first;
         double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
@@ -91,7 +83,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     }
   }
 
-  // Animated Snackbar for notifications.
   void _showAnimatedSnackbar(String message) {
     AnimationController controller = AnimationController(
       vsync: this,
@@ -116,18 +107,18 @@ class _WildfireReportPageState extends State<WildfireReportPage>
             child: Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 78, 19),
+                color: Color.fromARGB(255, 255, 78, 19),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.local_fire_department, color: Colors.white),
+                  Icon(Icons.cleaning_services, color: Colors.white),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       message,
-                      style:
-                          TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -148,7 +139,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     });
   }
 
-  // Floating AppBar widget overlapping the map.
   Widget _buildFloatingAppBar() {
     return Positioned(
       top: 40,
@@ -170,21 +160,19 @@ class _WildfireReportPageState extends State<WildfireReportPage>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Back Button.
             IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.black87),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
-            // Title with Wildfire Icon and Text.
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.local_fire_department, size: 30, color: Colors.redAccent),
+                Icon(Icons.cleaning_services, size: 30, color: Colors.redAccent),
                 SizedBox(width: 8),
                 Text(
-                  "Fire Reports",
+                  "Hygiene Issues Reports",
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -192,13 +180,12 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                 ),
               ],
             ),
-            // Search Button.
             IconButton(
               icon: Icon(Icons.search, color: Colors.black87),
               onPressed: () {
                 showSearch(
                   context: context,
-                  delegate: WildfireReportSearchDelegate(reports: _reports),
+                  delegate: HygieneissuesReportSearchDelegate(reports: _reports),
                 );
               },
             ),
@@ -208,7 +195,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     );
   }
 
-  // Tappable image that opens a full-screen view.
   Widget _buildTappableImage(String imageUrl) {
     return GestureDetector(
       onTap: () {
@@ -226,7 +212,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     );
   }
 
-  // Show a confirmation dialog before deletion.
   void _confirmDelete(String reportId) {
     showDialog(
       context: context,
@@ -252,7 +237,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     );
   }
 
-  // Delete the report from Firestore and update local state.
   Future<void> _deleteReport(String reportId) async {
     try {
       await _firestore.collection('reports').doc(reportId).delete();
@@ -266,7 +250,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     }
   }
 
-  // Handle likes.
   void _handleLike(String docId, bool isLiked) {
     String userId = _auth.currentUser?.uid ?? "";
     if (userId.isEmpty) return;
@@ -295,12 +278,9 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     });
   }
 
-  // Display comments in a bottom sheet.
   void _showComments(BuildContext context, String docId) {
     int reportIndex = _reports.indexWhere((report) => report['id'] == docId);
-    List<dynamic> comments = reportIndex != -1
-        ? List.from(_reports[reportIndex]['comments'] ?? [])
-        : [];
+    List<dynamic> comments = reportIndex != -1 ? List.from(_reports[reportIndex]['comments'] ?? []) : [];
     TextEditingController commentController = TextEditingController();
 
     showModalBottomSheet(
@@ -344,8 +324,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                         if (reportIndex != -1) {
                           setState(() {
                             _reports[reportIndex]['comments'] =
-                                List.from(_reports[reportIndex]['comments'] ?? [])
-                                  ..add(newComment);
+                                List.from(_reports[reportIndex]['comments'] ?? [])..add(newComment);
                           });
                         }
                         _firestore.collection('reports').doc(docId).update({
@@ -364,7 +343,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     );
   }
 
-  // Share report using share_plus.
   void _shareReport(String title, String description, String category, String location) {
     Share.share('$title\n\n$description\n\nCategory: $category\nLocation: $location');
   }
@@ -375,7 +353,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     return Scaffold(
       body: Column(
         children: [
-          // Map section with floating AppBar on top.
           Expanded(
             flex: 1,
             child: Stack(
@@ -395,7 +372,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
               ],
             ),
           ),
-          // Reports List section.
           Expanded(
             flex: 1,
             child: _isLoading
@@ -406,15 +382,13 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                         itemCount: _reports.length,
                         itemBuilder: (context, index) {
                           var report = _reports[index];
-                          // For deletion, use 'userId' or fallback to 'uid'
                           String reportUserId = report['userId'] ?? report['uid'] ?? "none";
                           print("Report id: ${report['id']}, report userId: $reportUserId, current user id: $currentUserId");
 
                           List<String> imageUrls = [];
                           if (report['imageUrl'] is List) {
                             imageUrls = List<String>.from(report['imageUrl']);
-                          } else if (report['imageUrl'] is String &&
-                              report['imageUrl'].isNotEmpty) {
+                          } else if (report['imageUrl'] is String && report['imageUrl'].isNotEmpty) {
                             imageUrls = [report['imageUrl']];
                           }
 
@@ -426,7 +400,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                           String? latitude = report['location']?['latitude']?.toString();
                           String? longitude = report['location']?['longitude']?.toString();
                           int likes = report['likes'] ?? 0;
-
                           List likedBy = List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(currentUserId);
 
@@ -446,60 +419,36 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(title,
-                                          style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold)),
+                                      Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                       SizedBox(height: 5),
-                                      Text(
-                                        description,
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[700]),
-                                      ),
+                                      Text(description, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
                                       SizedBox(height: 5),
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text("Category: $category",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
-                                          Text("Urgency: $urgency",
-                                              style: TextStyle(
-                                                  color: Colors.redAccent)),
+                                          Text("Category: $category", style: TextStyle(fontWeight: FontWeight.bold)),
+                                          Text("Urgency: $urgency", style: TextStyle(color: Colors.redAccent)),
                                         ],
                                       ),
                                       if (latitude != null && longitude != null)
-                                        Text("Location: $latitude, $longitude",
-                                            style: TextStyle(
-                                                color: Colors.blueGrey)),
+                                        Text("Location: $latitude, $longitude", style: TextStyle(color: Colors.blueGrey)),
                                       SizedBox(height: 10),
                                       Row(
                                         children: [
                                           IconButton(
-                                            icon: Icon(
-                                              isLiked
-                                                  ? Icons.thumb_up
-                                                  : Icons.thumb_up_alt_outlined,
-                                              color: Colors.blue,
-                                            ),
+                                            icon: Icon(isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined, color: Colors.blue),
                                             onPressed: () {
                                               _handleLike(reportId, isLiked);
-                                              _showAnimatedSnackbar(isLiked
-                                                  ? "Like removed!"
-                                                  : "Liked!");
+                                              _showAnimatedSnackbar(isLiked ? "Like removed!" : "Liked!");
                                             },
                                           ),
-                                          Text("$likes Likes",
-                                              style: TextStyle(color: Colors.blue)),
+                                          Text("$likes Likes", style: TextStyle(color: Colors.blue)),
                                           IconButton(
-                                            icon: Icon(Icons.comment_outlined,
-                                                color: Colors.green),
+                                            icon: Icon(Icons.comment_outlined, color: Colors.green),
                                             onPressed: () => _showComments(context, reportId),
                                           ),
                                           IconButton(
-                                            icon: Icon(Icons.share_outlined,
-                                                color: Colors.orange),
+                                            icon: Icon(Icons.share_outlined, color: Colors.orange),
                                             onPressed: () {
                                               String locationText = (latitude != null && longitude != null)
                                                   ? '$latitude, $longitude'
@@ -507,9 +456,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                                               _shareReport(title, description, category, locationText);
                                             },
                                           ),
-                                          // Show trash icon if forced or if report owner matches current user.
-                                          if (forceShowTrashIcon ||
-                                              ((report['userId'] ?? report['uid']) == currentUserId))
+                                          if (forceShowTrashIcon || ((report['userId'] ?? report['uid']) == currentUserId))
                                             IconButton(
                                               icon: Icon(Icons.delete, color: Colors.red),
                                               onPressed: () => _confirmDelete(reportId),
@@ -531,7 +478,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
   }
 }
 
-// Carousel widget for displaying report images.
 class ImageCarousel extends StatefulWidget {
   final List<String> imageUrls;
   ImageCarousel({required this.imageUrls});
@@ -563,8 +509,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => FullScreenImagePage(imageUrl: image)),
+                    MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: image)),
                   );
                 },
                 child: Image.network(
@@ -587,9 +532,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
               margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _current == entry.key
-                    ? Colors.redAccent
-                    : Colors.grey.shade400,
+                color: _current == entry.key ? Colors.redAccent : Colors.grey.shade400,
               ),
             );
           }).toList(),
@@ -599,11 +542,9 @@ class _ImageCarouselState extends State<ImageCarousel> {
   }
 }
 
-// Custom SearchDelegate for wildfire reports.
-class WildfireReportSearchDelegate extends SearchDelegate {
+class HygieneissuesReportSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> reports;
-
-  WildfireReportSearchDelegate({required this.reports});
+  HygieneissuesReportSearchDelegate({required this.reports});
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -623,7 +564,7 @@ class WildfireReportSearchDelegate extends SearchDelegate {
     return IconButton(
       icon: Icon(Icons.arrow_back),
       onPressed: () {
-        close(context, null); // Close search delegate.
+        close(context, null); // Close the search delegate
       },
     );
   }
@@ -640,7 +581,7 @@ class WildfireReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = results[index];
         return ListTile(
-          leading: Icon(Icons.local_fire_department, color: Colors.redAccent),
+          leading: Icon(Icons.cleaning_services, color: Colors.redAccent),
           title: Text(report['title'] ?? "No Title"),
           subtitle: Text(report['description'] ?? "No Description"),
           onTap: () {
@@ -648,8 +589,7 @@ class WildfireReportSearchDelegate extends SearchDelegate {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    WildfireReportDetailPage(report: report),
+                builder: (context) => HygieneissuesReportDetailPage(report: report),
               ),
             );
           },
@@ -670,7 +610,7 @@ class WildfireReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = suggestions[index];
         return ListTile(
-          leading: Icon(Icons.local_fire_department, color: Colors.redAccent),
+          leading: Icon(Icons.cleaning_services, color: Colors.redAccent),
           title: Text(report['title'] ?? "No Title"),
           onTap: () {
             query = report['title'] ?? "";
@@ -682,19 +622,15 @@ class WildfireReportSearchDelegate extends SearchDelegate {
   }
 }
 
-// Detail page for a wildfire report.
-class WildfireReportDetailPage extends StatelessWidget {
+class HygieneissuesReportDetailPage extends StatelessWidget {
   final Map<String, dynamic> report;
-
-  WildfireReportDetailPage({required this.report});
-
+  HygieneissuesReportDetailPage({required this.report});
   @override
   Widget build(BuildContext context) {
     List<String> imageUrls = [];
     if (report['imageUrl'] is List) {
       imageUrls = List<String>.from(report['imageUrl']);
-    } else if (report['imageUrl'] is String &&
-        report['imageUrl'].isNotEmpty) {
+    } else if (report['imageUrl'] is String && report['imageUrl'].isNotEmpty) {
       imageUrls = [report['imageUrl']];
     }
     return Scaffold(
@@ -706,35 +642,19 @@ class WildfireReportDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (imageUrls.isNotEmpty)
-              ImageCarousel(imageUrls: imageUrls),
+            if (imageUrls.isNotEmpty) ImageCarousel(imageUrls: imageUrls),
             Padding(
               padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    report['title'] ?? "No Title",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text(report['title'] ?? "No Title", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   SizedBox(height: 10),
-                  Text(
-                    report['description'] ?? "No Description",
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  Text(report['description'] ?? "No Description", style: TextStyle(fontSize: 16)),
                   SizedBox(height: 10),
-                  Text(
-                    "Category: ${report['category'] ?? "Unknown"}",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
+                  Text("Category: ${report['category'] ?? "Unknown"}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                   SizedBox(height: 5),
-                  Text(
-                    "Urgency: ${report['urgency'] ?? "Normal"}",
-                    style: TextStyle(fontSize: 16, color: Colors.redAccent),
-                  ),
+                  Text("Urgency: ${report['urgency'] ?? "Normal"}", style: TextStyle(fontSize: 16, color: Colors.redAccent)),
                 ],
               ),
             )
@@ -745,12 +665,9 @@ class WildfireReportDetailPage extends StatelessWidget {
   }
 }
 
-// Full screen image view page.
 class FullScreenImagePage extends StatelessWidget {
   final String imageUrl;
-
   FullScreenImagePage({required this.imageUrl});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -761,12 +678,7 @@ class FullScreenImagePage extends StatelessWidget {
         iconTheme: IconThemeData(color: Colors.white),
       ),
       body: Center(
-        child: InteractiveViewer(
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.contain,
-          ),
-        ),
+        child: InteractiveViewer(child: Image.network(imageUrl, fit: BoxFit.contain)),
       ),
     );
   }

@@ -1,51 +1,49 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:neighborly/clodinary_upload.dart';
 import 'package:neighborly/incidentlocation.dart';
 import 'package:neighborly/notification.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class CreateReportPage extends StatefulWidget {
+class FoodDonationPage extends StatefulWidget {
   @override
-  _CreateReportPageState createState() => _CreateReportPageState();
+  _FoodDonationPageState createState() => _FoodDonationPageState();
 }
 
-class _CreateReportPageState extends State<CreateReportPage> {
+class _FoodDonationPageState extends State<FoodDonationPage> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
+
+  // Controllers for various fields
+  final _foodNameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String? _selectedCategory;
-  String? _urgencyLevel;
-  DateTime? _dateTime;
-  TimeOfDay? _timeOfDay;
-  // Holds the fetched current location (as a Position)
+  final _quantityController = TextEditingController();
+  final _servingSizeController = TextEditingController();
+  final _contactController = TextEditingController();
+  final _instructionsController = TextEditingController();
+
+  String? _selectedFoodType;
+  DateTime? _expiryDate;
+  TimeOfDay? _expiryTimeOfDay;
+
+  // For location
   Position? _currentLocation;
-  // Holds the location selected from the map (as a LatLng)
   LatLng? _selectedLatLng;
+
+  // For images
   List<XFile> _images = [];
 
-  final List<String> _categories = [
-    'flood',
-    'Landslide',
-    'Drought',
-    'Fire',
-    'Sexual Abuse',
-    'Narcotics',
-    'Road Incidents',
-    'Eco Hazard',
-    'Alcohol',
-    'Animal Abuse',
-    'Bribery',
-    'Food Safety',
-    'Hygiene Issues',
+  // Food type dropdown options
+  final List<String> _foodTypes = [
+    "Cooked",
+    "Packaged",
+    "Fresh Produce",
+    "Other"
   ];
-
-  final List<String> _urgencyLevels = ['Low', 'Medium', 'High'];
 
   @override
   void initState() {
@@ -58,21 +56,14 @@ class _CreateReportPageState extends State<CreateReportPage> {
     LocationPermission permission;
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return;
-    }
+    if (!serviceEnabled) return;
 
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return;
-      }
+      if (permission == LocationPermission.denied) return;
     }
-
-    if (permission == LocationPermission.deniedForever) {
-      return;
-    }
+    if (permission == LocationPermission.deniedForever) return;
 
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
@@ -80,14 +71,12 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
     setState(() {
       _currentLocation = position;
-      // If no location has been selected yet, use the current location
       _selectedLatLng ??= LatLng(position.latitude, position.longitude);
     });
   }
 
   Future<void> _pickImages() async {
     final picker = ImagePicker();
-    // Allow selecting multiple images
     final List<XFile>? pickedFiles = await picker.pickMultiImage();
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
@@ -96,71 +85,66 @@ class _CreateReportPageState extends State<CreateReportPage> {
     }
   }
 
-  Future<void> _submitReport() async {
+  Future<void> _submitDonation() async {
     if (_formKey.currentState!.validate()) {
-      // Upload each image and collect the returned URLs
+      // Upload images to Cloudinary
       List<String> imageUrls = [];
       if (_images.isNotEmpty) {
         for (XFile image in _images) {
-          // getClodinaryUrl is assumed to return a String? (nullable)
           String? url = await getClodinaryUrl(image.path);
-          if (url != null) {
-            imageUrls.add(url);
-          }
+          if (url != null) imageUrls.add(url);
         }
       }
 
-      await FirebaseFirestore.instance.collection('reports').add({
-        'category': _selectedCategory,
-        'title': _titleController.text,
+      await FirebaseFirestore.instance.collection('food_donations').add({
+        'category': 'Food Donation',
+        'foodType': _selectedFoodType,
+        'foodName': _foodNameController.text,
         'description': _descriptionController.text,
-        'date': _dateTime?.toIso8601String(),
-        'time': _timeOfDay != null ? _timeOfDay!.format(context) : null,
-        // Use the selected location if available, otherwise use the current location.
-        'location': _selectedLatLng != null
+        'quantity': _quantityController.text,
+        'servingSize': _servingSizeController.text,
+        'expiryDate': _expiryDate?.toIso8601String(),
+        'expiryTime': _expiryTimeOfDay != null ? _expiryTimeOfDay!.format(context) : null,
+        'pickupLocation': _selectedLatLng != null
             ? {
                 'latitude': _selectedLatLng!.latitude,
                 'longitude': _selectedLatLng!.longitude,
               }
             : null,
-        'urgency': _urgencyLevel,
-        // Store the list of image URLs; if none, it will be an empty list.
-        'imageUrl': imageUrls,
+        'contact': _contactController.text,
+        'instructions': _instructionsController.text,
+        'imageUrls': imageUrls,
         'timestamp': FieldValue.serverTimestamp(),
-        // Updated: storing the UID under 'userId'
         'userId': FirebaseAuth.instance.currentUser!.uid,
       });
 
-      sendNotificationToDevice('new report', 'shjsahjsvhjssx');
+      sendNotificationToDevice('New Food Donation', 'A new food donation is available!');
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Report submitted successfully!')),
+        SnackBar(content: Text('Food donation submitted successfully!')),
       );
 
-      // Return to the homepage (pop the current page)
       Navigator.of(context).pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Build location text from _selectedLatLng
     String locationText = _selectedLatLng != null
-        ? 'Selected Location: ${_selectedLatLng!.latitude.toStringAsFixed(4)}, ${_selectedLatLng!.longitude.toStringAsFixed(4)}'
+        ? 'Pickup Location: ${_selectedLatLng!.latitude.toStringAsFixed(4)}, ${_selectedLatLng!.longitude.toStringAsFixed(4)}'
         : 'No location selected';
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Create Report',
+          'Food Donation',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.blueAccent, Colors.lightBlueAccent],
+              colors: [Colors.green, Colors.lightGreen],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -168,9 +152,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: Padding(
@@ -179,67 +161,45 @@ class _CreateReportPageState extends State<CreateReportPage> {
           key: _formKey,
           child: ListView(
             children: [
+              // Food Type dropdown
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                value: _selectedFoodType,
                 decoration: InputDecoration(
-                  hintText: 'Select Category',
+                  hintText: 'Select Food Type',
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(15),
                     borderSide: BorderSide.none,
                   ),
-                  prefixIcon: Icon(Icons.category),
+                  prefixIcon: Icon(Icons.fastfood),
                 ),
-                items: _categories
-                    .map((category) => DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
+                items: _foodTypes
+                    .map((type) => DropdownMenuItem<String>(
+                          value: type,
+                          child: Text(type),
                         ))
                     .toList(),
-                onChanged: (value) =>
-                    setState(() => _selectedCategory = value),
+                onChanged: (value) => setState(() => _selectedFoodType = value),
                 validator: (value) =>
-                    value == null ? 'Please select a category' : null,
+                    value == null ? 'Please select a food type' : null,
               ),
               SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _urgencyLevel,
-                decoration: InputDecoration(
-                  hintText: 'Select Urgency Level',
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                items: _urgencyLevels
-                    .map((level) => DropdownMenuItem<String>(
-                          value: level,
-                          child: Text(level),
-                        ))
-                    .toList(),
-                onChanged: (value) => setState(() => _urgencyLevel = value),
-                validator: (value) =>
-                    value == null ? 'Please select urgency level' : null,
-              ),
-              SizedBox(height: 12),
+              // Food Name
               TextFormField(
-                controller: _titleController,
+                controller: _foodNameController,
                 decoration: InputDecoration(
-                  hintText: 'Enter Title',
+                  hintText: 'Enter Food Name',
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none,
-                  ),
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Please enter a title' : null,
+                validator: (value) => value == null || value.isEmpty ? 'Please enter food name' : null,
               ),
               SizedBox(height: 12),
+              // Description
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 4,
@@ -248,58 +208,84 @@ class _CreateReportPageState extends State<CreateReportPage> {
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none,
-                  ),
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none),
                 ),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Please provide a description' : null,
               ),
               SizedBox(height: 12),
+              // Quantity
+              TextFormField(
+                controller: _quantityController,
+                decoration: InputDecoration(
+                  hintText: 'Enter Quantity (e.g., 20 meals)',
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none),
+                ),
+                validator: (value) => value == null || value.isEmpty ? 'Please enter quantity' : null,
+              ),
+              SizedBox(height: 12),
+              // Serving Size (optional)
+              TextFormField(
+                controller: _servingSizeController,
+                decoration: InputDecoration(
+                  hintText: 'Enter Serving Size (optional)',
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none),
+                ),
+              ),
+              SizedBox(height: 12),
+              // Expiry Date
               ListTile(
                 tileColor: Colors.grey[200],
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                leading: Icon(Icons.lock_clock_rounded, color: Colors.blueAccent),
-                title: Text(_dateTime == null
-                    ? 'Select Date'
-                    : '${_dateTime!.toLocal()}'.split(' ')[0]),
+                    borderRadius: BorderRadius.circular(10)),
+                leading: Icon(Icons.calendar_today, color: Colors.green),
+                title: Text(_expiryDate == null
+                    ? 'Select Expiry Date'
+                    : '${_expiryDate!.toLocal()}'.split(' ')[0]),
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
                     initialDate: DateTime.now(),
-                    firstDate: DateTime(2020),
+                    firstDate: DateTime.now(),
                     lastDate: DateTime(2101),
                   );
-                  if (picked != null) setState(() => _dateTime = picked);
+                  if (picked != null) setState(() => _expiryDate = picked);
                 },
               ),
               SizedBox(height: 12),
+              // Expiry Time
               ListTile(
                 tileColor: Colors.grey[200],
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                leading: Icon(Icons.access_time, color: Colors.blueAccent),
-                title: Text(_timeOfDay == null
-                    ? 'Select Time'
-                    : _timeOfDay!.format(context)),
+                    borderRadius: BorderRadius.circular(10)),
+                leading: Icon(Icons.access_time, color: Colors.green),
+                title: Text(_expiryTimeOfDay == null
+                    ? 'Select Expiry Time'
+                    : _expiryTimeOfDay!.format(context)),
                 onTap: () async {
                   final TimeOfDay? picked = await showTimePicker(
                     context: context,
                     initialTime: TimeOfDay.now(),
                   );
-                  if (picked != null) setState(() => _timeOfDay = picked);
+                  if (picked != null) setState(() => _expiryTimeOfDay = picked);
                 },
               ),
               SizedBox(height: 12),
+              // Current Location (fetch)
               ListTile(
                 tileColor: Colors.grey[200],
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                leading: Icon(Icons.location_on, color: Colors.blueAccent),
+                    borderRadius: BorderRadius.circular(10)),
+                leading: Icon(Icons.location_on, color: Colors.green),
                 title: Text(
                   _currentLocation == null
                       ? 'Fetch Current Location'
@@ -308,13 +294,12 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 onTap: _getCurrentLocation,
               ),
               SizedBox(height: 12),
+              // Pickup Location picker
               InkWell(
                 onTap: () async {
                   final result = await Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => PickLocationPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => PickLocationPage()),
                   );
                   if (result != null && result is LatLng) {
                     setState(() {
@@ -323,40 +308,76 @@ class _CreateReportPageState extends State<CreateReportPage> {
                   }
                 },
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.location_history, color: Colors.blueAccent, size: 22),
+                      Icon(Icons.location_history,
+                          color: Colors.green, size: 22),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           _selectedLatLng != null
-                              ? 'Incident Location: ${_selectedLatLng!.latitude.toStringAsFixed(4)}, ${_selectedLatLng!.longitude.toStringAsFixed(4)}'
-                              : "Incident Location",
+                              ? 'Pickup Location: ${_selectedLatLng!.latitude.toStringAsFixed(4)}, ${_selectedLatLng!.longitude.toStringAsFixed(4)}'
+                              : "Pickup Location",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: _selectedLatLng != null ? Colors.black : Colors.grey.shade600,
+                            color: _selectedLatLng != null
+                                ? Colors.black
+                                : Colors.grey.shade600,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24),
+                      Icon(Icons.keyboard_arrow_down,
+                          color: Colors.grey, size: 24),
                     ],
                   ),
                 ),
               ),
               SizedBox(height: 12),
+              // Contact Information
+              TextFormField(
+                controller: _contactController,
+                decoration: InputDecoration(
+                  hintText: 'Enter Contact Information',
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Please enter contact info' : null,
+              ),
+              SizedBox(height: 12),
+              // Special Instructions (optional)
+              TextFormField(
+                controller: _instructionsController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Enter Special Instructions (optional)',
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none),
+                ),
+              ),
+              SizedBox(height: 12),
+              // Image Upload Button
               ElevatedButton(
                 onPressed: _pickImages,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -395,18 +416,19 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 ),
               SizedBox(height: 12),
               ElevatedButton(
-                onPressed: _submitReport,
+                onPressed: _submitDonation,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 2,
                 ),
                 child: Text(
-                  'Submit Report',
+                  'Submit Donation',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

@@ -6,12 +6,12 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-class WildfireReportPage extends StatefulWidget {
+class AnimalabuseReportPage extends StatefulWidget {
   @override
-  _WildfireReportPageState createState() => _WildfireReportPageState();
+  _AnimalabuseReportPageState createState() => _AnimalabuseReportPageState();
 }
 
-class _WildfireReportPageState extends State<WildfireReportPage>
+class _AnimalabuseReportPageState extends State<AnimalabuseReportPage>
     with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -42,7 +42,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
     try {
       var snapshot = await _firestore
           .collection('reports')
-          .where('category', isEqualTo: 'Fire')
+          .where('category', isEqualTo: 'Animal Abuse')
           .orderBy('timestamp', descending: true)
           .get();
 
@@ -121,7 +121,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
               ),
               child: Row(
                 children: [
-                  Icon(Icons.local_fire_department, color: Colors.white),
+                  Icon(Icons.pets, color: Colors.white),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -177,14 +177,14 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                 Navigator.of(context).pop();
               },
             ),
-            // Title with Wildfire Icon and Text.
+            // Title with Animal Abuse Icon and Text.
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.local_fire_department, size: 30, color: Colors.redAccent),
+                Icon(Icons.pets, size: 30, color: Colors.redAccent),
                 SizedBox(width: 8),
                 Text(
-                  "Fire Reports",
+                  "Animal Abuse Reports",
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -198,7 +198,7 @@ class _WildfireReportPageState extends State<WildfireReportPage>
               onPressed: () {
                 showSearch(
                   context: context,
-                  delegate: WildfireReportSearchDelegate(reports: _reports),
+                  delegate: AnimalabuseReportSearchDelegate(reports: _reports),
                 );
               },
             ),
@@ -507,7 +507,6 @@ class _WildfireReportPageState extends State<WildfireReportPage>
                                               _shareReport(title, description, category, locationText);
                                             },
                                           ),
-                                          // Show trash icon if forced or if report owner matches current user.
                                           if (forceShowTrashIcon ||
                                               ((report['userId'] ?? report['uid']) == currentUserId))
                                             IconButton(
@@ -599,11 +598,11 @@ class _ImageCarouselState extends State<ImageCarousel> {
   }
 }
 
-// Custom SearchDelegate for wildfire reports.
-class WildfireReportSearchDelegate extends SearchDelegate {
+// Custom SearchDelegate for animal abuse reports.
+class AnimalabuseReportSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> reports;
 
-  WildfireReportSearchDelegate({required this.reports});
+  AnimalabuseReportSearchDelegate({required this.reports});
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -640,7 +639,7 @@ class WildfireReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = results[index];
         return ListTile(
-          leading: Icon(Icons.local_fire_department, color: Colors.redAccent),
+          leading: Icon(Icons.pets, color: Colors.redAccent),
           title: Text(report['title'] ?? "No Title"),
           subtitle: Text(report['description'] ?? "No Description"),
           onTap: () {
@@ -649,7 +648,7 @@ class WildfireReportSearchDelegate extends SearchDelegate {
               context,
               MaterialPageRoute(
                 builder: (context) =>
-                    WildfireReportDetailPage(report: report),
+                    AnimalabuseReportDetailPage(report: report),
               ),
             );
           },
@@ -670,7 +669,7 @@ class WildfireReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = suggestions[index];
         return ListTile(
-          leading: Icon(Icons.local_fire_department, color: Colors.redAccent),
+          leading: Icon(Icons.pets, color: Colors.redAccent),
           title: Text(report['title'] ?? "No Title"),
           onTap: () {
             query = report['title'] ?? "";
@@ -682,11 +681,11 @@ class WildfireReportSearchDelegate extends SearchDelegate {
   }
 }
 
-// Detail page for a wildfire report.
-class WildfireReportDetailPage extends StatelessWidget {
+// Detail page for an animal abuse report.
+class AnimalabuseReportDetailPage extends StatelessWidget {
   final Map<String, dynamic> report;
 
-  WildfireReportDetailPage({required this.report});
+  AnimalabuseReportDetailPage({required this.report});
 
   @override
   Widget build(BuildContext context) {
