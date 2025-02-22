@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:neighborly/Volunteerhome.dart';
-import 'package:neighborly/volunteerregister.dart';
-import 'package:neighborly/userhome.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart'; // Import the homepage
+import 'package:neighborly/Authorityregister.dart';
+import 'package:neighborly/authority.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
-class VolunteerLoginPage extends StatefulWidget {
-  const VolunteerLoginPage({super.key});
+class AuthorityLoginPage extends StatefulWidget {
+  const AuthorityLoginPage({super.key});
 
   @override
-  _VolunteerLoginPageState createState() => _VolunteerLoginPageState();
+  _AuthorityLoginPageState createState() => _AuthorityLoginPageState();
 }
 
-class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
+class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
   bool _isPasswordVisible = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -21,40 +20,38 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   void _signIn() async {
-  try {
-    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
-
-    if (userCredential.user != null) {
-      String uid = userCredential.user!.uid;
-
-      // Get OneSignal Player ID
-      String? playerid = await OneSignal.User.pushSubscription.id;
-
-      // Store in Firestore
-      await FirebaseFirestore.instance.collection('volunteers').doc(uid).update({
-       
-        'playerid': playerid,                 // Save OneSignal Player ID
-       
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login Successful")),
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => Volunteerhome()), // Navigate to homepage
+      if (userCredential.user != null) {
+        String uid = userCredential.user!.uid;
+
+        // Get OneSignal Player ID
+        String? playerid = await OneSignal.User.pushSubscription.id;
+
+        // Store in Firestore
+        await FirebaseFirestore.instance.collection('authorities').doc(uid).update({
+          'playerid': playerid, // Save OneSignal Player ID
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Login Successful")),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AuthorityPage()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.toString()}")),
       );
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: ${e.toString()}")),
-    );
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +62,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
           children: [
             Container(
               height: MediaQuery.of(context).size.height * 0.35,
-              width: MediaQuery.of(context).size.width * 1.00,
+              width: MediaQuery.of(context).size.width,
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 7, 135, 255),
                 borderRadius: BorderRadius.circular(15),
@@ -85,10 +82,10 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                     ),
                     SizedBox(height: 20),
                     Text(
-                      'Welcome back, you\'ve been missed!',
+                      'Welcome back, youve been missed!',
                       style: TextStyle(
                         fontSize: 20,
-                        color: Color.fromARGB(255, 255, 255, 255),
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -116,7 +113,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  hintStyle: TextStyle(color: const Color.fromARGB(255, 168, 168, 168)),
+                  hintStyle: TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -141,10 +138,8 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                 child: TextButton(
                   onPressed: () {},
                   child: const Text(
-                    'Recovery Password',
-                    style: TextStyle(
-                      color: Colors.blue,
-                    ),
+                    'Recover Password',
+                    style: TextStyle(color: Colors.blue),
                   ),
                 ),
               ),
@@ -162,10 +157,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                 ),
                 child: const Text(
                   'Sign In',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
             ),
@@ -183,14 +175,12 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => VolunteerRegister()),
+                        MaterialPageRoute(builder: (context) => AuthorityRegister()),
                       );
                     },
                     child: const Text(
                       'Register now',
-                      style: TextStyle(
-                        color: Colors.blue,
-                      ),
+                      style: TextStyle(color: Colors.blue),
                     ),
                   ),
                 ],

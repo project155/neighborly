@@ -20,6 +20,9 @@ class _FloodReportPageState extends State<FloodReportPage>
   List<Map<String, dynamic>> _reports = [];
   bool _isLoading = true;
 
+  // Set to true to force trash icon display for debugging.
+  bool forceShowTrashIcon = false;
+
   final LatLng _initialLocation =
       LatLng(11.194249397596916, 75.85098108272076);
 
@@ -37,7 +40,7 @@ class _FloodReportPageState extends State<FloodReportPage>
 
   Future<void> _fetchReports() async {
     try {
-      // Change category filter to 'Flood'
+      // Filter for 'Flood' category.
       var snapshot = await _firestore
           .collection('reports')
           .where('category', isEqualTo: 'flood')
@@ -48,30 +51,31 @@ class _FloodReportPageState extends State<FloodReportPage>
         _reports = snapshot.docs.map((doc) {
           var data = doc.data();
           data['id'] = doc.id;
+          // Assumes each report document contains a 'userId' field (or possibly 'uid')
           return data;
         }).toList();
         _isLoading = false;
       });
 
-      // Add markers to the map
+      // Add markers for each report that has a location.
       _markers.clear();
       for (var report in _reports) {
         if (report['location'] != null) {
           double lat = (report['location']['latitude'] ?? 0).toDouble();
           double lng = (report['location']['longitude'] ?? 0).toDouble();
-          print("Report Location: Lat: $lat, Lng: $lng");
           _markers.add(
             Marker(
               markerId: MarkerId(report['id']),
               position: LatLng(lat, lng),
               infoWindow: InfoWindow(
                   title: report['title'], snippet: report['description']),
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
             ),
           );
         }
       }
 
-      // Center map based on the first report (if available)
+      // Center the map on the first report's location (if available).
       if (_markers.isNotEmpty) {
         var firstReport = _reports.first;
         double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
@@ -88,7 +92,7 @@ class _FloodReportPageState extends State<FloodReportPage>
     }
   }
 
-  // Animated Snackbar Method (same as before)
+  // Animated snackbar for notifications.
   void _showAnimatedSnackbar(String message) {
     AnimationController controller = AnimationController(
       vsync: this,
@@ -123,8 +127,8 @@ class _FloodReportPageState extends State<FloodReportPage>
                   Expanded(
                     child: Text(
                       message,
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -145,7 +149,7 @@ class _FloodReportPageState extends State<FloodReportPage>
     });
   }
 
-  // Floating AppBar as an elongated cylinder overlapping the map.
+  // Floating AppBar widget over the map.
   Widget _buildFloatingAppBar() {
     return Positioned(
       top: 40,
@@ -157,24 +161,20 @@ class _FloodReportPageState extends State<FloodReportPage>
           color: Colors.white,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            )
+            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
           ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Back Button
+            // Back Button.
             IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.black87),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
-            // Title with Flood Icon and Text
+            // Title with Flood Icon.
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -183,14 +183,13 @@ class _FloodReportPageState extends State<FloodReportPage>
                 Text(
                   "Flood Reports",
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87),
                 ),
               ],
             ),
-            // Search Button which triggers search
+            // Search Button.
             IconButton(
               icon: Icon(Icons.search, color: Colors.black87),
               onPressed: () {
@@ -206,14 +205,13 @@ class _FloodReportPageState extends State<FloodReportPage>
     );
   }
 
-  // Instead of using zoomable InteractiveViewer, we open a full-screen image on tap.
+  // Tappable image that opens a full-screen view.
   Widget _buildTappableImage(String imageUrl) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-              builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
+          MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
         );
       },
       child: Image.network(
@@ -225,13 +223,152 @@ class _FloodReportPageState extends State<FloodReportPage>
     );
   }
 
+  // Show a confirmation dialog before deleting a report.
+  void _confirmDelete(String reportId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Delete Report"),
+          content: Text("Are you sure you want to delete this report?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteReport(reportId);
+              },
+              child: Text("Delete", style: TextStyle(color: Colors.red)),
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  // Delete the report from Firestore and update the local state.
+  Future<void> _deleteReport(String reportId) async {
+    try {
+      await _firestore.collection('reports').doc(reportId).delete();
+      setState(() {
+        _reports.removeWhere((report) => report['id'] == reportId);
+      });
+      _showAnimatedSnackbar("Report deleted successfully!");
+    } catch (e) {
+      print("Error deleting report: $e");
+      _showAnimatedSnackbar("Failed to delete report!");
+    }
+  }
+
+  // Handle likes.
+  void _handleLike(String docId, bool isLiked) {
+    String userId = _auth.currentUser?.uid ?? "";
+    if (userId.isEmpty) return;
+    int index = _reports.indexWhere((report) => report['id'] == docId);
+    if (index != -1) {
+      setState(() {
+        if (isLiked) {
+          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) - 1;
+          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
+          likedBy.remove(userId);
+          _reports[index]['likedBy'] = likedBy;
+        } else {
+          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) + 1;
+          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
+          likedBy.add(userId);
+          _reports[index]['likedBy'] = likedBy;
+        }
+      });
+    }
+    _firestore.collection('reports').doc(docId).update({
+      'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
+      'likedBy': isLiked
+          ? FieldValue.arrayRemove([userId])
+          : FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  // Display comments in a bottom sheet.
+  void _showComments(BuildContext context, String docId) {
+    int reportIndex = _reports.indexWhere((report) => report['id'] == docId);
+    List<dynamic> comments = reportIndex != -1
+        ? List.from(_reports[reportIndex]['comments'] ?? [])
+        : [];
+    TextEditingController commentController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: EdgeInsets.all(10),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      children: comments.map((comment) {
+                        if (comment is Map && comment.containsKey('name')) {
+                          return ListTile(
+                            title: Text(
+                              comment['name'],
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(comment['comment'] ?? ""),
+                          );
+                        } else {
+                          return ListTile(title: Text(comment.toString()));
+                        }
+                      }).toList(),
+                    ),
+                  ),
+                  TextField(
+                    controller: commentController,
+                    decoration: InputDecoration(hintText: "Add a comment..."),
+                    onSubmitted: (text) {
+                      if (text.isNotEmpty) {
+                        var newComment = {'name': 'Anonymous', 'comment': text};
+                        setModalState(() {
+                          comments.add(newComment);
+                        });
+                        if (reportIndex != -1) {
+                          setState(() {
+                            _reports[reportIndex]['comments'] =
+                                List.from(_reports[reportIndex]['comments'] ?? [])
+                                  ..add(newComment);
+                          });
+                        }
+                        _firestore.collection('reports').doc(docId).update({
+                          'comments': FieldValue.arrayUnion([newComment]),
+                        });
+                        commentController.clear();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Share report using share_plus.
+  void _shareReport(String title, String description) {
+    Share.share('$title\n\n$description');
+  }
+
   @override
   Widget build(BuildContext context) {
+    String currentUserId = _auth.currentUser?.uid ?? "";
     return Scaffold(
-      // No traditional appBar; using a Stack to overlay a floating bar on the map.
       body: Column(
         children: [
-          // Map section with floating AppBar on top.
+          // Map section with the floating AppBar.
           Expanded(
             flex: 1,
             child: Stack(
@@ -262,6 +399,11 @@ class _FloodReportPageState extends State<FloodReportPage>
                         itemCount: _reports.length,
                         itemBuilder: (context, index) {
                           var report = _reports[index];
+                          // Debug: print report userId and current user id.
+                          String reportUserId =
+                              report['userId'] ?? report['uid'] ?? "none";
+                          print("Report id: ${report['id']}, report userId: $reportUserId, current user id: $currentUserId");
+
                           List<String> imageUrls = [];
                           if (report['imageUrl'] is List) {
                             imageUrls = List<String>.from(report['imageUrl']);
@@ -281,12 +423,10 @@ class _FloodReportPageState extends State<FloodReportPage>
                           String? longitude =
                               report['location']?['longitude']?.toString();
                           int likes = report['likes'] ?? 0;
-                          List comments = report['comments'] ?? [];
 
-                          String userId = _auth.currentUser?.uid ?? "";
                           List likedBy =
                               List<String>.from(report['likedBy'] ?? []);
-                          bool isLiked = likedBy.contains(userId);
+                          bool isLiked = likedBy.contains(currentUserId);
 
                           return Card(
                             margin: EdgeInsets.symmetric(
@@ -303,20 +443,17 @@ class _FloodReportPageState extends State<FloodReportPage>
                                 Padding(
                                   padding: EdgeInsets.all(10),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(title,
                                           style: TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold)),
                                       SizedBox(height: 5),
-                                      Text(
-                                        description,
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[700]),
-                                      ),
+                                      Text(description,
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[700])),
                                       SizedBox(height: 5),
                                       Row(
                                         mainAxisAlignment:
@@ -330,8 +467,7 @@ class _FloodReportPageState extends State<FloodReportPage>
                                                   color: Colors.blueAccent)),
                                         ],
                                       ),
-                                      if (latitude != null &&
-                                          longitude != null)
+                                      if (latitude != null && longitude != null)
                                         Text("Location: $latitude, $longitude",
                                             style: TextStyle(
                                                 color: Colors.blueGrey)),
@@ -353,12 +489,10 @@ class _FloodReportPageState extends State<FloodReportPage>
                                             },
                                           ),
                                           Text("$likes Likes",
-                                              style: TextStyle(
-                                                  color: Colors.blue)),
+                                              style: TextStyle(color: Colors.blue)),
                                           IconButton(
                                             icon: Icon(Icons.comment_outlined,
                                                 color: Colors.green),
-                                            // Note: Updated to call _showComments with only the docId.
                                             onPressed: () =>
                                                 _showComments(context, reportId),
                                           ),
@@ -368,6 +502,13 @@ class _FloodReportPageState extends State<FloodReportPage>
                                             onPressed: () =>
                                                 _shareReport(title, description),
                                           ),
+                                          // Show trash icon if forced or if the report's owner matches the current user.
+                                          if (forceShowTrashIcon ||
+                                              ((report['userId'] ?? report['uid']) == currentUserId))
+                                            IconButton(
+                                              icon: Icon(Icons.delete, color: Colors.red),
+                                              onPressed: () => _confirmDelete(reportId),
+                                            ),
                                         ],
                                       )
                                     ],
@@ -383,112 +524,9 @@ class _FloodReportPageState extends State<FloodReportPage>
       ),
     );
   }
-
-  // --- Updated _handleLike method with optimistic UI update ---
-  void _handleLike(String docId, bool isLiked) {
-    String userId = _auth.currentUser?.uid ?? "";
-    if (userId.isEmpty) return;
-    int index = _reports.indexWhere((report) => report['id'] == docId);
-    if (index != -1) {
-      setState(() {
-        if (isLiked) {
-          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) - 1;
-          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
-          likedBy.remove(userId);
-          _reports[index]['likedBy'] = likedBy;
-        } else {
-          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) + 1;
-          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
-          likedBy.add(userId);
-          _reports[index]['likedBy'] = likedBy;
-        }
-      });
-    }
-    _firestore.collection('reports').doc(docId).update({
-      'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
-      'likedBy': isLiked
-          ? FieldValue.arrayRemove([userId])
-          : FieldValue.arrayUnion([userId]),
-    });
-  }
-
-  // --- Updated _showComments method for immediate comment updates ---
-  void _showComments(BuildContext context, String docId) {
-    // Find the report index and get its comments list.
-    int reportIndex = _reports.indexWhere((report) => report['id'] == docId);
-    List<dynamic> comments = reportIndex != -1
-        ? List.from(_reports[reportIndex]['comments'] ?? [])
-        : [];
-    TextEditingController commentController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        // Using StatefulBuilder to update the bottom sheet UI instantly.
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              padding: EdgeInsets.all(10),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      children: comments.map((comment) {
-                        if (comment is Map && comment.containsKey('name')) {
-                          return ListTile(
-                            title: Text(
-                              comment['name'],
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(comment['comment'] ?? ""),
-                          );
-                        } else {
-                          return ListTile(title: Text(comment.toString()));
-                        }
-                      }).toList(),
-                    ),
-                  ),
-                  TextField(
-                    controller: commentController,
-                    decoration: InputDecoration(hintText: "Add a comment..."),
-                    onSubmitted: (text) {
-                      if (text.isNotEmpty) {
-                        var newComment = {'name': 'Anonymous', 'comment': text};
-                        // Update the bottom sheet UI immediately.
-                        setModalState(() {
-                          comments.add(newComment);
-                        });
-                        // Also update the local _reports list.
-                        if (reportIndex != -1) {
-                          setState(() {
-                            _reports[reportIndex]['comments'] =
-                                List.from(_reports[reportIndex]['comments'] ?? [])
-                                  ..add(newComment);
-                          });
-                        }
-                        // Update Firestore.
-                        _firestore.collection('reports').doc(docId).update({
-                          'comments': FieldValue.arrayUnion([newComment]),
-                        });
-                        commentController.clear();
-                      }
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _shareReport(String title, String description) {
-    Share.share('$title\n\n$description');
-  }
 }
 
-// A new widget for the carousel with dot indicators.
+// Carousel widget for displaying report images.
 class ImageCarousel extends StatefulWidget {
   final List<String> imageUrls;
   ImageCarousel({required this.imageUrls});
@@ -581,7 +619,7 @@ class FloodReportSearchDelegate extends SearchDelegate {
     return IconButton(
       icon: Icon(Icons.arrow_back),
       onPressed: () {
-        close(context, null); // Close search delegate
+        close(context, null); // Close search delegate.
       },
     );
   }
@@ -640,7 +678,7 @@ class FloodReportSearchDelegate extends SearchDelegate {
   }
 }
 
-// A basic detail page for a flood report.
+// Detail page for a flood report.
 class FloodReportDetailPage extends StatelessWidget {
   final Map<String, dynamic> report;
 
@@ -686,14 +724,14 @@ class FloodReportDetailPage extends StatelessWidget {
                   SizedBox(height: 10),
                   Text(
                     "Category: ${report['category'] ?? "Unknown"}",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                   SizedBox(height: 5),
                   Text(
                     "Urgency: ${report['urgency'] ?? "Normal"}",
                     style: TextStyle(fontSize: 16, color: Colors.blueAccent),
                   ),
-                  // Add additional details as needed...
                 ],
               ),
             )
@@ -704,7 +742,7 @@ class FloodReportDetailPage extends StatelessWidget {
   }
 }
 
-// Full screen image view page.
+// Full screen image view.
 class FullScreenImagePage extends StatelessWidget {
   final String imageUrl;
 

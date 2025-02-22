@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -22,9 +23,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
   String? _urgencyLevel;
   DateTime? _dateTime;
   TimeOfDay? _timeOfDay;
-  // This variable holds the fetched current location (as a Position)
+  // Holds the fetched current location (as a Position)
   Position? _currentLocation;
-  // This variable holds the location selected from the map (as a LatLng)
+  // Holds the location selected from the map (as a LatLng)
   LatLng? _selectedLatLng;
   List<XFile> _images = [];
 
@@ -36,6 +37,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
     'Sexual Harassment',
     'Fire',
     'flood',
+    'Landslide',
+    'Drought',
   ];
 
   final List<String> _urgencyLevels = ['Low', 'Medium', 'High'];
@@ -73,14 +76,14 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
     setState(() {
       _currentLocation = position;
-      // Optionally, if no location has been selected yet, use the current location
+      // If no location has been selected yet, use the current location
       _selectedLatLng ??= LatLng(position.latitude, position.longitude);
     });
   }
 
   Future<void> _pickImages() async {
     final picker = ImagePicker();
-    // Use pickMultiImage to allow selecting multiple images
+    // Allow selecting multiple images
     final List<XFile>? pickedFiles = await picker.pickMultiImage();
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
@@ -120,9 +123,11 @@ class _CreateReportPageState extends State<CreateReportPage> {
         // Store the list of image URLs; if none, it will be an empty list.
         'imageUrl': imageUrls,
         'timestamp': FieldValue.serverTimestamp(),
+        // Updated: storing the UID under 'userId'
+        'userId': FirebaseAuth.instance.currentUser!.uid,
       });
 
-      sendNotificationToDevice('ggagga', 'gggggg');
+      sendNotificationToDevice('new report', 'shjsahjsvhjssx');
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(

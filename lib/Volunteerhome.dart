@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloudinary/cloudinary.dart';
 import 'package:http/http.dart' as http;
 import 'package:neighborly/Drought.dart';
 import 'package:neighborly/Landslide.dart';
@@ -12,24 +15,39 @@ import 'package:neighborly/sexualissues.dart';
 import 'package:neighborly/Userprofile.dart';
 import 'package:neighborly/wildfire.dart';
 
-void main() => runApp(MyApp());
+/// Cloudinary upload function using the cloudinary package.
+Future<String?> getClodinaryUrl(String image) async {
+  final cloudinary = Cloudinary.signedConfig(
+    cloudName: 'dkwnu8zei',
+    apiKey: '298339343829723',
+    apiSecret: 'T9q3BURXE2-Rj6Uv4Dk9bSzd7rY',
+  );
 
-class MyApp extends StatelessWidget {
+  final response = await cloudinary.upload(
+    file: image,
+    resourceType: CloudinaryResourceType.image,
+  );
+  return response.secureUrl;
+}
+
+void main() => runApp(VolunteerApp());
+
+class VolunteerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Userhome(),
+      home: Volunteerhome(),
     );
   }
 }
 
-class Userhome extends StatefulWidget {
+class Volunteerhome extends StatefulWidget {
   @override
-  _UserhomeState createState() => _UserhomeState();
+  _VolunteerhomeState createState() => _VolunteerhomeState();
 }
 
-class _UserhomeState extends State<Userhome> {
+class _VolunteerhomeState extends State<Volunteerhome> {
   final List<String> disasterTypes = [
     "Flood/Rainfall",
     "Fire",
@@ -50,10 +68,12 @@ class _UserhomeState extends State<Userhome> {
   final List<String> helpandrecover = [
     "XYZ",
     "Example Feature 1",
-    "Example Feature 2",
+    "Example Feature 2"
   ];
+  // Category for Notification Banner.
+  final List<String> notificationBanner = ["Change Banner"];
 
-  // Notice images will be fetched from Cloudinary.
+  // This list will hold the notice image URLs fetched from Cloudinary.
   List<String> noticeImages = [];
 
   late PageController _pageController;
@@ -63,6 +83,7 @@ class _UserhomeState extends State<Userhome> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    // Fetch images uploaded by volunteers from Cloudinary.
     _fetchNoticeImages().then((_) {
       _startTimer();
     });
@@ -73,22 +94,20 @@ class _UserhomeState extends State<Userhome> {
     final String cloudName = 'dkwnu8zei';
     final String apiKey = '298339343829723';
     final String apiSecret = 'T9q3BURXE2-Rj6Uv4Dk9bSzd7rY';
-    final String url =
-        'https://api.cloudinary.com/v1_1/$cloudName/resources/image';
-    String basicAuth =
-        'Basic ' + base64Encode(utf8.encode('$apiKey:$apiSecret'));
+    final String url = 'https://api.cloudinary.com/v1_1/$cloudName/resources/image';
+    String basicAuth = 'Basic ' + base64Encode(utf8.encode('$apiKey:$apiSecret'));
 
     try {
-      final response =
-          await http.get(Uri.parse(url), headers: {'Authorization': basicAuth});
+      final response = await http.get(Uri.parse(url), headers: {
+        'Authorization': basicAuth,
+      });
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
         List<dynamic> resources = data['resources'];
         setState(() {
-          noticeImages = resources
-              .map((r) => r['secure_url'] as String)
-              .toList();
-          // Fallback to default assets if no images were fetched.
+          noticeImages =
+              resources.map((r) => r['secure_url'] as String).toList();
+          // Fallback to local assets if no images are returned.
           if (noticeImages.isEmpty) {
             noticeImages = [
               'assets/notice1.jpg',
@@ -149,7 +168,7 @@ class _UserhomeState extends State<Userhome> {
             bottomRight: Radius.circular(30),
           ),
           child: AppBar(
-            title: Text("Neighborly", style: TextStyle(color: Colors.white)),
+            title: Text("Neighborly Volunteer", style: TextStyle(color: Colors.white)),
             backgroundColor: const Color.fromARGB(255, 95, 156, 255),
             actions: [
               Padding(
@@ -166,12 +185,11 @@ class _UserhomeState extends State<Userhome> {
           padding: EdgeInsets.only(bottom: 100),
           child: Column(
             children: [
-              // Notice slider section.
               _buildNoticeSection(),
-              // Sections for different features.
               _buildSection("Report Disaster", disasterTypes),
               _buildSection("Report public issues", newCategoryItems),
               _buildSection("Help And Recover", helpandrecover),
+              _buildSection("Notification Banner", notificationBanner),
             ],
           ),
         ),
@@ -198,46 +216,31 @@ class _UserhomeState extends State<Userhome> {
               IconButton(
                 icon: Icon(Icons.home, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => LoginUser()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
               ),
               IconButton(
                 icon: Icon(Icons.person, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => UserProfile()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfile()));
                 },
               ),
               IconButton(
                 icon: Icon(Icons.post_add_rounded, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => CreateReportPage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => CreateReportPage()));
                 },
               ),
               IconButton(
                 icon: Icon(Icons.camera_alt, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => LoginUser()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
               ),
               IconButton(
                 icon: Icon(Icons.sos_sharp, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => LoginUser()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
                 },
               ),
             ],
@@ -259,7 +262,7 @@ class _UserhomeState extends State<Userhome> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.3),
+              color: Colors.white.withOpacity(0.3),
               blurRadius: 4,
               offset: Offset(0, 4),
             ),
@@ -271,7 +274,6 @@ class _UserhomeState extends State<Userhome> {
                 controller: _pageController,
                 itemCount: noticeImages.length,
                 itemBuilder: (context, index) {
-                  // Load as network image if URL starts with "http"; otherwise, as asset.
                   if (noticeImages[index].startsWith("http")) {
                     return Image.network(
                       noticeImages[index],
@@ -300,7 +302,7 @@ class _UserhomeState extends State<Userhome> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.3),
+              color: Colors.white.withOpacity(0.3),
               blurRadius: 4,
               offset: Offset(0, 4),
             ),
@@ -311,8 +313,7 @@ class _UserhomeState extends State<Userhome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(heading,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(heading, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
               GridView.builder(
                 shrinkWrap: true,
@@ -338,46 +339,56 @@ class _UserhomeState extends State<Userhome> {
   // Builds a clickable grid item for a given service.
   Widget _buildServiceItem(String title) {
     final Map<String, String> imageMapping = {
-      "Flood": 'userimage.png',
-      "Fire": 'upperimage.png',
+      "Flood/Rainfall": 'assets/images/flood.png',
+      "Fire": 'assets/images/fire.png',
       "Drought": 'assets/images/drought.png',
       "Landslide": 'assets/images/landslide.png',
+      "Sexual Abuse": 'assets/images/sexual_abuse.png',
+      "Narcotics": 'assets/images/narcotics.png',
+      "Road Incidents": 'assets/images/road_incidents.png',
+      "Eco hazard": 'assets/images/eco_hazard.png',
+      "Alchohol": 'assets/images/alchohol.png',
+      "Animal Abuse": 'assets/images/animal_abuse.png',
+      "bribery": 'assets/images/bribery.png',
+      "Food Safety": 'assets/images/food_safety.png',
+      "Hygiene Issues": 'assets/images/hygiene.png',
       "XYZ": 'assets/images/xyz.png',
       "Example Feature 1": 'assets/images/feature1.png',
       "Example Feature 2": 'assets/images/feature2.png',
-      "Help": 'assets/images/help.png',
-      "ABC": 'assets/images/abc.png',
+      "Help And Recover": 'assets/images/help.png',
+      "Change Banner": 'assets/images/banner.png',
     };
 
     return GestureDetector(
       onTap: () {
         if (title == "Flood/Rainfall") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => FloodReportPage()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FloodReportPage()));
         } else if (title == "Fire") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => WildfireReportPage()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => WildfireReportPage()));
         } else if (title == "Drought") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => DroughtReportPage()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => DroughtReportPage()));
         } else if (title == "Landslide") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => LandSlideReportPage()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => LandSlideReportPage()));
         } else if (title == "XYZ") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => XYZPage()));
-        } else if (title == "Examp 33") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => ExampleFeaturePage1()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => XYZPage()));
+        } else if (title == "Example Feature 1") {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => ExampleFeaturePage1()));
         } else if (title == "Example Feature 2") {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => ExampleFeaturePage2()));
+        } else if (title == "Help And Recover") {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => AuthorityPage()));
+        } else if (title == "Change Banner") {
+          // Navigate to the upload form. When upload is successful,
+          // the secure URL is returned and added to the noticeImages list.
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => ExampleFeaturePage2()));
-        } else if (title == "Help") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => AuthorityPage()));
-        } else if (title == "ABC") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => WildfireReportPage()));
+                  MaterialPageRoute(builder: (context) => ChangeNotificationBannerPage()))
+              .then((newUrl) {
+            if (newUrl != null && newUrl is String) {
+              setState(() {
+                noticeImages.add(newUrl);
+              });
+            }
+          });
         }
       },
       child: Container(
@@ -385,18 +396,16 @@ class _UserhomeState extends State<Userhome> {
         height: 150,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               width: 60,
               height: 50,
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 255, 255),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color.fromARGB(255, 255, 255, 255)
-                        .withOpacity(0.3),
+                    color: Colors.white.withOpacity(0.3),
                     blurRadius: 4,
                     offset: Offset(0, 0),
                   ),
@@ -413,10 +422,7 @@ class _UserhomeState extends State<Userhome> {
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: const Color.fromARGB(255, 0, 0, 0)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
             ),
           ],
         ),
@@ -425,7 +431,7 @@ class _UserhomeState extends State<Userhome> {
   }
 }
 
-// Example pages (customize these as needed)
+// Dummy pages for demonstration (customize as needed).
 
 class FloodReportPage extends StatelessWidget {
   @override
@@ -503,6 +509,107 @@ class AuthorityPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text('Authority')),
       body: Center(child: Text('Authority page content here')),
+    );
+  }
+}
+
+class LoginUser extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Login User')),
+      body: Center(child: Text('Login user page content here')),
+    );
+  }
+}
+
+class UserProfile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('User Profile')),
+      body: Center(child: Text('User profile page content here')),
+    );
+  }
+}
+
+class CreateReportPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Create Report')),
+      body: Center(child: Text('Create report page content here')),
+    );
+  }
+}
+
+// Upload form for changing the notification banner.
+// After a successful upload to Cloudinary, the secure URL is returned.
+class ChangeNotificationBannerPage extends StatefulWidget {
+  @override
+  _ChangeNotificationBannerPageState createState() => _ChangeNotificationBannerPageState();
+}
+
+class _ChangeNotificationBannerPageState extends State<ChangeNotificationBannerPage> {
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _uploadImage() async {
+    if (_selectedImage == null) return;
+
+    // Use the provided Cloudinary upload function.
+    String? secureUrl = await getClodinaryUrl(_selectedImage!.path);
+    if (secureUrl != null) {
+      Navigator.pop(context, secureUrl);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Image uploaded successfully")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to upload image")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Change Notification Banner"),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _selectedImage != null
+                ? Image.file(_selectedImage!, height: 200, fit: BoxFit.cover)
+                : Container(
+                    height: 200,
+                    color: Colors.grey[300],
+                    child: Center(child: Text("No image selected")),
+                  ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _pickImage,
+              child: Text("Select Image"),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _uploadImage,
+              child: Text("Upload Image"),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
