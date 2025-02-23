@@ -1,139 +1,179 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
-// Entry point for the admin dashboard.
-void main() => runApp(MyApp());
-
-class MyApp extends StatelessWidget {
+class AnalyticsPage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: AdminDashboard(),
-    );
+  _AnalyticsPageState createState() => _AnalyticsPageState();
+}
+
+class _AnalyticsPageState extends State<AnalyticsPage> {
+  // Statistics holders
+  int totalReports = 0;
+  int last24HoursReports = 0;
+  List<FloodReport> hourlyReports = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchAnalytics();
   }
-}
 
-class AdminDashboard extends StatefulWidget {
-  @override
-  _AdminDashboardState createState() => _AdminDashboardState();
-}
+  Future<void> fetchAnalytics() async {
+    // Get timestamp for 24 hours ago
+    final DateTime now = DateTime.now();
+    final DateTime yesterday = now.subtract(Duration(hours: 24));
 
-class _AdminDashboardState extends State<AdminDashboard> {
-  // Dummy data for volunteer requests.
-  List<Volunteer> _volunteers = [
-    Volunteer(id: 1, name: 'John Doe', email: 'john@example.com', approved: false),
-    Volunteer(id: 2, name: 'Jane Smith', email: 'jane@example.com', approved: false),
-    Volunteer(id: 3, name: 'Alex Johnson', email: 'alex@example.com', approved: false),
-  ];
+    // Query Firestore
+    final QuerySnapshot reportSnapshot = await FirebaseFirestore.instance
+        .collection('flood_reports')
+        .where('timestamp', isGreaterThan: yesterday)
+        .orderBy('timestamp', descending: true)
+        .get();
 
-  // Update the approval status of a volunteer.
-  void _acceptVolunteer(int volunteerId) {
+    // Process the data
+    final List<FloodReport> reports = reportSnapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return FloodReport(
+        timestamp: (data['timestamp'] as Timestamp).toDate(),
+        severity: data['severity'] ?? 0,
+        location: data['location'] ?? '',
+      );
+    }).toList();
+
+    // Calculate statistics
     setState(() {
-      _volunteers = _volunteers.map((volunteer) {
-        if (volunteer.id == volunteerId) {
-          return Volunteer(
-            id: volunteer.id,
-            name: volunteer.name,
-            email: volunteer.email,
-            approved: true,
-          );
-        }
-        return volunteer;
-      }).toList();
+      totalReports = reports.length;
+      last24HoursReports = reports.where((report) => 
+        report.timestamp.isAfter(yesterday)
+      ).length;
+      hourlyReports = reports;
     });
+  }
+
+  List<BarChartGroupData> _generateHourlyData() {
+    // Group reports by hour
+    Map<int, int> hourlyCount = {};
+    final now = DateTime.now();
+    
+    for (int i = 0; i < 24; i++) {
+      hourlyCount[i] = 0;
+    }
+
+    for (var report in hourlyReports) {
+      final hour = report.timestamp.hour;
+      hourlyCount[hour] = (hourlyCount[hour] ?? 0) + 1;
+    }
+
+    // Create bar chart data
+    return hourlyCount.entries.map((entry) {
+      return BarChartGroupData(
+        x: entry.key,
+        barRods: [
+          BarChartRodData(
+            toY: entry.value.toDouble(),
+            color: Colors.blue,
+            width: 16,
+          ),
+        ],
+      );
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: Text('Analytics Dashboard'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: fetchAnalytics,
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Card for Overall Details/Reports.
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => OverallReportsPage()),
-                );
-              },
-              child: Card(
-                elevation: 4,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.bar_chart, size: 50, color: Colors.blue),
-                      SizedBox(height: 10),
-                      Text(
-                        "Details",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+            // Statistics Cards
+            Row(
+              children: [
+                Expanded(
+                  child: _StatisticCard(
+                    title: 'Total Reports',
+                    value: totalReports.toString(),
+                    icon: Icons.assessment,
                   ),
                 ),
-              ),
-            ),
-            // Card for All Users.
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AllUsersPage()),
-                );
-              },
-              child: Card(
-                elevation: 4,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.people, size: 50, color: Colors.blue),
-                      SizedBox(height: 10),
-                      Text(
-                        "All Users",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                SizedBox(width: 16),
+                Expanded(
+                  child: _StatisticCard(
+                    title: 'Last 24 Hours',
+                    value: last24HoursReports.toString(),
+                    icon: Icons.timer,
                   ),
                 ),
-              ),
+              ],
             ),
-            // Card for All Volunteers.
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AllVolunteersPage(
-                      volunteers: _volunteers,
-                      onAccept: _acceptVolunteer,
+            SizedBox(height: 24),
+            
+            // Hourly Reports Chart
+            Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hourly Flood Reports',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  ),
-                );
-              },
-              child: Card(
-                elevation: 4,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.volunteer_activism, size: 50, color: Colors.blue),
-                      SizedBox(height: 10),
-                      Text(
-                        "All Volunteers",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    SizedBox(height: 16),
+                    SizedBox(
+                      height: 300,
+                      child: BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: hourlyReports.length.toDouble(),
+                          barGroups: _generateHourlyData(),
+                          titlesData: FlTitlesData(
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 30,
+                              ),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  if (value % 6 == 0) {
+                                    return Text('${value.toInt()}:00');
+                                  }
+                                  return Text('');
+                                },
+                                reservedSize: 30,
+                              ),
+                            ),
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                          ),
+                          borderData: FlBorderData(
+                            show: true,
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          gridData: FlGridData(show: true),
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -144,122 +184,55 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 }
 
-// Model class for Volunteer.
-class Volunteer {
-  final int id;
-  final String name;
-  final String email;
-  final bool approved;
+// Statistic Card Widget
+class _StatisticCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
 
-  Volunteer({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.approved,
+  const _StatisticCard({
+    required this.title,
+    required this.value,
+    required this.icon,
   });
-}
 
-// Overall Reports/Details page.
-class OverallReportsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Overall Details'),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Text(
-            'Overall Reports\n\nDisplay charts, stats, and metrics here.',
-            style: const TextStyle(fontSize: 20),
-            textAlign: TextAlign.center,
-          ),
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: Colors.blue, size: 24),
+            SizedBox(height: 8),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            SizedBox(height: 4),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// All Users page fetching details from Firestore.
-class AllUsersPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // Using StreamBuilder to fetch user details from Firestore.
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('All Users'),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('No users found.'));
-          }
-          return ListView.builder(
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              final userData =
-                  snapshot.data!.docs[index].data() as Map<String, dynamic>;
-              final userName = userData['name'] ?? 'No name';
-              final userEmail = userData['email'] ?? 'No email';
-              return ListTile(
-                leading: Icon(Icons.person),
-                title: Text(userName),
-                subtitle: Text(userEmail),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
+// Model class for Flood Report
+class FloodReport {
+  final DateTime timestamp;
+  final int severity;
+  final String location;
 
-// Volunteers page listing volunteer requests with approval option.
-class AllVolunteersPage extends StatelessWidget {
-  final List<Volunteer> volunteers;
-  final Function(int) onAccept;
-
-  const AllVolunteersPage({
-    Key? key,
-    required this.volunteers,
-    required this.onAccept,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Volunteer Requests'),
-      ),
-      body: volunteers.isEmpty
-          ? const Center(child: Text('No volunteer requests at the moment.'))
-          : ListView.builder(
-              itemCount: volunteers.length,
-              itemBuilder: (context, index) {
-                final volunteer = volunteers[index];
-                return Card(
-                  margin: const EdgeInsets.all(8.0),
-                  child: ListTile(
-                    title: Text(volunteer.name),
-                    subtitle: Text("Request from: ${volunteer.email}"),
-                    trailing: volunteer.approved
-                        ? const Icon(Icons.check, color: Colors.green)
-                        : ElevatedButton(
-                            child: const Text('Accept'),
-                            onPressed: () => onAccept(volunteer.id),
-                          ),
-                  ),
-                );
-              },
-            ),
-    );
-  }
+  FloodReport({
+    required this.timestamp,
+    required this.severity,
+    required this.location,
+  });
 }

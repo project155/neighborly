@@ -46,7 +46,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => Volunteerhome()), // Navigate to homepage
+        MaterialPageRoute(builder: (context) => VolunteerHome()), // Navigate to homepage
       );
     }
   } catch (e) {

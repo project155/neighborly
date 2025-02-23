@@ -6,8 +6,6 @@ import 'package:neighborly/password.dart';
 import 'package:neighborly/userhome.dart'; // Normal User homepage
 import 'package:neighborly/Userregister.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
-// Import the admin dashboard page (you can also define it here as shown below)
-// import 'package:neighborly/admindashboard.dart';
 
 class UserLoginPage extends StatefulWidget {
   const UserLoginPage({super.key});
@@ -39,29 +37,37 @@ class _UserLoginPageState extends State<UserLoginPage> {
         // Get OneSignal Player ID
         String? playerid = await OneSignal.User.pushSubscription.id;
 
-        // Store in Firestore
+        // Update Firestore with the OneSignal Player ID
         await FirebaseFirestore.instance.collection('users').doc(uid).update({
-          'playerid': playerid, // Save OneSignal Player ID
+          'playerid': playerid,
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login Successful")),
         );
 
-        // Check if the logged in user is the admin.
+        // Navigate based on the user's email.
         if (userCredential.user!.email == adminEmail) {
-          // Route to Admin Dashboard.
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => AdminDashboard()),
+            MaterialPageRoute(builder: (context) => AnalyticsPage()),
           );
         } else {
-          // Route to normal User Home.
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => Userhome()),
           );
         }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'wrong-password') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Wrong password or credentials")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${e.message}")),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -77,13 +83,18 @@ class _UserLoginPageState extends State<UserLoginPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Top container with welcome text.
+            // Top container with welcome text and background image.
             Container(
-              height: MediaQuery.of(context).size.height * 0.35,
+              height: MediaQuery.of(context).size.height * 0.45,
               width: MediaQuery.of(context).size.width,
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 7, 135, 255),
-                borderRadius: BorderRadius.circular(15),
+                image: DecorationImage(
+                  image: NetworkImage(
+                    'https://res.cloudinary.com/dkwnu8zei/image/upload/v1740293549/upperimage_k8cepq.png',
+                  ),
+                  fit: BoxFit.fill,
+                ),
+                borderRadius: BorderRadius.circular(0),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(40),
@@ -110,8 +121,8 @@ class _UserLoginPageState extends State<UserLoginPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 50),
-            // Email TextField.
+            const SizedBox(height: 0),
+            // Email TextField (without light grey box).
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
               child: TextField(
@@ -125,7 +136,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
                 ),
               ),
             ),
-            // Password TextField.
+            // Password TextField (without light grey box).
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
               child: TextField(
@@ -151,29 +162,23 @@ class _UserLoginPageState extends State<UserLoginPage> {
                 ),
               ),
             ),
-            // Recovery Password button.
+            // Forgot Password button.
             Align(
               alignment: Alignment.centerRight,
               child: Padding(
                 padding: const EdgeInsets.only(right: 35),
-                child: ElevatedButton(
+                child: TextButton(
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => PasswordRecoveryPage()),
                     );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0, // Remove shadow effect.
-                    padding: EdgeInsets.zero, // Remove default padding.
-                  ),
                   child: const Text(
-                    'Recovery Password',
+                    'Forgot Password?',
                     style: TextStyle(
                       color: Colors.blue,
                       fontSize: 16,
-                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -181,14 +186,14 @@ class _UserLoginPageState extends State<UserLoginPage> {
             ),
             // Sign In button.
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 110, vertical: 50),
               child: ElevatedButton(
                 onPressed: _signIn,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6495ED),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  backgroundColor: const Color.fromARGB(255, 0, 111, 237),
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 70),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(20), // Slightly rounder corners.
                   ),
                 ),
                 child: const Text(
@@ -200,10 +205,10 @@ class _UserLoginPageState extends State<UserLoginPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 200),
+            const SizedBox(height: 50),
             // Register now button.
             Padding(
-              padding: const EdgeInsets.only(bottom: 50),
+              padding: const EdgeInsets.only(bottom: 40),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -235,4 +240,5 @@ class _UserLoginPageState extends State<UserLoginPage> {
   }
 }
 
-// Dummy AdminDashboard page example. Replace with your actual admin dashboard implementation.
+// Dummy AdminDashboard page example.
+

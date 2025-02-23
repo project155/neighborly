@@ -3,51 +3,58 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloudinary/cloudinary.dart';
+import 'package:neighborly/clodinary_upload.dart';
 import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+// Existing volunteer-related pages.
 import 'package:neighborly/Drought.dart';
 import 'package:neighborly/Landslide.dart';
 import 'package:neighborly/authority.dart';
 import 'package:neighborly/flood.dart';
 import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/newreport.dart';
-//import 'package:neighborly/sexualissues.dart';
 import 'package:neighborly/Userprofile.dart';
+import 'package:neighborly/volunteerfood.dart';
 import 'package:neighborly/wildfire.dart';
+import 'package:neighborly/Notificationpage.dart';
 
-/// Cloudinary upload function using the cloudinary package.
-Future<String?> getClodinaryUrl(String image) async {
-  final cloudinary = Cloudinary.signedConfig(
-    cloudName: 'dkwnu8zei',
-    apiKey: '298339343829723',
-    apiSecret: 'T9q3BURXE2-Rj6Uv4Dk9bSzd7rY',
-  );
+// New report pages for additional public issues.
+import 'package:neighborly/Sexualabuse.dart';
+import 'package:neighborly/Narcotics.dart';
+import 'package:neighborly/Roadincidents.dart';
+import 'package:neighborly/Ecohazard.dart';
+import 'package:neighborly/alcohol.dart';
+import 'package:neighborly/Animalabuse.dart';
+import 'package:neighborly/bribery.dart';
+import 'package:neighborly/Foodsafety.dart';
+import 'package:neighborly/Hygieneissues.dart';
 
-  final response = await cloudinary.upload(
-    file: image,
-    resourceType: CloudinaryResourceType.image,
-  );
-  return response.secureUrl;
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // Initialize Firebase
+  runApp(VolunteerApp());
 }
-
-void main() => runApp(VolunteerApp());
 
 class VolunteerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: "Neighborly Volunteer",
       debugShowCheckedModeBanner: false,
-      home: Volunteerhome(),
+      home: VolunteerHome(),
     );
   }
 }
 
-class Volunteerhome extends StatefulWidget {
+class VolunteerHome extends StatefulWidget {
   @override
-  _VolunteerhomeState createState() => _VolunteerhomeState();
+  _VolunteerHomeState createState() => _VolunteerHomeState();
 }
 
-class _VolunteerhomeState extends State<Volunteerhome> {
+class _VolunteerHomeState extends State<VolunteerHome> {
+  // Updated lists with corrected spellings and additional categories.
   final List<String> disasterTypes = [
     "Flood/Rainfall",
     "Fire",
@@ -58,23 +65,22 @@ class _VolunteerhomeState extends State<Volunteerhome> {
     "Sexual Abuse",
     "Narcotics",
     "Road Incidents",
-    "Eco hazard",
-    "Alchohol",
+    "Eco Hazard",
+    "Alcohol",
     "Animal Abuse",
-    "bribery",
+    "Bribery",
     "Food Safety",
     "Hygiene Issues"
   ];
-  final List<String> helpandrecover = [
-    "XYZ",
-    "Example Feature 1",
-    "Example Feature 2"
+  final List<String> helpAndRecover = [
+    "Food Donation"
   ];
-  // Category for Notification Banner.
+  // Optional extra section for changing the notification banner.
   final List<String> notificationBanner = ["Change Banner"];
 
-  // This list will hold the notice image URLs fetched from Cloudinary.
+  // Notice images fetched from Firestore.
   List<String> noticeImages = [];
+  bool _isLoading = true;
 
   late PageController _pageController;
   int _currentIndex = 0;
@@ -83,53 +89,30 @@ class _VolunteerhomeState extends State<Volunteerhome> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    // Fetch images uploaded by volunteers from Cloudinary.
     _fetchNoticeImages().then((_) {
       _startTimer();
     });
   }
 
-  /// Fetch notice image URLs from Cloudinary.
+  /// Fetch notice image URLs from Firestore collection 'noticeImages'.
   Future<void> _fetchNoticeImages() async {
-    final String cloudName = 'dkwnu8zei';
-    final String apiKey = '298339343829723';
-    final String apiSecret = 'T9q3BURXE2-Rj6Uv4Dk9bSzd7rY';
-    final String url = 'https://api.cloudinary.com/v1_1/$cloudName/resources/image';
-    String basicAuth = 'Basic ' + base64Encode(utf8.encode('$apiKey:$apiSecret'));
-
     try {
-      final response = await http.get(Uri.parse(url), headers: {
-        'Authorization': basicAuth,
-      });
-      if (response.statusCode == 200) {
-        var data = json.decode(response.body);
-        List<dynamic> resources = data['resources'];
-        setState(() {
-          noticeImages =
-              resources.map((r) => r['secure_url'] as String).toList();
-          // Fallback to local assets if no images are returned.
-          if (noticeImages.isEmpty) {
-            noticeImages = [
-              'assets/notice1.jpg',
-              'assets/notice3.jpg',
-            ];
-          }
-        });
-      } else {
-        setState(() {
-          noticeImages = [
-            'assets/notice1.jpg',
-            'assets/notice3.jpg',
-          ];
-        });
-      }
-    } catch (e) {
-      print("Error fetching images: $e");
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('noticeImages')
+          .orderBy('uploadedAt', descending: true)
+          .get();
+      List<String> urls = snapshot.docs
+          .map((doc) => doc.get('imageUrl') as String)
+          .toList();
       setState(() {
-        noticeImages = [
-          'assets/notice1.jpg',
-          'assets/notice3.jpg',
-        ];
+        noticeImages = urls;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("Error fetching images from Firestore: $e");
+      setState(() {
+        noticeImages = [];
+        _isLoading = false;
       });
     }
   }
@@ -160,6 +143,87 @@ class _VolunteerhomeState extends State<Volunteerhome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[200],
+      // Use a Stack to overlay the floating bottom navigation.
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: 100),
+            child: Column(
+              children: [
+                _buildNoticeSection(),
+                _buildSection("Report Disaster", disasterTypes),
+                _buildSection("Report Public Issues", newCategoryItems),
+                _buildSection("Help And Recover", helpAndRecover),
+                // Optional: if you want to allow banner changes as a separate section.
+                _buildSection("Notification Banner", notificationBanner),
+              ],
+            ),
+          ),
+          // Floating bottom navigation bar.
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 20,
+            child: Container(
+              height: 70,
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 95, 156, 255),
+                borderRadius: BorderRadius.circular(35),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.home, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => LoginUser()));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.person, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => UserProfile()));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.post_add_rounded, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => CreateReportPage()));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.camera_alt, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => LoginUser()));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.sos_sharp, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => LoginUser()));
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(65),
         child: ClipRRect(
@@ -168,89 +232,30 @@ class _VolunteerhomeState extends State<Volunteerhome> {
             bottomRight: Radius.circular(30),
           ),
           child: AppBar(
-            title: Text("Neighborly Volunteer", style: TextStyle(color: Colors.white)),
+            title: Text("Neighborly Volunteer",
+                style: TextStyle(color: Colors.white)),
             backgroundColor: const Color.fromARGB(255, 95, 156, 255),
             actions: [
-              Padding(
-                padding: EdgeInsets.only(right: 15),
-                child: Icon(Icons.notifications_active_rounded),
+              // Notifications icon now navigates to NotificationPage.
+              IconButton(
+                icon: Icon(Icons.notifications_active_rounded,
+                    color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => NotificationPage()));
+                },
               ),
             ],
             automaticallyImplyLeading: false,
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 100),
-          child: Column(
-            children: [
-              _buildNoticeSection(),
-              _buildSection("Report Disaster", disasterTypes),
-              _buildSection("Report public issues", newCategoryItems),
-              _buildSection("Help And Recover", helpandrecover),
-              _buildSection("Notification Banner", notificationBanner),
-            ],
-          ),
-        ),
-      ),
-      bottomSheet: Container(
-        width: MediaQuery.of(context).size.width,
-        height: 80,
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 95, 156, 255),
-          borderRadius: BorderRadius.all(Radius.circular(35)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              offset: Offset(0, -4),
-              blurRadius: 6,
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              IconButton(
-                icon: Icon(Icons.home, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.person, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfile()));
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.post_add_rounded, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => CreateReportPage()));
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.camera_alt, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.sos_sharp, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoginUser()));
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
-  // Builds the notice slider section.
+  // Builds the notice slider section with rounded corners.
   Widget _buildNoticeSection() {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 15, horizontal: 15),
@@ -259,7 +264,7 @@ class _VolunteerhomeState extends State<Volunteerhome> {
         height: 200,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(50),
           boxShadow: [
             BoxShadow(
               color: Colors.white.withOpacity(0.3),
@@ -268,30 +273,35 @@ class _VolunteerhomeState extends State<Volunteerhome> {
             ),
           ],
         ),
-        child: noticeImages.isEmpty
-            ? Center(child: CircularProgressIndicator())
-            : PageView.builder(
-                controller: _pageController,
-                itemCount: noticeImages.length,
-                itemBuilder: (context, index) {
-                  if (noticeImages[index].startsWith("http")) {
-                    return Image.network(
-                      noticeImages[index],
-                      fit: BoxFit.cover,
-                    );
-                  } else {
-                    return Image.asset(
-                      noticeImages[index],
-                      fit: BoxFit.cover,
-                    );
-                  }
-                },
-              ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(50),
+          child: _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : (noticeImages.isEmpty
+                  ? Center(child: Text("No Banner Available"))
+                  : PageView.builder(
+                      controller: _pageController,
+                      itemCount: noticeImages.length,
+                      itemBuilder: (context, index) {
+                        if (noticeImages[index].startsWith("http")) {
+                          return Image.network(
+                            noticeImages[index],
+                            fit: BoxFit.cover,
+                          );
+                        } else {
+                          return Image.asset(
+                            noticeImages[index],
+                            fit: BoxFit.cover,
+                          );
+                        }
+                      },
+                    )),
+        ),
       ),
     );
   }
 
-  // Builds a generic section with a heading and a grid of items.
+  // Builds a generic section with a heading and grid of items.
   Widget _buildSection(String heading, List<String> items) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 15),
@@ -313,7 +323,8 @@ class _VolunteerhomeState extends State<Volunteerhome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(heading, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(heading,
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
               GridView.builder(
                 shrinkWrap: true,
@@ -338,6 +349,7 @@ class _VolunteerhomeState extends State<Volunteerhome> {
 
   // Builds a clickable grid item for a given service.
   Widget _buildServiceItem(String title) {
+    // Updated mapping with keys that match the updated lists.
     final Map<String, String> imageMapping = {
       "Flood/Rainfall": 'assets/images/flood.png',
       "Fire": 'assets/images/fire.png',
@@ -346,42 +358,86 @@ class _VolunteerhomeState extends State<Volunteerhome> {
       "Sexual Abuse": 'assets/images/sexual_abuse.png',
       "Narcotics": 'assets/images/narcotics.png',
       "Road Incidents": 'assets/images/road_incidents.png',
-      "Eco hazard": 'assets/images/eco_hazard.png',
-      "Alchohol": 'assets/images/alchohol.png',
+      "Eco Hazard": 'assets/images/eco_hazard.png',
+      "Alcohol": 'assets/images/alcohol.png',
       "Animal Abuse": 'assets/images/animal_abuse.png',
-      "bribery": 'assets/images/bribery.png',
+      "Bribery": 'assets/images/bribery.png',
       "Food Safety": 'assets/images/food_safety.png',
       "Hygiene Issues": 'assets/images/hygiene.png',
-      "XYZ": 'assets/images/xyz.png',
-      "Example Feature 1": 'assets/images/feature1.png',
-      "Example Feature 2": 'assets/images/feature2.png',
-      "Help And Recover": 'assets/images/help.png',
+      "Food Donation": 'assets/images/help.png',
       "Change Banner": 'assets/images/banner.png',
     };
 
     return GestureDetector(
       onTap: () {
+        // Disaster types.
         if (title == "Flood/Rainfall") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FloodReportPage()));
-        } else if (title == "Fire") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => WildfireReportPage()));
-        } else if (title == "Drought") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => DroughtReportPage()));
-        } else if (title == "Landslide") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => LandSlideReportPage()));
-        } else if (title == "XYZ") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => XYZPage()));
-        } else if (title == "Example Feature 1") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => ExampleFeaturePage1()));
-        } else if (title == "Example Feature 2") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => ExampleFeaturePage2()));
-        } else if (title == "Help And Recover") {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => AuthorityPage()));
-        } else if (title == "Change Banner") {
-          // Navigate to the upload form. When upload is successful,
-          // the secure URL is returned and added to the noticeImages list.
           Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => ChangeNotificationBannerPage()))
+              MaterialPageRoute(builder: (context) => FloodReportPage()));
+        } else if (title == "Fire") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => WildfireReportPage()));
+        } else if (title == "Drought") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => DroughtReportPage()));
+        } else if (title == "Landslide") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => LandSlideReportPage()));
+        }
+        // Public issues.
+        else if (title == "Sexual Abuse") {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => SexualabuseReportPage()));
+        } else if (title == "Narcotics") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => NarcoticsReportPage()));
+        } else if (title == "Road Incidents") {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => RoadIncidentsReportPage()));
+        } else if (title == "Eco Hazard") {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => EcohazardReportPage()));
+        } else if (title == "Alcohol") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => AlcoholReportPage()));
+        } else if (title == "Animal Abuse") {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => AnimalabuseReportPage()));
+        } else if (title == "Bribery") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => BriberyReportPage()));
+        } else if (title == "Food Safety") {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => FoodsafetyReportPage()));
+        } else if (title == "Hygiene Issues") {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => HygieneissuesReportPage()));
+        }
+        // Help and recover.
+        else if (title == "Food Donation") {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => FoodDonationVolunteerPage()));
+        }
+        // Notification banner update.
+        else if (title == "Change Banner") {
+          Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ChangeNotificationBannerPage()))
               .then((newUrl) {
             if (newUrl != null && newUrl is String) {
               setState(() {
@@ -422,7 +478,10 @@ class _VolunteerhomeState extends State<Volunteerhome> {
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black),
             ),
           ],
         ),
@@ -431,126 +490,16 @@ class _VolunteerhomeState extends State<Volunteerhome> {
   }
 }
 
-// Dummy pages for demonstration (customize as needed).
-
-class FloodReportPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Flood Report')),
-      body: Center(child: Text('Flood report page content here')),
-    );
-  }
-}
-
-class WildfireReportPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Wildfire Report')),
-      body: Center(child: Text('Wildfire report page content here')),
-    );
-  }
-}
-
-class DroughtReportPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Drought Report')),
-      body: Center(child: Text('Drought report page content here')),
-    );
-  }
-}
-
-class LandSlideReportPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Landslide Report')),
-      body: Center(child: Text('Landslide report page content here')),
-    );
-  }
-}
-
-class XYZPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('XYZ Report')),
-      body: Center(child: Text('XYZ report page content here')),
-    );
-  }
-}
-
-class ExampleFeaturePage1 extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Feature 1')),
-      body: Center(child: Text('Feature 1 content here')),
-    );
-  }
-}
-
-class ExampleFeaturePage2 extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Feature 2')),
-      body: Center(child: Text('Feature 2 content here')),
-    );
-  }
-}
-
-class AuthorityPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Authority')),
-      body: Center(child: Text('Authority page content here')),
-    );
-  }
-}
-
-class LoginUser extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Login User')),
-      body: Center(child: Text('Login user page content here')),
-    );
-  }
-}
-
-class UserProfile extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('User Profile')),
-      body: Center(child: Text('User profile page content here')),
-    );
-  }
-}
-
-class CreateReportPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Create Report')),
-      body: Center(child: Text('Create report page content here')),
-    );
-  }
-}
-
 // Upload form for changing the notification banner.
-// After a successful upload to Cloudinary, the secure URL is returned.
+// After a successful upload to Cloudinary, the secure URL is returned and saved to Firestore.
 class ChangeNotificationBannerPage extends StatefulWidget {
   @override
-  _ChangeNotificationBannerPageState createState() => _ChangeNotificationBannerPageState();
+  _ChangeNotificationBannerPageState createState() =>
+      _ChangeNotificationBannerPageState();
 }
 
-class _ChangeNotificationBannerPageState extends State<ChangeNotificationBannerPage> {
+class _ChangeNotificationBannerPageState
+    extends State<ChangeNotificationBannerPage> {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
@@ -566,9 +515,15 @@ class _ChangeNotificationBannerPageState extends State<ChangeNotificationBannerP
   Future<void> _uploadImage() async {
     if (_selectedImage == null) return;
 
-    // Use the provided Cloudinary upload function.
+    // Upload the image to Cloudinary using your existing function.
     String? secureUrl = await getClodinaryUrl(_selectedImage!.path);
     if (secureUrl != null) {
+      // Save the secureUrl in Firestore under the 'noticeImages' collection.
+      await FirebaseFirestore.instance.collection('noticeImages').add({
+        'imageUrl': secureUrl,
+        'uploadedAt': FieldValue.serverTimestamp(),
+      });
+
       Navigator.pop(context, secureUrl);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Image uploaded successfully")),

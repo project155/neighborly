@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:neighborly/Authoritylogin.dart';
 import 'package:neighborly/Userlogin.dart';
 import 'package:neighborly/VolunteerLoginPage.dart';
-import 'package:neighborly/loginuser.dart';
-import 'package:neighborly/userhome.dart';
 
 void main() => runApp(MyApp());
 
@@ -25,13 +23,14 @@ class UserSelectionPage extends StatefulWidget {
 class _UserSelectionPageState extends State<UserSelectionPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  final int totalPages = 3;
 
   @override
   void initState() {
     super.initState();
     _pageController.addListener(() {
       setState(() {
-        _currentPage = _pageController.page!.toInt();
+        _currentPage = _pageController.page!.round();
       });
     });
   }
@@ -39,18 +38,25 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Stack to overlay the PageView and global page indicator.
       body: Stack(
         children: [
-          // PageView for user selection
           PageView(
             controller: _pageController,
             children: [
+              // User page.
               UserTypePage(
-                color: const Color.fromARGB(255, 170, 237, 255),
+                color: const Color.fromARGB(255, 0, 189, 202),
                 title: 'USER',
+                titleStyle: TextStyle(
+                  fontSize: 120,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Roboto',
+                  color: Colors.white.withOpacity(0.8),
+                ),
                 description: 'Login as a regular user to explore the app.',
-                image: 'userimage.png',
-                titlePosition: Offset(10, 400),
+                image: 'assets/userimage.png',
+                titlePosition: Offset(6, 400),
                 imagePosition: Offset(0.25, 0.15),
                 imageWidth: 350,
                 imageHeight: 500,
@@ -63,12 +69,24 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                   );
                 },
               ),
+              // Volunteer page.
               UserTypePage(
                 color: const Color.fromARGB(255, 174, 218, 255),
                 title: 'VOLUNTEER',
+                titleStyle: TextStyle(
+                  fontSize: 110,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Roboto',
+                  color: Colors.white.withOpacity(0.8),
+                ),
                 description: 'Login as a volunteer to contribute and assist.',
-                image: 'volunteer.png',
-                titlePosition: Offset(10, 220),
+                descriptionStyle: TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Roboto',
+                  color: Colors.white,
+                ),
+                image: 'assets/volunteer.png',
+                titlePosition: Offset(6, 220),
                 imagePosition: Offset(0.2, 0.2),
                 imageWidth: 180,
                 imageHeight: 250,
@@ -77,50 +95,58 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                 onProceed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => VolunteerLoginPage()),
+                    MaterialPageRoute(
+                        builder: (context) => VolunteerLoginPage()),
                   );
                 },
               ),
+              // Authority page.
               UserTypePage(
                 color: const Color.fromARGB(255, 255, 21, 21),
                 title: 'AUTHORITY',
-                description: 'Login as an admin to manage the platform.',
+                titleStyle: TextStyle(
+                  fontSize: 110,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Roboto',
+                  color: Colors.white.withOpacity(0.8),
+                ),
+                description: 'Login as an admin to manage the platformfefeeffefefefefefefefefef.',
                 image: 'assets/authority.png',
-                titlePosition: Offset(5, 200),
+                titlePosition: Offset(6, 200),
                 imagePosition: Offset(0.25, 0.25),
                 imageWidth: 220,
                 imageHeight: 320,
-                descriptionPosition: Offset(0.1, 0.6),
+                descriptionPosition: Offset(0.21, 0.6),
                 buttonPosition: Offset(0.3, 0.75),
                 onProceed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AuthorityLoginPage()),
+                    MaterialPageRoute(
+                        builder: (context) => AuthorityLoginPage()),
                   );
                 },
               ),
             ],
           ),
-          // Dots indicator
+          // Global page indicator placed at the bottom (above the individual page's proceed button).
           Positioned(
-            bottom: MediaQuery.of(context).size.height * 0.07,
+            bottom: MediaQuery.of(context).size.height * 0.03,
             left: 0,
             right: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                3,
-                (index) => AnimatedContainer(
+              children: List.generate(totalPages, (index) {
+                return AnimatedContainer(
                   duration: Duration(milliseconds: 500),
                   margin: EdgeInsets.symmetric(horizontal: 5),
-                  height: 10,
-                  width: _currentPage == index ? 20 : 10,
+                  height: 6,
+                  width: _currentPage == index ? 25 : 10,
                   decoration: BoxDecoration(
-                    color: _currentPage == index ? Colors.white : Colors.grey,
+                    color: _currentPage == index ? Colors.white : const Color.fromARGB(255, 255, 255, 255),
                     borderRadius: BorderRadius.circular(5),
                   ),
-                ),
-              ),
+                );
+              }),
             ),
           ),
         ],
@@ -138,11 +164,15 @@ class UserTypePage extends StatelessWidget {
   final Offset imagePosition;
   final double imageWidth;
   final double imageHeight;
+  // These positions are fractions relative to the screen.
   final Offset descriptionPosition;
   final Offset buttonPosition;
   final VoidCallback onProceed;
+  final TextStyle? titleStyle;
+  final TextStyle? descriptionStyle;
 
-  UserTypePage({
+  const UserTypePage({
+    Key? key,
     required this.color,
     required this.title,
     required this.description,
@@ -154,34 +184,40 @@ class UserTypePage extends StatelessWidget {
     required this.descriptionPosition,
     required this.buttonPosition,
     required this.onProceed,
-  });
+    this.titleStyle,
+    this.descriptionStyle,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
     return Container(
       color: color,
       child: Stack(
         children: [
-          // Rotated title with custom positioning
+          // Title positioned at its given top coordinates.
           Positioned(
             top: titlePosition.dy,
             left: titlePosition.dx,
             child: RotatedBox(
-              quarterTurns: 3, // Rotates text 90 degrees to the left
+              quarterTurns: 3,
               child: Text(
                 title,
-                style: TextStyle(
-                  fontSize: 90, // Larger font size
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white.withOpacity(0.8),
-                ),
+                style: titleStyle ??
+                    TextStyle(
+                      fontSize: 90,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'proxima',
+                      color: const Color.fromARGB(255, 74, 255, 38).withOpacity(0.4),
+                    ),
               ),
             ),
           ),
-          // Image with separate positioning, width, and height
+          // Image positioned relative to the screen width.
           Positioned(
-            top:100,
-            left: MediaQuery.of(context).size.width * imagePosition.dx,
+            top: 100,
+            left: screenWidth * imagePosition.dx,
             child: Image.asset(
               image,
               width: imageWidth,
@@ -189,40 +225,46 @@ class UserTypePage extends StatelessWidget {
               fit: BoxFit.contain,
             ),
           ),
-          // Description with separate positioning
+          // Description positioned using the provided bottom fraction.
           Positioned(
-            top: 600,
-            left: 100,
+            bottom: screenHeight * (1 - descriptionPosition.dy),
+            left: screenWidth * descriptionPosition.dx,
             child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.8, // Optional: Adjust width
+              width: screenWidth * 0.8,
               child: Text(
                 description,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  color: const Color.fromARGB(255, 255, 255, 255),
-                  fontFamily: 'proxima',
-                ),
+                style: descriptionStyle ??
+                    TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                      fontFamily: 'proxima',
+                    ),
               ),
             ),
           ),
-          // Proceed button with separate positioning
+          // Proceed button positioned using the provided bottom fraction.
           Positioned(
-            top: MediaQuery.of(context).size.height * buttonPosition.dy,
-            left: MediaQuery.of(context).size.width * buttonPosition.dx,
+            bottom: screenHeight * (1 - buttonPosition.dy)-140,
+            left: (screenWidth - 250) / 2, // Center horizontally
+
             child: ElevatedButton(
               onPressed: onProceed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: color,
-                padding: EdgeInsets.symmetric(horizontal: 80, vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 100, vertical: 18),
+                shape: StadiumBorder(),
+                elevation: 8,
+                shadowColor: Colors.black26,
               ),
               child: Text(
                 'Proceed',
-                style: TextStyle(fontSize: 16),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'proxima',
+                ),
               ),
             ),
           ),

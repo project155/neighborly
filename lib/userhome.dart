@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:neighborly/Animalabuse.dart';
 import 'package:neighborly/Drought.dart';
 import 'package:neighborly/Ecohazard.dart';
@@ -21,6 +21,8 @@ import 'package:neighborly/newreport.dart';
 import 'package:neighborly/Sexualabuse.dart';
 import 'package:neighborly/Userprofile.dart';
 import 'package:neighborly/wildfire.dart';
+import 'package:neighborly/Lostandfound.dart';
+
 
 void main() => runApp(MyApp());
 
@@ -63,8 +65,9 @@ class _UserhomeState extends State<Userhome> {
     "Example Feature 2",
   ];
 
-  // Notice images will be fetched from Cloudinary.
+  // Notice images are fetched from Firestore.
   List<String> noticeImages = [];
+  bool _isLoading = true;
 
   late PageController _pageController;
   int _currentIndex = 0;
@@ -78,49 +81,25 @@ class _UserhomeState extends State<Userhome> {
     });
   }
 
-  /// Fetch notice image URLs from Cloudinary.
+  /// Fetch notice image URLs from Firestore collection 'noticeImages'.
   Future<void> _fetchNoticeImages() async {
-    final String cloudName = 'dkwnu8zei';
-    final String apiKey = '298339343829723';
-    final String apiSecret = 'T9q3BURXE2-Rj6Uv4Dk9bSzd7rY';
-    final String url =
-        'https://api.cloudinary.com/v1_1/$cloudName/resources/image';
-    String basicAuth =
-        'Basic ' + base64Encode(utf8.encode('$apiKey:$apiSecret'));
-
     try {
-      final response =
-          await http.get(Uri.parse(url), headers: {'Authorization': basicAuth});
-      if (response.statusCode == 200) {
-        var data = json.decode(response.body);
-        List<dynamic> resources = data['resources'];
-        setState(() {
-          noticeImages = resources
-              .map((r) => r['secure_url'] as String)
-              .toList();
-          // Fallback to default assets if no images were fetched.
-          if (noticeImages.isEmpty) {
-            noticeImages = [
-              'assets/notice1.jpg',
-              'assets/notice3.jpg',
-            ];
-          }
-        });
-      } else {
-        setState(() {
-          noticeImages = [
-            'assets/notice1.jpg',
-            'assets/notice3.jpg',
-          ];
-        });
-      }
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('noticeImages')
+          .orderBy('uploadedAt', descending: true)
+          .get();
+      List<String> urls = snapshot.docs
+          .map((doc) => doc.get('imageUrl') as String)
+          .toList();
+      setState(() {
+        noticeImages = urls;
+        _isLoading = false;
+      });
     } catch (e) {
       print("Error fetching images: $e");
       setState(() {
-        noticeImages = [
-          'assets/notice1.jpg',
-          'assets/notice3.jpg',
-        ];
+        noticeImages = [];
+        _isLoading = false;
       });
     }
   }
@@ -162,11 +141,12 @@ class _UserhomeState extends State<Userhome> {
             title: Text("Neighborly", style: TextStyle(color: Colors.white)),
             backgroundColor: const Color.fromARGB(255, 95, 156, 255),
             actions: [
-              // Updated bell icon to navigate to NotificationPage.
+              // Bell icon navigates to NotificationPage.
               IconButton(
                 icon: Icon(Icons.notifications_active_rounded, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationPage()));
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => NotificationPage()));
                 },
               ),
             ],
@@ -177,7 +157,7 @@ class _UserhomeState extends State<Userhome> {
       backgroundColor: Colors.grey[200],
       body: Stack(
         children: [
-          // Main content
+          // Main content.
           SingleChildScrollView(
             padding: EdgeInsets.only(bottom: 100),
             child: Column(
@@ -189,7 +169,7 @@ class _UserhomeState extends State<Userhome> {
               ],
             ),
           ),
-          // Floating, elongated bottom navigation bar.
+          // Floating bottom navigation bar.
           Positioned(
             left: 20,
             right: 20,
@@ -254,7 +234,7 @@ class _UserhomeState extends State<Userhome> {
     );
   }
 
-  // Builds the notice slider section.
+  // Builds the notice slider section with rounded corners.
   Widget _buildNoticeSection() {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 15, horizontal: 15),
@@ -263,39 +243,42 @@ class _UserhomeState extends State<Userhome> {
         height: 200,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(50), // More rounded look.
           boxShadow: [
             BoxShadow(
-              color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.3),
+              color: Colors.white.withOpacity(0.3),
               blurRadius: 4,
               offset: Offset(0, 4),
             ),
           ],
         ),
-        child: noticeImages.isEmpty
-            ? Center(child: CircularProgressIndicator())
-            : PageView.builder(
-                controller: _pageController,
-                itemCount: noticeImages.length,
-                itemBuilder: (context, index) {
-                  if (noticeImages[index].startsWith("http")) {
-                    return Image.network(
-                      noticeImages[index],
-                      fit: BoxFit.cover,
-                    );
-                  } else {
-                    return Image.asset(
-                      noticeImages[index],
-                      fit: BoxFit.cover,
-                    );
-                  }
-                },
-              ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(50), // Enforce rounded clipping.
+          child: _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : PageView.builder(
+                  controller: _pageController,
+                  itemCount: noticeImages.length,
+                  itemBuilder: (context, index) {
+                    if (noticeImages[index].startsWith("http")) {
+                      return Image.network(
+                        noticeImages[index],
+                        fit: BoxFit.cover,
+                      );
+                    } else {
+                      return Image.asset(
+                        noticeImages[index],
+                        fit: BoxFit.cover,
+                      );
+                    }
+                  },
+                ),
+        ),
       ),
     );
   }
 
-  // Builds a generic section with a heading and a grid of items.
+  // Builds a generic section with a heading and grid items.
   Widget _buildSection(String heading, List<String> items) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 15),
@@ -306,7 +289,7 @@ class _UserhomeState extends State<Userhome> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.3),
+              color: Colors.white.withOpacity(0.3),
               blurRadius: 4,
               offset: Offset(0, 4),
             ),
@@ -390,6 +373,9 @@ class _UserhomeState extends State<Userhome> {
         } else if (title == "Hygiene Issues") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => HygieneissuesReportPage()));
+               } else if (title == "Lost & Found") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => LostAndFoundPage()));
         } else if (title == "Food Donation") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => FoodDonationPage()));
@@ -397,6 +383,7 @@ class _UserhomeState extends State<Userhome> {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => EcohazardReportPage()));
         } else if (title == "Alcohol") {
+          
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => AlcoholReportPage()));
         }
@@ -442,152 +429,6 @@ class _UserhomeState extends State<Userhome> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ---------------- Notification Page ----------------
-
-// Model for a notification item.
-// class NotificationItem {
-//   final String title;
-//   final String message;
-//   final String sender; // "Volunteer" or "Authority"
-//   final DateTime dateTime;
-
-//   NotificationItem({
-//     required this.title,
-//     required this.message,
-//     required this.sender,
-//     required this.dateTime,
-//   });
-// }
-
-// class Notificationage extends StatelessWidget {
-//   // Sample notifications list.
-//   final List<NotificationItem> notifications = [
-//     NotificationItem(
-//       title: "Volunteer Message",
-//       message: "A volunteer has updated you regarding your report. Please check the details.",
-//       sender: "Volunteer",
-//       dateTime: DateTime.now().subtract(Duration(minutes: 5)),
-//     ),
-//     NotificationItem(
-//       title: "Authority Update",
-//       message: "Authorities have updated the status of your report.",
-//       sender: "Authority",
-//       dateTime: DateTime.now().subtract(Duration(hours: 1)),
-//     ),
-//     NotificationItem(
-//       title: "Volunteer Reminder",
-//       message: "Don't forget to follow up on your recent report.",
-//       sender: "Volunteer",
-//       dateTime: DateTime.now().subtract(Duration(hours: 2)),
-//     ),
-//     NotificationItem(
-//       title: "Authority Notice",
-//       message: "Local authority has posted a new alert in your area.",
-//       sender: "Authority",
-//       dateTime: DateTime.now().subtract(Duration(days: 1)),
-//     ),
-//   ];
-
-  // Formats time difference.
-//   String _formatDateTime(DateTime dateTime) {
-//     final now = DateTime.now();
-//     final difference = now.difference(dateTime);
-//     if (difference.inMinutes < 60) {
-//       return "${difference.inMinutes} min ago";
-//     } else if (difference.inHours < 24) {
-//       return "${difference.inHours} hrs ago";
-//     } else {
-//       return "${difference.inDays} days ago";
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text("Notifications"),
-//         backgroundColor: const Color.fromARGB(255, 95, 156, 255),
-//       ),
-//       body: notifications.isEmpty
-//           ? Center(child: Text("No notifications available."))
-//           : ListView.builder(
-//               itemCount: notifications.length,
-//               itemBuilder: (context, index) {
-//                 final notification = notifications[index];
-//                 return Card(
-//                   margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-//                   child: ListTile(
-//                     leading: Icon(
-//                       notification.sender == "Volunteer"
-//                           ? Icons.volunteer_activism
-//                           : Icons.account_balance,
-//                       color: notification.sender == "Volunteer"
-//                           ? Colors.green
-//                           : Colors.blue,
-//                       size: 30,
-//                     ),
-//                     title: Text(
-//                       notification.title,
-//                       style: TextStyle(fontWeight: FontWeight.bold),
-//                     ),
-//                     subtitle: Text(notification.message),
-//                     trailing: Text(
-//                       _formatDateTime(notification.dateTime),
-//                       style: TextStyle(fontSize: 12, color: Colors.grey),
-//                     ),
-//                     onTap: () {
-//                       // Add navigation to detailed notification page if needed.
-//                     },
-//                   ),
-//                 );
-//               },
-//             ),
-//     );
-//   }
-// }
-
-// ---------------- Example Pages ----------------
-
-class XYZPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('XYZ Report')),
-      body: Center(child: Text('XYZ report page content here')),
-    );
-  }
-}
-
-class ExampleFeaturePage1 extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Feature 1')),
-      body: Center(child: Text('Feature 1 content here')),
-    );
-  }
-}
-
-class ExampleFeaturePage2 extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Feature 2')),
-      body: Center(child: Text('Feature 2 content here')),
-    );
-  }
-}
-
-class AuthorityPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Authority')),
-      body: Center(child: Text('Authority page content here')),
     );
   }
 }
