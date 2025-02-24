@@ -6,13 +6,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:neighborly/firebase_options.dart';
 
-Future<void> sendNotificationToDevice(String title, String body) async {
+Future<void> sendNotificationToAuthorityVolunteerUsers(String title, String body) async {
   print('notification');
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   const String oneSignalRestApiKey =
       'os_v2_app_7pcpw34lzfbbtonr6p6deiovrzrzhbuaz2vedcm4xij5u3ehnastqac756wft7ja3lo3f2mucz52p5hmpj5ckh7vdzywtmeoojc3wti';
   const String oneSignalAppId = 'fbc4fb6f-8bc9-4219-b9b1-f3fc3221d58e';
-  var playId = ['9b9136a2-5f7e-4970-a5c7-3fffbd748eab'];
+  var playId = ['207691bb-eabc-4320-94d0-92c56e0cdeeb'];
   // final addedData = await FirebaseFirestore.instance
   //     .collection('playerid')
   //     .doc(FirebaseAuth.instance.currentUser!.uid)

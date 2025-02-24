@@ -100,7 +100,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
         'foodPreference': _foodPreference, // New field.
       });
 
-      sendNotificationToDevice('New Food Donation', 'A new food donation is available!');
+      sendNotificationToAuthorityVolunteerUsers('New Food Donation', 'A new food donation is available!');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Food donation submitted successfully!')),

@@ -55,7 +55,7 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                   color: Colors.white.withOpacity(0.8),
                 ),
                 description: 'Login as a regular user to explore the app.',
-                image: 'assets/userimage.png',
+                image: 'assets/back.jpg',
                 titlePosition: Offset(6, 400),
                 imagePosition: Offset(0.25, 0.15),
                 imageWidth: 350,
@@ -222,7 +222,7 @@ class UserTypePage extends StatelessWidget {
               image,
               width: imageWidth,
               height: imageHeight,
-              fit: BoxFit.contain,
+              fit: BoxFit.cover,
             ),
           ),
           // Description positioned using the provided bottom fraction.

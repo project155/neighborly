@@ -131,7 +131,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
         'userId': FirebaseAuth.instance.currentUser!.uid,
       });
 
-      sendNotificationToDevice('new report', 'shjsahjsvhjssx');
+      sendNotificationToAuthorityVolunteerUsers('new report', 'shjsahjsvhjssx');
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(

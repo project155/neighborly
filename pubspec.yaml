@@ -76,8 +76,8 @@ flutter:
 assets:
   - assets/
   - assets/fonts/
-  # - assets/back.jpg
-  # - assets/userimage.png
+  - assets/back.jpg
+  
   # - assets/userphoto.jpg
   # - assets/upperimage.png
 
