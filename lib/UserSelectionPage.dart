@@ -51,7 +51,7 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                 titleStyle: TextStyle(
                   fontSize: 120,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Roboto',
+                  fontFamily: 'proxima',
                   color: Colors.white.withOpacity(0.8),
                 ),
                 description: 'Login as a regular user to explore the app.',
@@ -76,7 +76,7 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                 titleStyle: TextStyle(
                   fontSize: 110,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Roboto',
+                  fontFamily: 'proxima',
                   color: Colors.white.withOpacity(0.8),
                 ),
                 description: 'Login as a volunteer to contribute and assist.',
@@ -110,7 +110,7 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                   fontFamily: 'Roboto',
                   color: Colors.white.withOpacity(0.8),
                 ),
-                description: 'Login as an admin to manage the platformfefeeffefefefefefefefefef.',
+                description: 'LOGIN AS AN ADMIN.',
                 image: 'assets/authority.png',
                 titlePosition: Offset(6, 200),
                 imagePosition: Offset(0.25, 0.25),

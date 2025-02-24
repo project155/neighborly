@@ -5,12 +5,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:neighborly/firebase_options.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 Future<void> sendNotificationToAuthorityVolunteerUsers(String title, String body) async {
   print('notification');
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   const String oneSignalRestApiKey =
-      'os_v2_app_7pcpw34lzfbbtonr6p6deiovrzrzhbuaz2vedcm4xij5u3ehnastqac756wft7ja3lo3f2mucz52p5hmpj5ckh7vdzywtmeoojc3wti';
+      'os_v2_app_7pcpw34lzfbbtonr6p6deiovrzrzhbuaz2vedcm4xij5u3ehnas3btm5nnkwpr24422citbojuwg54abyr5wr25zhyurhhveuwyqfzq';
   const String oneSignalAppId = 'fbc4fb6f-8bc9-4219-b9b1-f3fc3221d58e';
   var playId = ['207691bb-eabc-4320-94d0-92c56e0cdeeb'];
   // final addedData = await FirebaseFirestore.instance
@@ -35,13 +36,15 @@ Future<void> sendNotificationToAuthorityVolunteerUsers(String title, String body
   //   desiredAccuracy: LocationAccuracy.high,
   // );
   // Use the position data in your notification
-  var url = Uri.parse('https://api.onesignal.com/notifications?c=push');
+ 
+  var url = Uri.parse('https://api.onesignal.com/notifications?');
   var notificationData = {
     "app_id": oneSignalAppId,
+    "included_segments":["All"],
     "headings": {"en": title},
     "contents": {"en": body},
     "target_channel": "push",
-    "include_player_ids": playId,
+    
     // "data": {
     //   "latitude": position.latitude,
     //   "longitude": position.longitude,
