@@ -70,3 +70,28 @@ Future<void> sendNotificationToAuthorityVolunteerUsers(String title, String body
     print("Error sending notification: $e");
   }
 }
+
+
+Future<void> sendNotificationToSpecificUsers(List<String> userIds, String message) async {
+  final String oneSignalAppId = "fbc4fb6f-8bc9-4219-b9b1-f3fc3221d58e";
+  final String oneSignalRestApiKey = "os_v2_app_7pcpw34lzfbbtonr6p6deiovrzrzhbuaz2vedcm4xij5u3ehnas3btm5nnkwpr24422citbojuwg54abyr5wr25zhyurhhveuwyqfzq";
+
+  final response = await http.post(
+    Uri.parse('https://onesignal.com/api/v1/notifications'),
+    headers: <String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Basic $oneSignalRestApiKey',
+    },
+    body: jsonEncode(<String, dynamic>{
+      'app_id': oneSignalAppId,
+      'include_player_ids': userIds,
+      'contents': {'en': message},
+    }),
+  );
+
+  if (response.statusCode == 200) {
+    print('Notification sent successfully');
+  } else {
+    print('Failed to send notification: ${response.body}');
+  }
+}

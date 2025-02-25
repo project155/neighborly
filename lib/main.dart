@@ -9,8 +9,23 @@ void main() async {
    WidgetsFlutterBinding.ensureInitialized(); 
    // Ensures proper initialization
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); 
-  OneSignal.initialize("617074f3-4458-47d2-9036-029122088c33");
-  OneSignal.Notifications.requestPermission(true);
+  // OneSignal.initialize("fbc4fb6f-8bc9-4219-b9b1-f3fc3221d58e");
+  // OneSignal.Notifications.requestPermission(true);
+   OneSignal.shared.setAppId("fbc4fb6f-8bc9-4219-b9b1-f3fc3221d58e");
+
+   OneSignal.shared.setPermissionObserver((OSPermissionStateChanges changes) {
+  // Handle permission changes
+});
+
+
+OneSignal.shared.setSubscriptionObserver((OSSubscriptionStateChanges changes) {
+  // Handle subscription changes
+  String? userId = changes.to.userId;
+  if (userId != null) {
+    // Save this userId to your server or database
+    print("OneSignal User ID: $userId");
+  }
+});
 
   runApp(const MyApp());
   

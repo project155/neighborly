@@ -30,12 +30,14 @@ class _UserLoginPageState extends State<UserLoginPage> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+    
 
       if (userCredential.user != null) {
         String uid = userCredential.user!.uid;
 
         // Get OneSignal Player ID
-        String? playerid = await OneSignal.User.pushSubscription.id;
+        String? playerid = '';
+        //await OneSignal.User.pushSubscription.id;
 
         // Update Firestore with the OneSignal Player ID
         await FirebaseFirestore.instance.collection('users').doc(uid).update({

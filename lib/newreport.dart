@@ -97,50 +97,55 @@ class _CreateReportPageState extends State<CreateReportPage> {
   }
 
   Future<void> _submitReport() async {
-    if (_formKey.currentState!.validate()) {
-      // Upload each image and collect the returned URLs
-      List<String> imageUrls = [];
-      if (_images.isNotEmpty) {
-        for (XFile image in _images) {
-          // getClodinaryUrl is assumed to return a String? (nullable)
-          String? url = await getClodinaryUrl(image.path);
-          if (url != null) {
-            imageUrls.add(url);
-          }
-        }
-      }
 
-      await FirebaseFirestore.instance.collection('reports').add({
-        'category': _selectedCategory,
-        'title': _titleController.text,
-        'description': _descriptionController.text,
-        'date': _dateTime?.toIso8601String(),
-        'time': _timeOfDay != null ? _timeOfDay!.format(context) : null,
-        // Use the selected location if available, otherwise use the current location.
-        'location': _selectedLatLng != null
-            ? {
-                'latitude': _selectedLatLng!.latitude,
-                'longitude': _selectedLatLng!.longitude,
-              }
-            : null,
-        'urgency': _urgencyLevel,
-        // Store the list of image URLs; if none, it will be an empty list.
-        'imageUrl': imageUrls,
-        'timestamp': FieldValue.serverTimestamp(),
-        // Updated: storing the UID under 'userId'
-        'userId': FirebaseAuth.instance.currentUser!.uid,
-      });
 
-      sendNotificationToAuthorityVolunteerUsers('new report', 'shjsahjsvhjssx');
+    sendNotificationToSpecificUsers(['4f32fdc8-7950-4797-91e4-221bad27bc3d','7e3a48f2-01fc-41a9-b549-85d3786ea9b8'],'qwerty');
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Report submitted successfully!')),
-      );
 
-      // Return to the homepage (pop the current page)
-      Navigator.of(context).pop();
-    }
+    // if (_formKey.currentState!.validate()) {
+    //   // Upload each image and collect the returned URLs
+    //   List<String> imageUrls = [];
+    //   if (_images.isNotEmpty) {
+    //     for (XFile image in _images) {
+    //       // getClodinaryUrl is assumed to return a String? (nullable)
+    //       String? url = await getClodinaryUrl(image.path);
+    //       if (url != null) {
+    //         imageUrls.add(url);
+    //       }
+    //     }
+    //   }
+
+    //   await FirebaseFirestore.instance.collection('reports').add({
+    //     'category': _selectedCategory,
+    //     'title': _titleController.text,
+    //     'description': _descriptionController.text,
+    //     'date': _dateTime?.toIso8601String(),
+    //     'time': _timeOfDay != null ? _timeOfDay!.format(context) : null,
+    //     // Use the selected location if available, otherwise use the current location.
+    //     'location': _selectedLatLng != null
+    //         ? {
+    //             'latitude': _selectedLatLng!.latitude,
+    //             'longitude': _selectedLatLng!.longitude,
+    //           }
+    //         : null,
+    //     'urgency': _urgencyLevel,
+    //     // Store the list of image URLs; if none, it will be an empty list.
+    //     'imageUrl': imageUrls,
+    //     'timestamp': FieldValue.serverTimestamp(),
+    //     // Updated: storing the UID under 'userId'
+    //     'userId': FirebaseAuth.instance.currentUser!.uid,
+    //   });
+
+    //   sendNotificationToAuthorityVolunteerUsers('new report', 'shjsahjsvhjssx');
+
+    //   // Show success message
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(content: Text('Report submitted successfully!')),
+    //   );
+
+    //   // Return to the homepage (pop the current page)
+    //   Navigator.of(context).pop();
+    // }
   }
 
   @override

@@ -31,7 +31,8 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
       String uid = userCredential.user!.uid;
 
       // Get OneSignal Player ID
-      String? playerid = await OneSignal.User.pushSubscription.id;
+      String? playerid = '';
+      // await OneSignal.User.pushSubscription.id;
 
       // Store in Firestore
       await FirebaseFirestore.instance.collection('volunteers').doc(uid).update({
