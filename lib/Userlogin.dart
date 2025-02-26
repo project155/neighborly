@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,14 +37,25 @@ class _UserLoginPageState extends State<UserLoginPage> {
       if (userCredential.user != null) {
         String uid = userCredential.user!.uid;
 
+         String? pId;
+
+         final f = await OneSignal.shared.getDeviceState();
+         pId = f?.userId;
+
+
+        
+
+
         // Get OneSignal Player ID
-        String? playerid = '';
+       
         //await OneSignal.User.pushSubscription.id;
 
         // Update Firestore with the OneSignal Player ID
-        await FirebaseFirestore.instance.collection('users').doc(uid).update({
-          'playerid': playerid,
+       if(pId != null){
+         await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'playerid': pId,
         });
+       }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login Successful")),

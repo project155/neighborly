@@ -96,56 +96,116 @@ class _CreateReportPageState extends State<CreateReportPage> {
     }
   }
 
+ Future<List<String>> getAllPlayerIds() async {
+  try {
+    // Fetch player IDs from 'users' collection
+    QuerySnapshot usersSnapshot =
+        await FirebaseFirestore.instance.collection('users').get();
+
+    // Fetch player IDs from 'volunteers' collection
+    QuerySnapshot volunteersSnapshot =
+        await FirebaseFirestore.instance.collection('volunteers').get();
+
+    // Fetch player IDs from 'authorities' collection
+    QuerySnapshot authoritiesSnapshot =
+        await FirebaseFirestore.instance.collection('authorities').get();
+
+    print('Total users: ${usersSnapshot.docs.length}');
+    print('Total volunteers: ${volunteersSnapshot.docs.length}');
+    print('Total authorities: ${authoritiesSnapshot.docs.length}');
+
+    // Function to extract and filter player IDs
+    List<String> extractPlayerIds(QuerySnapshot snapshot) {
+      return snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .where((data) =>
+              data.containsKey('playerid') &&
+              data['playerid'] != null &&
+              data['playerid'].toString().trim().isNotEmpty)
+          .map((data) => data['playerid'] as String)
+          .toList();
+    }
+
+    // Extract player IDs from each collection
+    List<String> userPlayerIds = extractPlayerIds(usersSnapshot);
+    List<String> volunteerPlayerIds = extractPlayerIds(volunteersSnapshot);
+    List<String> authorityPlayerIds = extractPlayerIds(authoritiesSnapshot);
+
+    // Combine all lists and remove duplicates
+    Set<String> playerIds = {
+      ...userPlayerIds,
+      ...volunteerPlayerIds,
+      ...authorityPlayerIds
+    };
+
+    print('Filtered Player IDs: $playerIds');
+
+    return playerIds.toList();
+  } catch (e) {
+    print('Error fetching player IDs: $e');
+    return [];
+  }
+}
+
+
+
+
+
   Future<void> _submitReport() async {
 
+     List<String> pidlist = await getAllPlayerIds();
+     print(pidlist);
 
-    sendNotificationToSpecificUsers(['4f32fdc8-7950-4797-91e4-221bad27bc3d','7e3a48f2-01fc-41a9-b549-85d3786ea9b8'],'qwerty');
 
 
-    // if (_formKey.currentState!.validate()) {
-    //   // Upload each image and collect the returned URLs
-    //   List<String> imageUrls = [];
-    //   if (_images.isNotEmpty) {
-    //     for (XFile image in _images) {
-    //       // getClodinaryUrl is assumed to return a String? (nullable)
-    //       String? url = await getClodinaryUrl(image.path);
-    //       if (url != null) {
-    //         imageUrls.add(url);
-    //       }
-    //     }
-    //   }
 
-    //   await FirebaseFirestore.instance.collection('reports').add({
-    //     'category': _selectedCategory,
-    //     'title': _titleController.text,
-    //     'description': _descriptionController.text,
-    //     'date': _dateTime?.toIso8601String(),
-    //     'time': _timeOfDay != null ? _timeOfDay!.format(context) : null,
-    //     // Use the selected location if available, otherwise use the current location.
-    //     'location': _selectedLatLng != null
-    //         ? {
-    //             'latitude': _selectedLatLng!.latitude,
-    //             'longitude': _selectedLatLng!.longitude,
-    //           }
-    //         : null,
-    //     'urgency': _urgencyLevel,
-    //     // Store the list of image URLs; if none, it will be an empty list.
-    //     'imageUrl': imageUrls,
-    //     'timestamp': FieldValue.serverTimestamp(),
-    //     // Updated: storing the UID under 'userId'
-    //     'userId': FirebaseAuth.instance.currentUser!.uid,
-    //   });
 
-    //   sendNotificationToAuthorityVolunteerUsers('new report', 'shjsahjsvhjssx');
+   // sendNotificationToSpecificUsers(pidlist,'qwerty');
 
-    //   // Show success message
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(content: Text('Report submitted successfully!')),
-    //   );
 
-    //   // Return to the homepage (pop the current page)
-    //   Navigator.of(context).pop();
-    // }
+    if (_formKey.currentState!.validate()) {
+      // Upload each image and collect the returned URLs
+      List<String> imageUrls = [];
+      if (_images.isNotEmpty) {
+        for (XFile image in _images) {
+          // getClodinaryUrl is assumed to return a String? (nullable)
+          String? url = await getClodinaryUrl(image.path);
+          if (url != null) {
+            imageUrls.add(url);
+          }
+        }
+      }
+
+      await FirebaseFirestore.instance.collection('reports').add({
+        'category': _selectedCategory,
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+        'date': _dateTime?.toIso8601String(),
+        'time': _timeOfDay != null ? _timeOfDay!.format(context) : null,
+        // Use the selected location if available, otherwise use the current location.
+        'location': _selectedLatLng != null
+            ? {
+                'latitude': _selectedLatLng!.latitude,
+                'longitude': _selectedLatLng!.longitude,
+              }
+            : null,
+        'urgency': _urgencyLevel,
+        // Store the list of image URLs; if none, it will be an empty list.
+        'imageUrl': imageUrls,
+        'timestamp': FieldValue.serverTimestamp(),
+        // Updated: storing the UID under 'userId'
+        'userId': FirebaseAuth.instance.currentUser!.uid,
+      });
+
+      sendNotificationToSpecificUsers(pidlist,'qwerty','helloooo asiyadh');
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Report submitted successfully!')),
+      );
+
+      // Return to the homepage (pop the current page)
+      Navigator.of(context).pop();
+    }
   }
 
   @override

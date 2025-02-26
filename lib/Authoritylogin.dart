@@ -29,13 +29,22 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
       if (userCredential.user != null) {
         String uid = userCredential.user!.uid;
 
+
+
         // Get OneSignal Player ID
-        String? playerid = '';
+   
+
+        
+     String? pId;
+
+         final f = await OneSignal.shared.getDeviceState();
+         pId = f?.userId;
+
         //await OneSignal.User.pushSubscription.id;
 
         // Store in Firestore
         await FirebaseFirestore.instance.collection('authorities').doc(uid).update({
-          'playerid': playerid, // Save OneSignal Player ID
+          'playerid': pId, // Save OneSignal Player ID
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -44,7 +53,7 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AuthorityPage()),
+          MaterialPageRoute(builder: (context) => AuthorityHome()),
         );
       }
     } catch (e) {

@@ -12,6 +12,7 @@ import 'package:neighborly/Landslide.dart';
 import 'package:neighborly/Narcotics.dart';
 import 'package:neighborly/Notificationpage.dart';
 import 'package:neighborly/Roadincidents.dart';
+import 'package:neighborly/SOSpage.dart';
 import 'package:neighborly/alcohol.dart';
 import 'package:neighborly/authority.dart';
 import 'package:neighborly/bribery.dart';
@@ -222,7 +223,7 @@ class _UserhomeState extends State<Userhome> {
                     icon: Icon(Icons.sos_sharp, color: Colors.white),
                     onPressed: () {
                       Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => LoginUser()));
+                          MaterialPageRoute(builder: (context) => SosPage()));
                     },
                   ),
                 ],

@@ -17,8 +17,14 @@ void main() async {
   // Handle permission changes
 });
 
+print('oooooo');
+
+
+
+
 
 OneSignal.shared.setSubscriptionObserver((OSSubscriptionStateChanges changes) {
+  print('llllll');
   // Handle subscription changes
   String? userId = changes.to.userId;
   if (userId != null) {

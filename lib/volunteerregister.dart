@@ -357,6 +357,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
         'name': name,
         'email': email,
         'phone': phone,
+        'isApproved': false,
         'location': {
           'latitude': _selectedLatLng!.latitude,
           'longitude': _selectedLatLng!.longitude,

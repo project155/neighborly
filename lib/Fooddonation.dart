@@ -63,6 +63,16 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
       });
     }
   }
+  List<String> extractPlayerIds(QuerySnapshot snapshot) {
+      return snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .where((data) =>
+              data.containsKey('playerid') &&
+              data['playerid'] != null &&
+              data['playerid'].toString().trim().isNotEmpty)
+          .map((data) => data['playerid'] as String)
+          .toList();
+    }
 
   Future<void> _submitDonation() async {
     if (_formKey.currentState!.validate()) {
@@ -99,8 +109,12 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
         'orderStatus': 'Pending', // Default status.
         'foodPreference': _foodPreference, // New field.
       });
+       QuerySnapshot volunteersSnapshot =
+        await FirebaseFirestore.instance.collection('volunteers').get();
+            List<String> volunteerPlayerIds = extractPlayerIds(volunteersSnapshot);
 
-      sendNotificationToAuthorityVolunteerUsers('New Food Donation', 'A new food donation is available!');
+
+      sendNotificationToSpecificUsers(volunteerPlayerIds,'New Food Donation', 'A new food donation is available!');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Food donation submitted successfully!')),

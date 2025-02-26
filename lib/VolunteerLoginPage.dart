@@ -30,16 +30,25 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
     if (userCredential.user != null) {
       String uid = userCredential.user!.uid;
 
-      // Get OneSignal Player ID
-      String? playerid = '';
-      // await OneSignal.User.pushSubscription.id;
+     String? pId;
 
-      // Store in Firestore
-      await FirebaseFirestore.instance.collection('volunteers').doc(uid).update({
+         final f = await OneSignal.shared.getDeviceState();
+         pId = f?.userId;
+
+
+        
+
+
+        // Get OneSignal Player ID
        
-        'playerid': playerid,                 // Save OneSignal Player ID
-       
-      });
+        //await OneSignal.User.pushSubscription.id;
+
+        // Update Firestore with the OneSignal Player ID
+       if(pId != null){
+         await FirebaseFirestore.instance.collection('volunteers').doc(uid).update({
+          'playerid': pId,
+        });
+       }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login Successful")),
