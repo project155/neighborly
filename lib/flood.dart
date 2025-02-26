@@ -69,7 +69,8 @@ class _FloodReportPageState extends State<FloodReportPage>
               position: LatLng(lat, lng),
               infoWindow: InfoWindow(
                   title: report['title'], snippet: report['description']),
-              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                  BitmapDescriptor.hueAzure),
             ),
           );
         }
@@ -127,8 +128,8 @@ class _FloodReportPageState extends State<FloodReportPage>
                   Expanded(
                     child: Text(
                       message,
-                      style:
-                          TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -428,93 +429,108 @@ class _FloodReportPageState extends State<FloodReportPage>
                               List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(currentUserId);
 
-                          return Card(
-                            margin: EdgeInsets.symmetric(
-                                vertical: 10, horizontal: 16),
-                            elevation: 5,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (imageUrls.isNotEmpty)
-                                  ImageCarousel(imageUrls: imageUrls),
-                                Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(title,
-                                          style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold)),
-                                      SizedBox(height: 5),
-                                      Text(description,
-                                          style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[700])),
-                                      SizedBox(height: 5),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text("Category: $category",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
-                                          Text("Urgency: $urgency",
-                                              style: TextStyle(
-                                                  color: Colors.blueAccent)),
-                                        ],
-                                      ),
-                                      if (latitude != null && longitude != null)
-                                        Text("Location: $latitude, $longitude",
+                          return InkWell(
+                            onTap: () {
+                              // When tapping a report, animate the map to its location and show its info window.
+                              if (report['location'] != null) {
+                                double lat = (report['location']['latitude'] ?? 0).toDouble();
+                                double lng = (report['location']['longitude'] ?? 0).toDouble();
+                                _mapController.animateCamera(
+                                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 18),
+                                );
+                                _mapController.showMarkerInfoWindow(MarkerId(report['id']));
+                              }
+                            },
+                            child: Card(
+                              margin: EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 16),
+                              elevation: 5,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (imageUrls.isNotEmpty)
+                                    ImageCarousel(imageUrls: imageUrls),
+                                  Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(title,
                                             style: TextStyle(
-                                                color: Colors.blueGrey)),
-                                      SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: Icon(
-                                              isLiked
-                                                  ? Icons.thumb_up
-                                                  : Icons.thumb_up_alt_outlined,
-                                              color: Colors.blue,
-                                            ),
-                                            onPressed: () {
-                                              _handleLike(reportId, isLiked);
-                                              _showAnimatedSnackbar(isLiked
-                                                  ? "Like removed!"
-                                                  : "Liked!");
-                                            },
-                                          ),
-                                          Text("$likes Likes",
-                                              style: TextStyle(color: Colors.blue)),
-                                          IconButton(
-                                            icon: Icon(Icons.comment_outlined,
-                                                color: Colors.green),
-                                            onPressed: () =>
-                                                _showComments(context, reportId),
-                                          ),
-                                          IconButton(
-                                            icon: Icon(Icons.share_outlined,
-                                                color: Colors.orange),
-                                            onPressed: () =>
-                                                _shareReport(title, description),
-                                          ),
-                                          // Show trash icon if forced or if the report's owner matches the current user.
-                                          if (forceShowTrashIcon ||
-                                              ((report['userId'] ?? report['uid']) == currentUserId))
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold)),
+                                        SizedBox(height: 5),
+                                        Text(description,
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey[700])),
+                                        SizedBox(height: 5),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text("Category: $category",
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold)),
+                                            Text("Urgency: $urgency",
+                                                style: TextStyle(
+                                                    color: Colors.blueAccent)),
+                                          ],
+                                        ),
+                                        if (latitude != null && longitude != null)
+                                          Text("Location: $latitude, $longitude",
+                                              style: TextStyle(
+                                                  color: Colors.blueGrey)),
+                                        SizedBox(height: 10),
+                                        Row(
+                                          children: [
                                             IconButton(
-                                              icon: Icon(Icons.delete, color: Colors.red),
-                                              onPressed: () => _confirmDelete(reportId),
+                                              icon: Icon(
+                                                isLiked
+                                                    ? Icons.thumb_up
+                                                    : Icons.thumb_up_alt_outlined,
+                                                color: Colors.black,
+                                              ),
+                                              onPressed: () {
+                                                _handleLike(reportId, isLiked);
+                                                _showAnimatedSnackbar(isLiked
+                                                    ? "Like removed!"
+                                                    : "Liked!");
+                                              },
                                             ),
-                                        ],
-                                      )
-                                    ],
-                                  ),
-                                )
-                              ],
+                                            Text("$likes Likes",
+                                                style: TextStyle(color: Colors.black)),
+                                            IconButton(
+                                              icon: Icon(Icons.comment_outlined,
+                                                  color: Colors.black),
+                                              onPressed: () =>
+                                                  _showComments(context, reportId),
+                                            ),
+                                            IconButton(
+                                              icon: Icon(Icons.share_outlined,
+                                                  color: Colors.black),
+                                              onPressed: () =>
+                                                  _shareReport(title, description),
+                                            ),
+                                            // Show trash icon if forced or if the report's owner matches the current user.
+                                            if (forceShowTrashIcon ||
+                                                ((report['userId'] ?? report['uid']) == currentUserId))
+                                              IconButton(
+                                                icon: Icon(Icons.delete,
+                                                    color: Colors.red),
+                                                onPressed: () =>
+                                                    _confirmDelete(reportId),
+                                              ),
+                                          ],
+                                        )
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
                           );
                         },

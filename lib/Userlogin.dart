@@ -32,30 +32,19 @@ class _UserLoginPageState extends State<UserLoginPage> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-    
 
       if (userCredential.user != null) {
         String uid = userCredential.user!.uid;
-
-         String? pId;
-
-         final f = await OneSignal.shared.getDeviceState();
-         pId = f?.userId;
-
-
-        
-
-
-        // Get OneSignal Player ID
-       
-        //await OneSignal.User.pushSubscription.id;
+        String? pId;
+        final f = await OneSignal.shared.getDeviceState();
+        pId = f?.userId;
 
         // Update Firestore with the OneSignal Player ID
-       if(pId != null){
-         await FirebaseFirestore.instance.collection('users').doc(uid).update({
-          'playerid': pId,
-        });
-       }
+        if (pId != null) {
+          await FirebaseFirestore.instance.collection('users').doc(uid).update({
+            'playerid': pId,
+          });
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login Successful")),
@@ -65,7 +54,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
         if (userCredential.user!.email == adminEmail) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => AnalyticsPage()),
+            MaterialPageRoute(builder: (context) => AdminHome()),
           );
         } else {
           Navigator.pushReplacement(
@@ -104,9 +93,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
               width: MediaQuery.of(context).size.width,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: NetworkImage(
-                    'https://res.cloudinary.com/dkwnu8zei/image/upload/v1740293549/upperimage_k8cepq.png',
-                  ),
+                  image: AssetImage('assets/upperimage.png'),
                   fit: BoxFit.fill,
                 ),
                 borderRadius: BorderRadius.circular(0),
@@ -220,10 +207,10 @@ class _UserLoginPageState extends State<UserLoginPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 80),
             // Register now button.
             Padding(
-              padding: const EdgeInsets.only(bottom: 40),
+              padding: const EdgeInsets.only(bottom: 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -254,6 +241,3 @@ class _UserLoginPageState extends State<UserLoginPage> {
     );
   }
 }
-
-// Dummy AdminDashboard page example.
-

@@ -11,6 +11,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class CreateReportPage extends StatefulWidget {
+  final XFile? attachment; // Optional image attachment
+
+  const CreateReportPage({Key? key, this.attachment}) : super(key: key);
+
   @override
   _CreateReportPageState createState() => _CreateReportPageState();
 }
@@ -28,6 +32,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
   // Holds the location selected from the map (as a LatLng)
   LatLng? _selectedLatLng;
   List<XFile> _images = [];
+
+  // New variable to track submission status.
+  bool _isSubmitting = false;
 
   final List<String> _categories = [
     'flood',
@@ -51,6 +58,44 @@ class _CreateReportPageState extends State<CreateReportPage> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    // If an attachment is provided, add it to the images list.
+    if (widget.attachment != null) {
+      _images.add(widget.attachment!);
+    }
+  }
+
+  // Helper function to map each category to an icon.
+  Icon _getIconForCategory(String category) {
+    switch (category.toLowerCase()) {
+      case 'flood':
+        return Icon(Icons.opacity, color: Colors.blue);
+      case 'landslide':
+        return Icon(Icons.terrain, color: Colors.brown);
+      case 'drought':
+        return Icon(Icons.wb_sunny, color: Colors.orange);
+      case 'fire':
+        return Icon(Icons.local_fire_department, color: Colors.red);
+      case 'sexual abuse':
+        return Icon(Icons.report, color: Colors.pink);
+      case 'narcotics':
+        return Icon(Icons.medication, color: Colors.green);
+      case 'road incidents':
+        return Icon(Icons.traffic, color: Colors.deepPurple);
+      case 'eco hazard':
+        return Icon(Icons.eco, color: Colors.green);
+      case 'alcohol':
+        return Icon(Icons.local_bar, color: Colors.brown);
+      case 'animal abuse':
+        return Icon(Icons.pets, color: Colors.orange);
+      case 'bribery':
+        return Icon(Icons.money, color: Colors.green);
+      case 'food safety':
+        return Icon(Icons.restaurant, color: Colors.orange);
+      case 'hygiene issues':
+        return Icon(Icons.clean_hands, color: Colors.blue);
+      default:
+        return Icon(Icons.help_outline, color: Colors.grey);
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -80,14 +125,14 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
     setState(() {
       _currentLocation = position;
-      // If no location has been selected yet, use the current location
+      // If no location has been selected yet, use the current location.
       _selectedLatLng ??= LatLng(position.latitude, position.longitude);
     });
   }
 
   Future<void> _pickImages() async {
     final picker = ImagePicker();
-    // Allow selecting multiple images
+    // Allow selecting multiple images.
     final List<XFile>? pickedFiles = await picker.pickMultiImage();
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
@@ -96,79 +141,71 @@ class _CreateReportPageState extends State<CreateReportPage> {
     }
   }
 
- Future<List<String>> getAllPlayerIds() async {
-  try {
-    // Fetch player IDs from 'users' collection
-    QuerySnapshot usersSnapshot =
-        await FirebaseFirestore.instance.collection('users').get();
+  Future<List<String>> getAllPlayerIds() async {
+    try {
+      // Fetch player IDs from 'users' collection.
+      QuerySnapshot usersSnapshot =
+          await FirebaseFirestore.instance.collection('users').get();
 
-    // Fetch player IDs from 'volunteers' collection
-    QuerySnapshot volunteersSnapshot =
-        await FirebaseFirestore.instance.collection('volunteers').get();
+      // Fetch player IDs from 'volunteers' collection.
+      QuerySnapshot volunteersSnapshot =
+          await FirebaseFirestore.instance.collection('volunteers').get();
 
-    // Fetch player IDs from 'authorities' collection
-    QuerySnapshot authoritiesSnapshot =
-        await FirebaseFirestore.instance.collection('authorities').get();
+      // Fetch player IDs from 'authorities' collection.
+      QuerySnapshot authoritiesSnapshot =
+          await FirebaseFirestore.instance.collection('authorities').get();
 
-    print('Total users: ${usersSnapshot.docs.length}');
-    print('Total volunteers: ${volunteersSnapshot.docs.length}');
-    print('Total authorities: ${authoritiesSnapshot.docs.length}');
+      print('Total users: ${usersSnapshot.docs.length}');
+      print('Total volunteers: ${volunteersSnapshot.docs.length}');
+      print('Total authorities: ${authoritiesSnapshot.docs.length}');
 
-    // Function to extract and filter player IDs
-    List<String> extractPlayerIds(QuerySnapshot snapshot) {
-      return snapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .where((data) =>
-              data.containsKey('playerid') &&
-              data['playerid'] != null &&
-              data['playerid'].toString().trim().isNotEmpty)
-          .map((data) => data['playerid'] as String)
-          .toList();
+      // Function to extract and filter player IDs.
+      List<String> extractPlayerIds(QuerySnapshot snapshot) {
+        return snapshot.docs
+            .map((doc) => doc.data() as Map<String, dynamic>)
+            .where((data) =>
+                data.containsKey('playerid') &&
+                data['playerid'] != null &&
+                data['playerid'].toString().trim().isNotEmpty)
+            .map((data) => data['playerid'] as String)
+            .toList();
+      }
+
+      // Extract player IDs from each collection.
+      List<String> userPlayerIds = extractPlayerIds(usersSnapshot);
+      List<String> volunteerPlayerIds = extractPlayerIds(volunteersSnapshot);
+      List<String> authorityPlayerIds = extractPlayerIds(authoritiesSnapshot);
+
+      // Combine all lists and remove duplicates.
+      Set<String> playerIds = {
+        ...userPlayerIds,
+        ...volunteerPlayerIds,
+        ...authorityPlayerIds
+      };
+
+      print('Filtered Player IDs: $playerIds');
+
+      return playerIds.toList();
+    } catch (e) {
+      print('Error fetching player IDs: $e');
+      return [];
     }
-
-    // Extract player IDs from each collection
-    List<String> userPlayerIds = extractPlayerIds(usersSnapshot);
-    List<String> volunteerPlayerIds = extractPlayerIds(volunteersSnapshot);
-    List<String> authorityPlayerIds = extractPlayerIds(authoritiesSnapshot);
-
-    // Combine all lists and remove duplicates
-    Set<String> playerIds = {
-      ...userPlayerIds,
-      ...volunteerPlayerIds,
-      ...authorityPlayerIds
-    };
-
-    print('Filtered Player IDs: $playerIds');
-
-    return playerIds.toList();
-  } catch (e) {
-    print('Error fetching player IDs: $e');
-    return [];
   }
-}
-
-
-
-
 
   Future<void> _submitReport() async {
-
-     List<String> pidlist = await getAllPlayerIds();
-     print(pidlist);
-
-
-
-
-
-   // sendNotificationToSpecificUsers(pidlist,'qwerty');
-
+    // Start submission: disable the button.
+    setState(() {
+      _isSubmitting = true;
+    });
+    List<String> pidlist = await getAllPlayerIds();
+    print(pidlist);
 
     if (_formKey.currentState!.validate()) {
-      // Upload each image and collect the returned URLs
+      // Upload each image and collect the returned URLs.
       List<String> imageUrls = [];
       if (_images.isNotEmpty) {
         for (XFile image in _images) {
-          // getClodinaryUrl is assumed to return a String? (nullable)
+          // getClodinaryUrl is assumed to return a String? (nullable).
           String? url = await getClodinaryUrl(image.path);
           if (url != null) {
             imageUrls.add(url);
@@ -197,20 +234,39 @@ class _CreateReportPageState extends State<CreateReportPage> {
         'userId': FirebaseAuth.instance.currentUser!.uid,
       });
 
-      sendNotificationToSpecificUsers(pidlist,'qwerty','helloooo asiyadh');
-      // Show success message
+      // Send a notification with:
+      // Notification title: "<type of report> reported"
+      // Notification description: "<report title>"
+      //
+      // If the sendNotificationToSpecificUsers function expects (playerIds, message, title)
+      // then we need to swap the order from what we might normally assume.
+      sendNotificationToSpecificUsers(
+          pidlist,
+          _titleController.text,
+          '${_selectedCategory ?? "Report"} reported');
+
+      // Show success message.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Report submitted successfully!')),
       );
 
-      // Return to the homepage (pop the current page)
+      // End submission: re-enable the button.
+      setState(() {
+        _isSubmitting = false;
+      });
+      // Return to the homepage (pop the current page).
       Navigator.of(context).pop();
+    } else {
+      // If form is not valid, re-enable the button.
+      setState(() {
+        _isSubmitting = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Build location text from _selectedLatLng
+    // Build location text from _selectedLatLng.
     String locationText = _selectedLatLng != null
         ? 'Selected Location: ${_selectedLatLng!.latitude.toStringAsFixed(4)}, ${_selectedLatLng!.longitude.toStringAsFixed(4)}'
         : 'No location selected';
@@ -244,6 +300,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
           key: _formKey,
           child: ListView(
             children: [
+              // Category Dropdown with icons.
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
                 decoration: InputDecoration(
@@ -257,10 +314,18 @@ class _CreateReportPageState extends State<CreateReportPage> {
                   prefixIcon: Icon(Icons.category),
                 ),
                 items: _categories
-                    .map((category) => DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
-                        ))
+                    .map(
+                      (category) => DropdownMenuItem<String>(
+                        value: category,
+                        child: Row(
+                          children: [
+                            _getIconForCategory(category),
+                            SizedBox(width: 8),
+                            Text(category),
+                          ],
+                        ),
+                      ),
+                    )
                     .toList(),
                 onChanged: (value) =>
                     setState(() => _selectedCategory = value),
@@ -280,10 +345,12 @@ class _CreateReportPageState extends State<CreateReportPage> {
                   ),
                 ),
                 items: _urgencyLevels
-                    .map((level) => DropdownMenuItem<String>(
-                          value: level,
-                          child: Text(level),
-                        ))
+                    .map(
+                      (level) => DropdownMenuItem<String>(
+                        value: level,
+                        child: Text(level),
+                      ),
+                    )
                     .toList(),
                 onChanged: (value) => setState(() => _urgencyLevel = value),
                 validator: (value) =>
@@ -301,8 +368,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Please enter a title' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter a title'
+                    : null,
               ),
               SizedBox(height: 12),
               TextFormField(
@@ -317,8 +385,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Please provide a description' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please provide a description'
+                    : null,
               ),
               SizedBox(height: 12),
               ListTile(
@@ -326,7 +395,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading: Icon(Icons.lock_clock_rounded, color: Colors.blueAccent),
+                leading:
+                    Icon(Icons.lock_clock_rounded, color: Colors.blueAccent),
                 title: Text(_dateTime == null
                     ? 'Select Date'
                     : '${_dateTime!.toLocal()}'.split(' ')[0]),
@@ -346,7 +416,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading: Icon(Icons.access_time, color: Colors.blueAccent),
+                leading:
+                    Icon(Icons.access_time, color: Colors.blueAccent),
                 title: Text(_timeOfDay == null
                     ? 'Select Time'
                     : _timeOfDay!.format(context)),
@@ -364,7 +435,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading: Icon(Icons.location_on, color: Colors.blueAccent),
+                leading:
+                    Icon(Icons.location_on, color: Colors.blueAccent),
                 title: Text(
                   _currentLocation == null
                       ? 'Fetch Current Location'
@@ -388,14 +460,16 @@ class _CreateReportPageState extends State<CreateReportPage> {
                   }
                 },
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.location_history, color: Colors.blueAccent, size: 22),
+                      Icon(Icons.location_history,
+                          color: Colors.blueAccent, size: 22),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -405,12 +479,15 @@ class _CreateReportPageState extends State<CreateReportPage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: _selectedLatLng != null ? Colors.black : Colors.grey.shade600,
+                            color: _selectedLatLng != null
+                                ? Colors.black
+                                : Colors.grey.shade600,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24),
+                      Icon(Icons.keyboard_arrow_down,
+                          color: Colors.grey, size: 24),
                     ],
                   ),
                 ),
@@ -421,7 +498,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -460,24 +538,34 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 ),
               SizedBox(height: 12),
               ElevatedButton(
-                onPressed: _submitReport,
+                onPressed: _isSubmitting ? null : _submitReport,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 2,
                 ),
-                child: Text(
-                  'Submit Report',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                child: _isSubmitting
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.0,
+                        ),
+                      )
+                    : Text(
+                        'Submit Report',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
               ),
             ],
           ),

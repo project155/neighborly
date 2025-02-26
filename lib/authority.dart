@@ -235,65 +235,6 @@ class _AuthorityHomeState extends State<AuthorityHome> {
     );
   }
 
-  /// Builds the floating bottom navigation bar.
-  Widget _buildBottomNavigationBar() {
-    return Positioned(
-      left: 20,
-      right: 20,
-      bottom: 20,
-      child: Container(
-        height: 70,
-        decoration: BoxDecoration(
-          color: Color.fromARGB(255, 95, 156, 255),
-          borderRadius: BorderRadius.circular(35),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            IconButton(
-              icon: Icon(Icons.home, color: Colors.white),
-              onPressed: () {
-                // Already on Authority Home
-                Navigator.push(context, MaterialPageRoute(builder: (context) => AuthorityHome()));
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.person, color: Colors.white),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => UserLoginPage()));
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.post_add_rounded, color: Colors.white),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => UserLoginPage()));
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.camera_alt, color: Colors.white),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => UserLoginPage()));
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.sos_sharp, color: Colors.white),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => UserLoginPage()));
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -312,7 +253,6 @@ class _AuthorityHomeState extends State<AuthorityHome> {
               IconButton(
                 icon: Icon(Icons.notifications_active_rounded, color: Colors.white),
                 onPressed: () {
-                  // For example, navigate to notifications page
                   Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationPage()));
                 },
               ),
@@ -333,7 +273,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
               ],
             ),
           ),
-          _buildBottomNavigationBar(),
+          // Removed floating bottom navigation bar.
         ],
       ),
     );

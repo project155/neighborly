@@ -23,7 +23,7 @@ import 'package:neighborly/Sexualabuse.dart';
 import 'package:neighborly/Userprofile.dart';
 import 'package:neighborly/wildfire.dart';
 import 'package:neighborly/Lostandfound.dart';
-
+import 'package:image_picker/image_picker.dart';
 
 void main() => runApp(MyApp());
 
@@ -212,11 +212,20 @@ class _UserhomeState extends State<Userhome> {
                           MaterialPageRoute(builder: (context) => CreateReportPage()));
                     },
                   ),
+                  // Updated camera button: Opens the camera, takes a photo, then navigates to CreateReportPage with the image attached.
                   IconButton(
                     icon: Icon(Icons.camera_alt, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => LoginUser()));
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final pickedFile = await picker.pickImage(source: ImageSource.camera);
+                      if (pickedFile != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CreateReportPage(attachment: pickedFile),
+                          ),
+                        );
+                      }
                     },
                   ),
                   IconButton(
@@ -325,18 +334,25 @@ class _UserhomeState extends State<Userhome> {
     );
   }
 
-  // Builds a clickable grid item for a given service.
+  // Builds a clickable grid item for a given service using icons.
   Widget _buildServiceItem(String title) {
-    final Map<String, String> imageMapping = {
-      "Flood": 'userimage.png',
-      "Fire": 'upperimage.png',
-      "Drought": 'assets/images/drought.png',
-      "Landslide": 'assets/images/landslide.png',
-      "XYZ": 'assets/images/xyz.png',
-      "Example Feature 1": 'assets/images/feature1.png',
-      "Example Feature 2": 'assets/images/feature2.png',
-      "Help": 'assets/images/help.png',
-      "ABC": 'assets/images/abc.png',
+    final Map<String, IconData> iconMapping = {
+      "Flood/Rainfall": Icons.water_drop,
+      "Fire": Icons.local_fire_department,
+      "Landslide": Icons.terrain,
+      "Drought": Icons.wb_sunny,
+      "Sexual Abuse": Icons.report,
+      "Narcotics": Icons.warning,
+      "Road Incidents": Icons.traffic,
+      "Eco Hazard": Icons.eco,
+      "Alcohol": Icons.local_bar,
+      "Animal Abuse": Icons.pets,
+      "Bribery": Icons.attach_money,
+      "Food Safety": Icons.food_bank,
+      "Hygiene Issues": Icons.cleaning_services,
+      "Lost & Found": Icons.search,
+      "Food Donation": Icons.volunteer_activism,
+      "Example Feature 2": Icons.extension,
     };
 
     return GestureDetector(
@@ -374,7 +390,7 @@ class _UserhomeState extends State<Userhome> {
         } else if (title == "Hygiene Issues") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => HygieneissuesReportPage()));
-               } else if (title == "Lost & Found") {
+        } else if (title == "Lost & Found") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => LostAndFoundPage()));
         } else if (title == "Food Donation") {
@@ -384,7 +400,6 @@ class _UserhomeState extends State<Userhome> {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => EcohazardReportPage()));
         } else if (title == "Alcohol") {
-          
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => AlcoholReportPage()));
         }
@@ -400,20 +415,20 @@ class _UserhomeState extends State<Userhome> {
               width: 60,
               height: 50,
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 255, 255),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color.fromARGB(255, 255, 255, 255)
-                        .withOpacity(0.3),
+                    color: Colors.white.withOpacity(0.3),
                     blurRadius: 4,
                     offset: Offset(0, 0),
                   ),
                 ],
               ),
-              child: Image.asset(
-                imageMapping[title] ?? 'assets/images/default.png',
-                fit: BoxFit.contain,
+              child: Icon(
+                iconMapping[title] ?? Icons.help, // default icon if not mapped
+                size: 30,
+                color: Colors.blue,
               ),
             ),
             SizedBox(height: 5),
@@ -423,9 +438,10 @@ class _UserhomeState extends State<Userhome> {
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
               style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: const Color.fromARGB(255, 0, 0, 0)),
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
           ],
         ),

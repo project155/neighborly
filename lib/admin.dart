@@ -1,182 +1,149 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 
-class AnalyticsPage extends StatefulWidget {
+// Dummy pages – replace these with your actual pages.
+class ViewUsersPage extends StatelessWidget {
   @override
-  _AnalyticsPageState createState() => _AnalyticsPageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("View Users"),
+        backgroundColor: Colors.teal,
+      ),
+      body: Center(child: Text("List of users will be displayed here.")),
+    );
+  }
 }
 
-class _AnalyticsPageState extends State<AnalyticsPage> {
-  // Statistics holders
-  int totalReports = 0;
-  int last24HoursReports = 0;
-  List<FloodReport> hourlyReports = [];
-
+class ManageVolunteersPage extends StatelessWidget {
   @override
-  void initState() {
-    super.initState();
-    fetchAnalytics();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Manage Volunteers"),
+        backgroundColor: Colors.teal,
+      ),
+      body: Center(
+          child: Text(
+              "Volunteer management and approval process will be shown here.\n\nNote: Volunteers must be approved by an admin before they can log in.")),
+    );
+  }
+}
+
+class ManageAuthoritiesPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Manage Authorities"),
+        backgroundColor: Colors.teal,
+      ),
+      body: Center(child: Text("Authority management will be displayed here.")),
+    );
+  }
+}
+
+class AdminHome extends StatelessWidget {
+  const AdminHome({Key? key}) : super(key: key);
+
+  // Navigation functions.
+  void _navigateToViewUsers(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ViewUsersPage()),
+    );
   }
 
-  Future<void> fetchAnalytics() async {
-    // Get timestamp for 24 hours ago
-    final DateTime now = DateTime.now();
-    final DateTime yesterday = now.subtract(Duration(hours: 24));
-
-    // Query Firestore
-    final QuerySnapshot reportSnapshot = await FirebaseFirestore.instance
-        .collection('flood_reports')
-        .where('timestamp', isGreaterThan: yesterday)
-        .orderBy('timestamp', descending: true)
-        .get();
-
-    // Process the data
-    final List<FloodReport> reports = reportSnapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      return FloodReport(
-        timestamp: (data['timestamp'] as Timestamp).toDate(),
-        severity: data['severity'] ?? 0,
-        location: data['location'] ?? '',
-      );
-    }).toList();
-
-    // Calculate statistics
-    setState(() {
-      totalReports = reports.length;
-      last24HoursReports = reports.where((report) => 
-        report.timestamp.isAfter(yesterday)
-      ).length;
-      hourlyReports = reports;
-    });
+  void _navigateToManageVolunteers(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ManageVolunteersPage()),
+    );
   }
 
-  List<BarChartGroupData> _generateHourlyData() {
-    // Group reports by hour
-    Map<int, int> hourlyCount = {};
-    final now = DateTime.now();
-    
-    for (int i = 0; i < 24; i++) {
-      hourlyCount[i] = 0;
-    }
+  void _navigateToManageAuthorities(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ManageAuthoritiesPage()),
+    );
+  }
 
-    for (var report in hourlyReports) {
-      final hour = report.timestamp.hour;
-      hourlyCount[hour] = (hourlyCount[hour] ?? 0) + 1;
-    }
-
-    // Create bar chart data
-    return hourlyCount.entries.map((entry) {
-      return BarChartGroupData(
-        x: entry.key,
-        barRods: [
-          BarChartRodData(
-            toY: entry.value.toDouble(),
-            color: Colors.blue,
-            width: 16,
+  // Build a card for a given option.
+  Widget _buildOptionCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+    String? subtitle,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40, color: Colors.blue),
+              SizedBox(height: 12),
+              Text(
+                title,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              if (subtitle != null) ...[
+                SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
           ),
-        ],
-      );
-    }).toList();
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Standard AppBar with a centered title.
       appBar: AppBar(
-        title: Text('Analytics Dashboard'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: fetchAnalytics,
-          ),
-        ],
+        title: Text("Admin Dashboard"),
+        centerTitle: true,
+        backgroundColor: Colors.teal,
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
           children: [
-            // Statistics Cards
-            Row(
-              children: [
-                Expanded(
-                  child: _StatisticCard(
-                    title: 'Total Reports',
-                    value: totalReports.toString(),
-                    icon: Icons.assessment,
-                  ),
-                ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: _StatisticCard(
-                    title: 'Last 24 Hours',
-                    value: last24HoursReports.toString(),
-                    icon: Icons.timer,
-                  ),
-                ),
-              ],
+            _buildOptionCard(
+              context: context,
+              title: "View Users",
+              icon: Icons.people,
+              onTap: () => _navigateToViewUsers(context),
             ),
-            SizedBox(height: 24),
-            
-            // Hourly Reports Chart
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hourly Flood Reports',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    SizedBox(height: 16),
-                    SizedBox(
-                      height: 300,
-                      child: BarChart(
-                        BarChartData(
-                          alignment: BarChartAlignment.spaceAround,
-                          maxY: hourlyReports.length.toDouble(),
-                          barGroups: _generateHourlyData(),
-                          titlesData: FlTitlesData(
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 30,
-                              ),
-                            ),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (value, meta) {
-                                  if (value % 6 == 0) {
-                                    return Text('${value.toInt()}:00');
-                                  }
-                                  return Text('');
-                                },
-                                reservedSize: 30,
-                              ),
-                            ),
-                            rightTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            topTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                          ),
-                          borderData: FlBorderData(
-                            show: true,
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          gridData: FlGridData(show: true),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            _buildOptionCard(
+              context: context,
+              title: "Manage Volunteers",
+              icon: Icons.volunteer_activism,
+              onTap: () => _navigateToManageVolunteers(context),
+              subtitle: "Approval required",
             ),
+            _buildOptionCard(
+              context: context,
+              title: "Manage Authorities",
+              icon: Icons.admin_panel_settings,
+              onTap: () => _navigateToManageAuthorities(context),
+            ),
+            // Add more cards here if needed.
           ],
         ),
       ),
@@ -184,55 +151,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 }
 
-// Statistic Card Widget
-class _StatisticCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-
-  const _StatisticCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.blue, size: 24),
-            SizedBox(height: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            SizedBox(height: 4),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Model class for Flood Report
-class FloodReport {
-  final DateTime timestamp;
-  final int severity;
-  final String location;
-
-  FloodReport({
-    required this.timestamp,
-    required this.severity,
-    required this.location,
-  });
+void main() {
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: AdminHome(),
+  ));
 }
