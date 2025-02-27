@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import 'package:neighborly/clodinary_upload.dart';
-import 'package:neighborly/Userlogin.dart'; // Import the login page
+import 'package:neighborly/Userlogin.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import the login page
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -101,6 +102,9 @@ class _UserProfileState extends State<UserProfile> {
   // Sign out and return to login page
   Future<void> _signOut() async {
     await _auth.signOut();
+    SharedPreferences pref = await SharedPreferences.getInstance();
+
+    await pref.remove('role');
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const UserLoginPage()),

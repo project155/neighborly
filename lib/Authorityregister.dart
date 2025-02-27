@@ -224,6 +224,8 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
         'department': department,
         'organization': organization,
         'role': 'Authority',
+        'isApproved': false,
+
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

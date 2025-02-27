@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:neighborly/notification_sos.dart';
 
+/// SosPage allows users to send an emergency SOS alert along with their current location.
+/// Simply press and hold the bright red button for 3 seconds to notify local authorities and emergency contacts.
 class SosPage extends StatefulWidget {
   const SosPage({Key? key}) : super(key: key);
 
@@ -13,12 +15,13 @@ class SosPage extends StatefulWidget {
   State<SosPage> createState() => _SosPageState();
 }
 
-class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
+class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
   Position? _currentPosition;
   bool _isFetchingLocation = false;
   String _statusMessage = 'Emergency help needed?';
 
   late AnimationController _animationController;
+  late AnimationController _glowController; // For pulsating glow effect
 
   @override
   void initState() {
@@ -31,17 +34,24 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
       duration: const Duration(seconds: 3),
     );
 
-    // When the animation completes, send the SOS.
+    // When the long press animation completes, send the SOS.
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _sendSOS();
       }
     });
+
+    // Animation controller for the pulsating glow effect.
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -123,7 +133,10 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
     // Fetch user details from the "users" collection.
     DocumentSnapshot<Map<String, dynamic>> userDoc;
     try {
-      userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+      userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
     } catch (e) {
       setState(() {
         _statusMessage = 'Error fetching user details: $e';
@@ -133,6 +146,25 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
     final userData = userDoc.data() ?? {};
 
     try {
+      QuerySnapshot authoritiesSnapshot =
+          await FirebaseFirestore.instance.collection('authorities').get();
+
+      List<String> extractPlayerIds(QuerySnapshot snapshot) {
+        return snapshot.docs
+            .map((doc) => doc.data() as Map<String, dynamic>)
+            .where((data) =>
+                data.containsKey('playerid') &&
+                data['playerid'] != null &&
+                data['playerid'].toString().trim().isNotEmpty)
+            .map((data) => data['playerid'] as String)
+            .toList();
+      }
+
+      List<String> authorityPlayerIds = extractPlayerIds(authoritiesSnapshot);
+      print(authorityPlayerIds);
+
+      await Notification_sos(authorityPlayerIds, 'gfhhfhfh', 'danger');
+      
       // Create a document in the "sos_reports" collection with location and user data.
       await FirebaseFirestore.instance.collection('sos_reports').add({
         'latitude': _currentPosition!.latitude,
@@ -145,7 +177,8 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('SOS Sent!'),
-          content: const Text('Your emergency report has been sent to the authorities.'),
+          content: const Text(
+              'Your emergency report has been sent to the authorities.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -169,19 +202,148 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
   }
 
   /// Reset the animation if the long press is released early.
-  void _onLongPressEnd(LongPressEndDetails details)async {
+  void _onLongPressEnd(LongPressEndDetails details) async {
     if (_animationController.status != AnimationStatus.completed) {
       _animationController.reset();
     }
-    
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // White background
+      // Wrap the body in a Container with a gradient background.
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Colors.red.shade100],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              if (_isFetchingLocation)
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: CircularProgressIndicator(),
+                ),
+              // Small description explaining the purpose of the SOS page.
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Text(
+                  'This page lets you send an emergency SOS alert with your current location to local authorities and contacts. Press and hold the button to trigger the alert.',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const Spacer(),
+              // SOS button with animated circular progress and pulsating glow.
+              Center(
+                child: GestureDetector(
+                  onLongPressStart: _onLongPressStart,
+                  onLongPressEnd: _onLongPressEnd,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Pulsating glow effect behind the button.
+                      AnimatedBuilder(
+                        animation: _glowController,
+                        builder: (context, child) {
+                          double scale = 1 + _glowController.value * 0.2;
+                          return Container(
+                            width: 140 * scale,
+                            height: 140 * scale,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.redAccent.withOpacity(
+                                  0.3 * (1 - _glowController.value)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.redAccent.withOpacity(
+                                      0.5 * (1 - _glowController.value)),
+                                  blurRadius: 20 * _glowController.value,
+                                  spreadRadius: 5,
+                                )
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      // Animated circular progress indicator.
+                      SizedBox(
+                        width: 140,
+                        height: 140,
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return CircularProgressIndicator(
+                              value: _animationController.value,
+                              strokeWidth: 8,
+                              backgroundColor: Colors.grey[300],
+                              valueColor:
+                                  const AlwaysStoppedAnimation<Color>(Colors.red),
+                            );
+                          },
+                        ),
+                      ),
+                      // The static SOS button with enhanced brightness.
+                      Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.redAccent,
+                              blurRadius: 30,
+                              spreadRadius: 5,
+                              offset: Offset(0, 5),
+                            )
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: null, // Only handles long press.
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent.shade700,
+                            shape: const CircleBorder(),
+                            padding: const EdgeInsets.all(60),
+                            elevation: 10,
+                          ),
+                          child: const Text(
+                            'SOS',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Spacer(),
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Press and hold for 3 seconds to send an SOS alert',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         title: Text(
@@ -189,104 +351,6 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
           style: const TextStyle(color: Colors.black),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (_isFetchingLocation)
-              const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(),
-              ),
-            const Spacer(),
-            // SOS button with animated circular progress indicator.
-            GestureDetector(
-              onLongPressStart: _onLongPressStart,
-              onLongPressEnd: _onLongPressEnd,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 140,
-                    height: 140,
-                    child: AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return CircularProgressIndicator(
-                          value: _animationController.value,
-                          strokeWidth: 8,
-                          backgroundColor: Colors.grey[300],
-                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
-                        );
-                      },
-                    ),
-                  ),
-                  Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                          offset: Offset(0, 5),
-                        )
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      onPressed: ()async {
-                        print('jjjjj');
-                         QuerySnapshot authoritiesSnapshot =
-        await FirebaseFirestore.instance.collection('authorities').get();
-        List<String> extractPlayerIds(QuerySnapshot snapshot) {
-      return snapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .where((data) =>
-              data.containsKey('playerid') &&
-              data['playerid'] != null &&
-              data['playerid'].toString().trim().isNotEmpty)
-          .map((data) => data['playerid'] as String)
-          .toList();
-    }
-     List<String> authorityPlayerIds = extractPlayerIds(authoritiesSnapshot);
-
-     print(authorityPlayerIds);
-
-   await  Notification_sos(authorityPlayerIds, 'gfhhfhfh', 'danger');
-                      }, // Only handles long press.
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: const CircleBorder(),
-                        padding: const EdgeInsets.all(60),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'SOS',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Press and hold for 3 seconds to send an SOS alert',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

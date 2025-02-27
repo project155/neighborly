@@ -3,10 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloudinary/cloudinary.dart'; // Import Cloudinary package
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:neighborly/incidentlocation.dart'; // Ensure PickLocationPage returns a LatLng
 import 'package:neighborly/Userlogin.dart';
+
+/// Uploads the image at [image] path to Cloudinary and returns the secure URL.
+Future<String?> getClodinaryUrl(String image) async {
+  final cloudinary = Cloudinary.signedConfig(
+    cloudName: 'dkwnu8zei',
+    apiKey: '298339343829723',
+    apiSecret: 'T9q3BURXE2-Rj6Uv4Dk9bSzd7rY',
+  );
+
+  final response = await cloudinary.upload(
+    file: image,
+    resourceType: CloudinaryResourceType.image,
+  );
+  return response.secureUrl;
+}
 
 class VolunteerRegister extends StatefulWidget {
   const VolunteerRegister({super.key});
@@ -25,10 +41,10 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  // Using a LatLng variable to store the selected location
+  // Using a LatLng variable to store the selected location.
   LatLng? _selectedLatLng;
 
-  // Identity card image file
+  // Identity card image file.
   File? _identityCard;
   final ImagePicker _picker = ImagePicker();
 
@@ -111,7 +127,6 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
           ),
           fit: BoxFit.fill,
         ),
-        borderRadius: BorderRadius.circular(0),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -134,7 +149,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     );
   }
 
-  // General text field widget with outlined borders (no fill).
+  // General text field widget with outlined borders.
   Widget _buildTextField(
     TextEditingController controller,
     String hint,
@@ -173,7 +188,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     );
   }
 
-  // Location selector widget with outlined border and transparent background.
+  // Location selector widget.
   Widget _buildLocationSelector() {
     return InkWell(
       onTap: () async {
@@ -193,7 +208,6 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
         height: 55,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.transparent,
           border: Border.all(color: const Color.fromARGB(255, 235, 235, 235)),
           borderRadius: BorderRadius.circular(15),
         ),
@@ -221,7 +235,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     );
   }
 
-  // Identity Card Picker widget with outlined border and transparent background.
+  // Identity Card Picker widget.
   Widget _buildIdentityCardPicker() {
     return InkWell(
       onTap: _pickIdentityCardImage,
@@ -229,7 +243,6 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
         height: 55,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.transparent,
           border: Border.all(color: const Color.fromARGB(255, 235, 235, 235)),
           borderRadius: BorderRadius.circular(15),
         ),
@@ -285,7 +298,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     );
   }
 
-  // Function to pick identity card image with an option between camera and gallery.
+  // Function to pick identity card image.
   Future<void> _pickIdentityCardImage() async {
     showModalBottomSheet(
       context: context,
@@ -349,11 +362,22 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
       return;
     }
     try {
+      // Create a new user with Firebase Auth.
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      await _firestore.collection('volunteers').doc(userCredential.user!.uid).set({
+      String uid = userCredential.user!.uid;
+
+      // Upload identity card image to Cloudinary and get the secure URL.
+      String? downloadUrl = await getClodinaryUrl(_identityCard!.path);
+      if (downloadUrl == null) {
+        _showError('Image upload failed.');
+        return;
+      }
+
+      // Save volunteer data to Firestore along with the image URL.
+      await _firestore.collection('volunteers').doc(uid).set({
         'name': name,
         'email': email,
         'phone': phone,
@@ -362,7 +386,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
           'latitude': _selectedLatLng!.latitude,
           'longitude': _selectedLatLng!.longitude,
         },
-        // Optionally, upload and store the identity card image URL.
+        'idCardImage': downloadUrl,
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration Successful!')),

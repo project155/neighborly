@@ -22,6 +22,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
 
   void _signIn() async {
   try {
+    // Sign in the user with email and password
     UserCredential userCredential = await _auth.signInWithEmailAndPassword(
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
@@ -30,33 +31,50 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
     if (userCredential.user != null) {
       String uid = userCredential.user!.uid;
 
-     String? pId;
+      // Retrieve the document for this user from the "volunteers" collection
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('volunteers')
+          .doc(uid)
+          .get();
 
-         final f = await OneSignal.shared.getDeviceState();
-         pId = f?.userId;
+      if (docSnapshot.exists) {
+        // Cast the document data to a map
+        var data = docSnapshot.data() as Map<String, dynamic>;
 
+        // Check if isApproved is true; if not, show an error message and exit the function
+        if (data['isApproved'] != true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Your account is not approved yet.")),
+          );
+          return; // Exit early if not approved
+        }
+      } else {
+        // Handle case where the document doesn't exist
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No volunteer data found for this user.")),
+        );
+        return;
+      }
 
-        
+      // Continue with getting the OneSignal Player ID
+      String? pId;
+      final deviceState = await OneSignal.shared.getDeviceState();
+      pId = deviceState?.userId;
 
+      // Update the Firestore document with the OneSignal Player ID
+      await FirebaseFirestore.instance.collection('volunteers').doc(uid).update({
+        'playerid': pId, // Save OneSignal Player ID
+      });
 
-        // Get OneSignal Player ID
-       
-        //await OneSignal.User.pushSubscription.id;
-
-        // Update Firestore with the OneSignal Player ID
-       if(pId != null){
-         await FirebaseFirestore.instance.collection('volunteers').doc(uid).update({
-          'playerid': pId,
-        });
-       }
-
+      // Notify user of successful login
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login Successful")),
       );
 
+      // Navigate to the VolunteerHome screen
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => VolunteerHome()), // Navigate to homepage
+        MaterialPageRoute(builder: (context) => VolunteerHome()),
       );
     }
   } catch (e) {
@@ -65,6 +83,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
     );
   }
 }
+
 
   @override
   Widget build(BuildContext context) {

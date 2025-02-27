@@ -1,12 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:neighborly/AuthoritySendnotification.dart';
 import 'package:neighborly/Notificationpage.dart';
 import 'package:neighborly/SOSpage.dart';
+import 'package:neighborly/Sosreports.dart';
 import 'package:neighborly/Userlogin.dart';
 
-// Dummy pages for Authority actions
+void main() {
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: AuthorityHome(),
+  ));
+}
 
 class AuthorityHome extends StatefulWidget {
   @override
@@ -122,12 +129,12 @@ class _AuthorityHomeState extends State<AuthorityHome> {
       {
         "title": "Urgent SOS",
         "icon": Icons.warning,
-        "page": UserLoginPage(),
+        "page": SosReportPage(),
       },
       {
         "title": "Categorized Reports",
         "icon": Icons.list,
-        "page": UserLoginPage(),
+        "page": CategorizedReportsPage(), // Navigates to our new page.
       },
       {
         "title": "Send Alerts",
@@ -235,6 +242,111 @@ class _AuthorityHomeState extends State<AuthorityHome> {
     );
   }
 
+  /// Builds the SOS Reports section which fetches SOS reports from Firestore.
+  Widget _buildSOSReportsSection() {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              blurRadius: 4,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section header
+            Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: Text(
+                "SOS Reports",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            ),
+            // StreamBuilder to fetch SOS reports from Firestore
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('sos_reports')
+                  .orderBy('reportedAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.all(15.0),
+                    child: Text("No SOS reports found."),
+                  );
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, index) {
+                    DocumentSnapshot doc = snapshot.data!.docs[index];
+                    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                    String title = data['title'] ?? "No Title";
+                    String description = data['description'] ?? "";
+                    // Assume location is stored as a map with 'latitude' and 'longitude'
+                    Map<String, dynamic>? location = data['location'];
+                    double latitude = location?['latitude'] ?? 0.0;
+                    double longitude = location?['longitude'] ?? 0.0;
+
+                    return Card(
+                      margin: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: ExpansionTile(
+                        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(
+                          description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        children: [
+                          Container(
+                            height: 200,
+                            child: GoogleMap(
+                              initialCameraPosition: CameraPosition(
+                                target: LatLng(latitude, longitude),
+                                zoom: 14,
+                              ),
+                              markers: {
+                                Marker(
+                                  markerId: MarkerId(doc.id),
+                                  position: LatLng(latitude, longitude),
+                                ),
+                              },
+                              // Disable map gestures for embedded preview.
+                              zoomGesturesEnabled: false,
+                              scrollGesturesEnabled: false,
+                              rotateGesturesEnabled: false,
+                              tiltGesturesEnabled: false,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -270,19 +382,257 @@ class _AuthorityHomeState extends State<AuthorityHome> {
               children: [
                 _buildNoticeSection(),
                 _buildAuthorityActionsSection(),
+                _buildSOSReportsSection(), // SOS Reports section.
               ],
             ),
           ),
-          // Removed floating bottom navigation bar.
         ],
       ),
     );
   }
 }
 
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: AuthorityHome(),
-  ));
+/// New Categorized Reports page with two big cards.
+class CategorizedReportsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final double cardHeight = 150;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Categorized Reports"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // Big Card for Disaster Reports.
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => DisasterReportsPage()),
+                );
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                elevation: 6,
+                child: Container(
+                  height: cardHeight,
+                  width: double.infinity,
+                  padding: EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning, size: 60, color: Colors.red),
+                      SizedBox(width: 20),
+                      Expanded(
+                        child: Text(
+                          "Disaster Reports",
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            // Big Card for Public Issues Reports.
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => PublicIssuesReportsPage()),
+                );
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                elevation: 6,
+                child: Container(
+                  height: cardHeight,
+                  width: double.infinity,
+                  padding: EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.public, size: 60, color: Colors.green),
+                      SizedBox(width: 20),
+                      Expanded(
+                        child: Text(
+                          "Public Issues Reports",
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Disaster Reports page displaying four disaster type cards.
+class DisasterReportsPage extends StatelessWidget {
+  final List<Map<String, dynamic>> disasters = [
+    {
+      "title": "Flood",
+      "icon": Icons.water_damage,
+      "page": FloodReportsPage(),
+    },
+    {
+      "title": "Fire",
+      "icon": Icons.local_fire_department,
+      "page": FireReportsPage(),
+    },
+    {
+      "title": "Landslide",
+      "icon": Icons.terrain,
+      "page": LandslideReportsPage(),
+    },
+    {
+      "title": "Drought",
+      "icon": Icons.wb_sunny,
+      "page": DroughtReportsPage(),
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final double cardHeight = 150;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Disaster Reports"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: GridView.builder(
+          itemCount: disasters.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // Two cards per row
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1,
+          ),
+          itemBuilder: (context, index) {
+            final disaster = disasters[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => disaster["page"]),
+                );
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                elevation: 6,
+                child: Container(
+                  height: cardHeight,
+                  width: double.infinity,
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        disaster["icon"],
+                        size: 60,
+                        color: Colors.blue,
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        disaster["title"],
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Dummy page for Flood Reports.
+class FloodReportsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Flood Reports"),
+      ),
+      body: Center(
+        child: Text("Flood Reports Details Here"),
+      ),
+    );
+  }
+}
+
+/// Dummy page for Fire Reports.
+class FireReportsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Fire Reports"),
+      ),
+      body: Center(
+        child: Text("Fire Reports Details Here"),
+      ),
+    );
+  }
+}
+
+/// Dummy page for Landslide Reports.
+class LandslideReportsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Landslide Reports"),
+      ),
+      body: Center(
+        child: Text("Landslide Reports Details Here"),
+      ),
+    );
+  }
+}
+
+/// Dummy page for Drought Reports.
+class DroughtReportsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Drought Reports"),
+      ),
+      body: Center(
+        child: Text("Drought Reports Details Here"),
+      ),
+    );
+  }
+}
+
+/// Dummy Public Issues Reports page.
+class PublicIssuesReportsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Public Issues Reports"),
+      ),
+      body: Center(
+        child: Text("Public Issues Reports Details Here"),
+      ),
+    );
+  }
 }

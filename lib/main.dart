@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:neighborly/UserSelectionPage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:neighborly/firebase_options.dart';
+import 'package:neighborly/userhome.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-
+String  ? role;
 void main() async {
    WidgetsFlutterBinding.ensureInitialized(); 
    // Ensures proper initialization
@@ -18,6 +20,10 @@ void main() async {
 });
 
 print('oooooo');
+
+SharedPreferences pref = await SharedPreferences.getInstance();
+
+ role =   pref.getString('role');
 
 
 
@@ -49,9 +55,24 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       
       debugShowCheckedModeBanner: false,
-      home:UserSelectionPage(),
+      home: getScreen()
     );
     
+  }
+}
+
+
+Widget getScreen(){
+  switch(role){
+    case 'user':
+      return  Userhome();
+    
+    default:
+      return  UserSelectionPage();
+      
+
+
+
   }
 }
 

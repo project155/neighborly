@@ -8,6 +8,7 @@ import 'package:neighborly/password.dart';
 import 'package:neighborly/userhome.dart'; // Normal User homepage
 import 'package:neighborly/Userregister.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserLoginPage extends StatefulWidget {
   const UserLoginPage({super.key});
@@ -52,14 +53,21 @@ class _UserLoginPageState extends State<UserLoginPage> {
 
         // Navigate based on the user's email.
         if (userCredential.user!.email == adminEmail) {
-          Navigator.pushReplacement(
+           SharedPreferences pref = await SharedPreferences.getInstance();
+
+          pref.setString('role', 'admin');
+          Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => AdminHome()),
+            MaterialPageRoute(builder: (context) => AdminHome()),(route) => false,
           );
         } else {
-          Navigator.pushReplacement(
+
+          SharedPreferences pref = await SharedPreferences.getInstance();
+
+          pref.setString('role', 'user');
+          Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => Userhome()),
+            MaterialPageRoute(builder: (context) => Userhome()),(route) => false,
           );
         }
       }

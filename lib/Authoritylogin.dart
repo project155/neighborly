@@ -20,48 +20,69 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   void _signIn() async {
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+  try {
+    // Sign in the user with email and password
+    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    if (userCredential.user != null) {
+      String uid = userCredential.user!.uid;
+
+      // Retrieve the document for this user from the "authorities" collection
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('authorities')
+          .doc(uid)
+          .get();
+
+      if (docSnapshot.exists) {
+        // Cast the document data to a map
+        var data = docSnapshot.data() as Map<String, dynamic>;
+
+        // Check if isApproved is true; if not, show an error message and exit the function
+        if (data['isApproved'] != true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Your account is not approved yet.")),
+          );
+          return; // Exit early if not approved
+        }
+      } else {
+        // Handle case where the document doesn't exist
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No authority data found for this user.")),
+        );
+        return;
+      }
+
+      // Continue with getting the OneSignal Player ID
+      String? pId;
+      final deviceState = await OneSignal.shared.getDeviceState();
+      pId = deviceState?.userId;
+
+      // Update the Firestore document with the OneSignal Player ID
+      await FirebaseFirestore.instance.collection('authorities').doc(uid).update({
+        'playerid': pId, // Save OneSignal Player ID
+      });
+
+      // Notify user of successful login
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Login Successful")),
       );
 
-      if (userCredential.user != null) {
-        String uid = userCredential.user!.uid;
-
-
-
-        // Get OneSignal Player ID
-   
-
-        
-     String? pId;
-
-         final f = await OneSignal.shared.getDeviceState();
-         pId = f?.userId;
-
-        //await OneSignal.User.pushSubscription.id;
-
-        // Store in Firestore
-        await FirebaseFirestore.instance.collection('authorities').doc(uid).update({
-          'playerid': pId, // Save OneSignal Player ID
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login Successful")),
-        );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AuthorityHome()),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}")),
+      // Navigate to the AuthorityHome screen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => AuthorityHome()),
       );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: ${e.toString()}")),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
