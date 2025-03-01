@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:neighborly/Volunteerhome.dart';
 import 'package:neighborly/volunteerregister.dart';
 import 'package:neighborly/userhome.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart'; // Import the homepage
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import the homepage
 
 class VolunteerLoginPage extends StatefulWidget {
   const VolunteerLoginPage({super.key});
@@ -70,11 +71,13 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login Successful")),
       );
+        SharedPreferences pref = await SharedPreferences.getInstance();
 
+          pref.setString('role', 'volunteer');
       // Navigate to the VolunteerHome screen
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => VolunteerHome()),
+        MaterialPageRoute(builder: (context) => VolunteerHome()),(route) => false,
       );
     }
   } catch (e) {

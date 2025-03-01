@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:neighborly/UserSelectionPage.dart';
 import 'dart:io';
 import 'package:neighborly/clodinary_upload.dart';
 import 'package:neighborly/Userlogin.dart';
@@ -107,7 +108,7 @@ class _UserProfileState extends State<UserProfile> {
     await pref.remove('role');
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const UserLoginPage()),
+      MaterialPageRoute(builder: (context) =>  UserSelectionPage()),
     );
   }
 

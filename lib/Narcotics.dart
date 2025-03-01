@@ -40,29 +40,47 @@ class _NarcoticsReportPageState extends State<NarcoticsReportPage>
 
   Future<void> _fetchReports() async {
     try {
+      // Get user's current position for radius filtering.
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      final double userLat = position.latitude;
+      final double userLng = position.longitude;
+      double radiusInMeters = 10000; // 10 km radius
+
+      // Fetch all 'Narcotics' reports.
       var snapshot = await _firestore
           .collection('reports')
           .where('category', isEqualTo: 'Narcotics')
           .orderBy('timestamp', descending: true)
           .get();
 
-      setState(() {
-        _reports = snapshot.docs.map((doc) {
-          var data = doc.data();
-          data['id'] = doc.id;
-          // Document is expected to include "userId" (or fallback "uid")
-          return data;
-        }).toList();
-        _isLoading = false;
-      });
+      // Convert snapshot to a list of reports.
+      List<Map<String, dynamic>> allReports = snapshot.docs.map((doc) {
+        var data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
 
-      // Add markers to the map
+      // Filter reports based on distance from the user.
+      _reports = allReports.where((report) {
+        if (report['location'] != null) {
+          double reportLat =
+              (report['location']['latitude'] ?? 0).toDouble();
+          double reportLng =
+              (report['location']['longitude'] ?? 0).toDouble();
+          double distanceInMeters = Geolocator.distanceBetween(
+              userLat, userLng, reportLat, reportLng);
+          return distanceInMeters <= radiusInMeters;
+        }
+        return false;
+      }).toList();
+
+      // Add markers to the map.
       _markers.clear();
       for (var report in _reports) {
         if (report['location'] != null) {
           double lat = (report['location']['latitude'] ?? 0).toDouble();
           double lng = (report['location']['longitude'] ?? 0).toDouble();
-          print("Report Location: Lat: $lat, Lng: $lng");
           _markers.add(
             Marker(
               markerId: MarkerId(report['id']),
@@ -74,15 +92,21 @@ class _NarcoticsReportPageState extends State<NarcoticsReportPage>
         }
       }
 
-      // Center map based on the first report (if available)
+      // Center the map on the first report's location (if available).
       if (_markers.isNotEmpty) {
         var firstReport = _reports.first;
-        double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
-        double lng = (firstReport['location']['longitude'] ?? 0).toDouble();
+        double lat =
+            (firstReport['location']['latitude'] ?? 0).toDouble();
+        double lng =
+            (firstReport['location']['longitude'] ?? 0).toDouble();
         _mapController.animateCamera(
           CameraUpdate.newLatLng(LatLng(lat, lng)),
         );
       }
+
+      setState(() {
+        _isLoading = false;
+      });
     } catch (e) {
       print("Error fetching reports: $e");
       setState(() {
@@ -126,8 +150,8 @@ class _NarcoticsReportPageState extends State<NarcoticsReportPage>
                   Expanded(
                     child: Text(
                       message,
-                      style:
-                          TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -181,7 +205,8 @@ class _NarcoticsReportPageState extends State<NarcoticsReportPage>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.local_pharmacy, size: 30, color: Colors.redAccent),
+                Icon(Icons.local_pharmacy,
+                    size: 30, color: Colors.redAccent),
                 SizedBox(width: 8),
                 Text(
                   "Narcotics Reports",
@@ -214,7 +239,8 @@ class _NarcoticsReportPageState extends State<NarcoticsReportPage>
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
+          MaterialPageRoute(
+              builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
         );
       },
       child: Image.network(
@@ -275,12 +301,14 @@ class _NarcoticsReportPageState extends State<NarcoticsReportPage>
     if (index != -1) {
       setState(() {
         if (isLiked) {
-          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) - 1;
+          _reports[index]['likes'] =
+              ((_reports[index]['likes'] ?? 0) as int) - 1;
           List likedBy = List.from(_reports[index]['likedBy'] ?? []);
           likedBy.remove(userId);
           _reports[index]['likedBy'] = likedBy;
         } else {
-          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) + 1;
+          _reports[index]['likes'] =
+              ((_reports[index]['likes'] ?? 0) as int) + 1;
           List likedBy = List.from(_reports[index]['likedBy'] ?? []);
           likedBy.add(userId);
           _reports[index]['likedBy'] = likedBy;
@@ -318,7 +346,8 @@ class _NarcoticsReportPageState extends State<NarcoticsReportPage>
                         if (comment is Map && comment.containsKey('name')) {
                           return ListTile(
                             leading: CircleAvatar(
-                              backgroundImage: AssetImage('assets/images/anonymous_avatar.png'),
+                              backgroundImage: AssetImage(
+                                  'assets/images/anonymous_avatar.png'),
                             ),
                             title: Text(
                               comment['name'],
@@ -348,7 +377,10 @@ class _NarcoticsReportPageState extends State<NarcoticsReportPage>
                                   ..add(newComment);
                           });
                         }
-                        _firestore.collection('reports').doc(docId).update({
+                        _firestore
+                            .collection('reports')
+                            .doc(docId)
+                            .update({
                           'comments': FieldValue.arrayUnion([newComment]),
                         });
                         commentController.clear();
@@ -430,96 +462,109 @@ class _NarcoticsReportPageState extends State<NarcoticsReportPage>
                           List likedBy = List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(currentUserId);
 
-                          return Card(
-                            margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                            elevation: 5,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (imageUrls.isNotEmpty)
-                                  ImageCarousel(imageUrls: imageUrls),
-                                Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(title,
-                                          style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold)),
-                                      SizedBox(height: 5),
-                                      Text(
-                                        description,
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[700]),
-                                      ),
-                                      SizedBox(height: 5),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text("Category: $category",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
-                                          Text("Urgency: $urgency",
-                                              style: TextStyle(
-                                                  color: Colors.redAccent)),
-                                        ],
-                                      ),
-                                      if (latitude != null && longitude != null)
-                                        Text("Location: $latitude, $longitude",
+                          // Wrap the report card in an InkWell to enable tapping to redirect the map.
+                          return InkWell(
+                            onTap: () {
+                              if (report['location'] != null) {
+                                double lat = (report['location']['latitude'] ?? 0).toDouble();
+                                double lng = (report['location']['longitude'] ?? 0).toDouble();
+                                _mapController.animateCamera(
+                                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 18),
+                                );
+                                _mapController.showMarkerInfoWindow(MarkerId(report['id']));
+                              }
+                            },
+                            child: Card(
+                              margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                              elevation: 5,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (imageUrls.isNotEmpty)
+                                    ImageCarousel(imageUrls: imageUrls),
+                                  Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(title,
                                             style: TextStyle(
-                                                color: Colors.blueGrey)),
-                                      SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: Icon(
-                                              isLiked
-                                                  ? Icons.thumb_up
-                                                  : Icons.thumb_up_alt_outlined,
-                                              color: Colors.blue,
-                                            ),
-                                            onPressed: () {
-                                              _handleLike(reportId, isLiked);
-                                              _showAnimatedSnackbar(isLiked
-                                                  ? "Like removed!"
-                                                  : "Liked!");
-                                            },
-                                          ),
-                                          Text("$likes Likes",
-                                              style: TextStyle(color: Colors.blue)),
-                                          IconButton(
-                                            icon: Icon(Icons.comment_outlined,
-                                                color: Colors.green),
-                                            onPressed: () => _showComments(context, reportId),
-                                          ),
-                                          IconButton(
-                                            icon: Icon(Icons.share_outlined,
-                                                color: Colors.orange),
-                                            onPressed: () {
-                                              String locationText = (latitude != null && longitude != null)
-                                                  ? '$latitude, $longitude'
-                                                  : 'Location not available';
-                                              _shareReport(title, description, category, locationText);
-                                            },
-                                          ),
-                                          // Show trash icon if forced or if report owner matches current user.
-                                          if (forceShowTrashIcon ||
-                                              ((report['userId'] ?? report['uid']) == currentUserId))
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold)),
+                                        SizedBox(height: 5),
+                                        Text(
+                                          description,
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[700]),
+                                        ),
+                                        SizedBox(height: 5),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text("Category: $category",
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold)),
+                                            Text("Urgency: $urgency",
+                                                style: TextStyle(
+                                                    color: Colors.redAccent)),
+                                          ],
+                                        ),
+                                        if (latitude != null && longitude != null)
+                                          Text("Location: $latitude, $longitude",
+                                              style: TextStyle(
+                                                  color: Colors.blueGrey)),
+                                        SizedBox(height: 10),
+                                        Row(
+                                          children: [
                                             IconButton(
-                                              icon: Icon(Icons.delete, color: Colors.red),
-                                              onPressed: () => _confirmDelete(reportId),
+                                              icon: Icon(
+                                                isLiked
+                                                    ? Icons.thumb_up
+                                                    : Icons.thumb_up_alt_outlined,
+                                                color: Colors.black,
+                                              ),
+                                              onPressed: () {
+                                                _handleLike(reportId, isLiked);
+                                                _showAnimatedSnackbar(isLiked
+                                                    ? "Like removed!"
+                                                    : "Liked!");
+                                              },
                                             ),
-                                        ],
-                                      )
-                                    ],
-                                  ),
-                                )
-                              ],
+                                            Text("$likes Likes",
+                                                style: TextStyle(color: Colors.black)),
+                                            IconButton(
+                                              icon: Icon(Icons.comment_outlined,
+                                                  color: Colors.black),
+                                              onPressed: () => _showComments(context, reportId),
+                                            ),
+                                            IconButton(
+                                              icon: Icon(Icons.share_outlined,
+                                                  color: Colors.black),
+                                              onPressed: () {
+                                                String locationText = (latitude != null && longitude != null)
+                                                    ? '$latitude, $longitude'
+                                                    : 'Location not available';
+                                                _shareReport(title, description, category, locationText);
+                                              },
+                                            ),
+                                            // Show trash icon if forced or if report owner matches current user.
+                                            if (forceShowTrashIcon ||
+                                                ((report['userId'] ?? report['uid']) == currentUserId))
+                                              IconButton(
+                                                icon: Icon(Icons.delete, color: Colors.red),
+                                                onPressed: () => _confirmDelete(reportId),
+                                              ),
+                                          ],
+                                        )
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
                           );
                         },

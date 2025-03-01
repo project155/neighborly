@@ -40,29 +40,47 @@ class _EcohazardReportPageState extends State<EcohazardReportPage>
 
   Future<void> _fetchReports() async {
     try {
+      // Get user's current position for radius filtering.
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      final double userLat = position.latitude;
+      final double userLng = position.longitude;
+      double radiusInMeters = 10000; // 10 km radius
+
+      // Fetch all 'Eco Hazard' reports.
       var snapshot = await _firestore
           .collection('reports')
           .where('category', isEqualTo: 'Eco Hazard')
           .orderBy('timestamp', descending: true)
           .get();
 
-      setState(() {
-        _reports = snapshot.docs.map((doc) {
-          var data = doc.data();
-          data['id'] = doc.id;
-          // Document is expected to include "userId" (or fallback "uid")
-          return data;
-        }).toList();
-        _isLoading = false;
-      });
+      // Convert snapshot to a list of reports.
+      List<Map<String, dynamic>> allReports = snapshot.docs.map((doc) {
+        var data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
 
-      // Add markers to the map
+      // Filter reports based on distance from the user.
+      _reports = allReports.where((report) {
+        if (report['location'] != null) {
+          double reportLat =
+              (report['location']['latitude'] ?? 0).toDouble();
+          double reportLng =
+              (report['location']['longitude'] ?? 0).toDouble();
+          double distance = Geolocator.distanceBetween(
+              userLat, userLng, reportLat, reportLng);
+          return distance <= radiusInMeters;
+        }
+        return false;
+      }).toList();
+
+      // Clear and add markers to the map.
       _markers.clear();
       for (var report in _reports) {
         if (report['location'] != null) {
           double lat = (report['location']['latitude'] ?? 0).toDouble();
           double lng = (report['location']['longitude'] ?? 0).toDouble();
-          print("Report Location: Lat: $lat, Lng: $lng");
           _markers.add(
             Marker(
               markerId: MarkerId(report['id']),
@@ -74,15 +92,21 @@ class _EcohazardReportPageState extends State<EcohazardReportPage>
         }
       }
 
-      // Center map based on the first report (if available)
+      // Center map based on the first report (if available).
       if (_markers.isNotEmpty) {
         var firstReport = _reports.first;
-        double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
-        double lng = (firstReport['location']['longitude'] ?? 0).toDouble();
+        double lat =
+            (firstReport['location']['latitude'] ?? 0).toDouble();
+        double lng =
+            (firstReport['location']['longitude'] ?? 0).toDouble();
         _mapController.animateCamera(
           CameraUpdate.newLatLng(LatLng(lat, lng)),
         );
       }
+
+      setState(() {
+        _isLoading = false;
+      });
     } catch (e) {
       print("Error fetching reports: $e");
       setState(() {
@@ -441,107 +465,122 @@ class _EcohazardReportPageState extends State<EcohazardReportPage>
                               List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(currentUserId);
 
-                          return Card(
-                            margin: EdgeInsets.symmetric(
-                                vertical: 10, horizontal: 16),
-                            elevation: 5,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (imageUrls.isNotEmpty)
-                                  ImageCarousel(imageUrls: imageUrls),
-                                Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(title,
-                                          style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold)),
-                                      SizedBox(height: 5),
-                                      Text(
-                                        description,
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[700]),
-                                      ),
-                                      SizedBox(height: 5),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text("Category: $category",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
-                                          Text("Urgency: $urgency",
-                                              style: TextStyle(
-                                                  color: Colors.redAccent)),
-                                        ],
-                                      ),
-                                      if (latitude != null && longitude != null)
-                                        Text("Location: $latitude, $longitude",
+                          // Wrap the report card in an InkWell to enable map redirection on tap.
+                          return InkWell(
+                            onTap: () {
+                              if (report['location'] != null) {
+                                double lat = (report['location']['latitude'] ?? 0)
+                                    .toDouble();
+                                double lng = (report['location']['longitude'] ?? 0)
+                                    .toDouble();
+                                _mapController.animateCamera(
+                                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 18),
+                                );
+                                _mapController.showMarkerInfoWindow(
+                                    MarkerId(report['id']));
+                              }
+                            },
+                            child: Card(
+                              margin: EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 16),
+                              elevation: 5,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (imageUrls.isNotEmpty)
+                                    ImageCarousel(imageUrls: imageUrls),
+                                  Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(title,
                                             style: TextStyle(
-                                                color: Colors.blueGrey)),
-                                      SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: Icon(
-                                              isLiked
-                                                  ? Icons.thumb_up
-                                                  : Icons.thumb_up_alt_outlined,
-                                              color: Colors.blue,
-                                            ),
-                                            onPressed: () {
-                                              _handleLike(reportId, isLiked);
-                                              _showAnimatedSnackbar(isLiked
-                                                  ? "Like removed!"
-                                                  : "Liked!");
-                                            },
-                                          ),
-                                          Text("$likes Likes",
-                                              style:
-                                                  TextStyle(color: Colors.blue)),
-                                          IconButton(
-                                            icon: Icon(Icons.comment_outlined,
-                                                color: Colors.green),
-                                            onPressed: () =>
-                                                _showComments(context, reportId),
-                                          ),
-                                          IconButton(
-                                            icon: Icon(Icons.share_outlined,
-                                                color: Colors.orange),
-                                            onPressed: () {
-                                              String locationText =
-                                                  (latitude != null &&
-                                                          longitude != null)
-                                                      ? '$latitude, $longitude'
-                                                      : 'Location not available';
-                                              _shareReport(title, description,
-                                                  category, locationText);
-                                            },
-                                          ),
-                                          if (forceShowTrashIcon ||
-                                              ((report['userId'] ??
-                                                      report['uid']) ==
-                                                  currentUserId))
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold)),
+                                        SizedBox(height: 5),
+                                        Text(
+                                          description,
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[700]),
+                                        ),
+                                        SizedBox(height: 5),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text("Category: $category",
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold)),
+                                            Text("Urgency: $urgency",
+                                                style: TextStyle(
+                                                    color: Colors.redAccent)),
+                                          ],
+                                        ),
+                                        if (latitude != null && longitude != null)
+                                          Text("Location: $latitude, $longitude",
+                                              style: TextStyle(
+                                                  color: Colors.blueGrey)),
+                                        SizedBox(height: 10),
+                                        Row(
+                                          children: [
                                             IconButton(
-                                              icon: Icon(Icons.delete,
-                                                  color: Colors.red),
-                                              onPressed: () =>
-                                                  _confirmDelete(reportId),
+                                              icon: Icon(
+                                                isLiked
+                                                    ? Icons.thumb_up
+                                                    : Icons.thumb_up_alt_outlined,
+                                                color: Colors.black,
+                                              ),
+                                              onPressed: () {
+                                                _handleLike(reportId, isLiked);
+                                                _showAnimatedSnackbar(isLiked
+                                                    ? "Like removed!"
+                                                    : "Liked!");
+                                              },
                                             ),
-                                        ],
-                                      )
-                                    ],
-                                  ),
-                                )
-                              ],
+                                            Text("$likes Likes",
+                                                style: TextStyle(color: Colors.black)),
+                                            IconButton(
+                                              icon: Icon(Icons.comment_outlined,
+                                                  color: Colors.black),
+                                              onPressed: () =>
+                                                  _showComments(context, reportId),
+                                            ),
+                                            IconButton(
+                                              icon: Icon(Icons.share_outlined,
+                                                  color: Colors.black),
+                                              onPressed: () {
+                                                String locationText =
+                                                    (latitude != null &&
+                                                            longitude != null)
+                                                        ? '$latitude, $longitude'
+                                                        : 'Location not available';
+                                                _shareReport(title, description,
+                                                    category, locationText);
+                                              },
+                                            ),
+                                            if (forceShowTrashIcon ||
+                                                ((report['userId'] ??
+                                                        report['uid']) ==
+                                                    currentUserId))
+                                              IconButton(
+                                                icon: Icon(Icons.delete,
+                                                    color: Colors.red),
+                                                onPressed: () =>
+                                                    _confirmDelete(reportId),
+                                              ),
+                                          ],
+                                        )
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
                           );
                         },

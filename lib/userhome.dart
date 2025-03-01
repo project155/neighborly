@@ -2,17 +2,22 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:neighborly/Animalabuse.dart';
+import 'package:neighborly/ChildAbuse.dart';
 import 'package:neighborly/Drought.dart';
 import 'package:neighborly/Ecohazard.dart';
 import 'package:neighborly/Fooddonation.dart';
 import 'package:neighborly/Foodsafety.dart';
 import 'package:neighborly/Hygieneissues.dart';
+import 'package:neighborly/Infrastructureissues.dart';
 import 'package:neighborly/Landslide.dart';
 import 'package:neighborly/Narcotics.dart';
 import 'package:neighborly/Notificationpage.dart';
 import 'package:neighborly/Roadincidents.dart';
 import 'package:neighborly/SOSpage.dart';
+import 'package:neighborly/Theft.dart';
+import 'package:neighborly/Transportation.dart';
 import 'package:neighborly/alcohol.dart';
 import 'package:neighborly/authority.dart';
 import 'package:neighborly/bribery.dart';
@@ -58,7 +63,11 @@ class _UserhomeState extends State<Userhome> {
     "Animal Abuse",
     "Bribery",
     "Food Safety",
-    "Hygiene Issues"
+    "Hygiene Issues",
+    "Infrastructure Issues",
+    "Transportation",
+    "Theft",
+    "Child Abuse"
   ];
   final List<String> helpandrecover = [
     "Food Donation",
@@ -337,22 +346,28 @@ class _UserhomeState extends State<Userhome> {
   // Builds a clickable grid item for a given service using icons.
   Widget _buildServiceItem(String title) {
     final Map<String, IconData> iconMapping = {
-      "Flood/Rainfall": Icons.water_drop,
-      "Fire": Icons.local_fire_department,
-      "Landslide": Icons.terrain,
-      "Drought": Icons.wb_sunny,
-      "Sexual Abuse": Icons.report,
-      "Narcotics": Icons.warning,
-      "Road Incidents": Icons.traffic,
+      "Flood/Rainfall": FontAwesomeIcons.houseFloodWater,
+      "Fire": FontAwesomeIcons.fire,
+      "Landslide": FontAwesomeIcons.mountain,
+      "Drought": FontAwesomeIcons.sunPlantWilt,
+      "Sexual Abuse":FontAwesomeIcons.personHarassing,
+      "Narcotics": FontAwesomeIcons.syringe,
+      "Road Incidents": FontAwesomeIcons.roadCircleExclamation,
       "Eco Hazard": Icons.eco,
-      "Alcohol": Icons.local_bar,
-      "Animal Abuse": Icons.pets,
-      "Bribery": Icons.attach_money,
-      "Food Safety": Icons.food_bank,
-      "Hygiene Issues": Icons.cleaning_services,
-      "Lost & Found": Icons.search,
+      "Alcohol": FontAwesomeIcons.wineGlass,
+      "Animal Abuse": FontAwesomeIcons.paw,
+      "Bribery": FontAwesomeIcons.moneyBill1Wave,
+      "Food Safety": FontAwesomeIcons.cutlery,
+      "Hygiene Issues": FontAwesomeIcons.broom,
+      "Lost & Found": FontAwesomeIcons.search,
       "Food Donation": Icons.volunteer_activism,
-      "Example Feature 2": Icons.extension,
+      "Example Feature 2":Icons.child_care_sharp,
+      "Infrastructure Issues": FontAwesomeIcons.buildingCircleExclamation,
+      "Transportation": FontAwesomeIcons.bus,
+      "Theft":FontAwesomeIcons.peopleRobbery,
+      "Child Abuse":FontAwesomeIcons.childReaching
+     
+      
     };
 
     return GestureDetector(
@@ -399,6 +414,18 @@ class _UserhomeState extends State<Userhome> {
         } else if (title == "Eco Hazard") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => EcohazardReportPage()));
+        } else if (title == "Infrastructure Issues") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => InfrastructureReportPage()));
+        } else if (title == "Transportation") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => TransportationReportPage()));
+        } else if (title == "Theft") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => TheftReportPage()));
+        } else if (title == "Child Abuse") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => ChildAbuseReportPage()));
         } else if (title == "Alcohol") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => AlcoholReportPage()));

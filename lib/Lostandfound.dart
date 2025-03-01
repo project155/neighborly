@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:neighborly/lost.dart';
+import 'package:neighborly/lostandfoundreport.dart'; // Existing import for your report page.
 
 class LostAndFoundPage extends StatelessWidget {
   const LostAndFoundPage({Key? key}) : super(key: key);
 
   // Navigate to the list page (lost or found) based on the selection.
   void _navigateToList(BuildContext context, bool isLost) {
-    // Replace with your navigation code.
-    // Example: Navigator.push(context, MaterialPageRoute(builder: (_) => ItemsListPage(isLost: isLost)));
+    if (isLost) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LostItemsPage()),
+      );
+    } else {
+      // Add navigation for Found Items if needed.
+    }
   }
 
-  // Navigate to the form page for posting a lost/found item.
+  // Navigate to the form page for posting an item.
   void _navigateToForm(BuildContext context, bool isLost) {
     // Replace with your navigation code.
     // Example: Navigator.push(context, MaterialPageRoute(builder: (_) => PostItemFormPage(isLost: isLost)));
@@ -27,7 +35,11 @@ class LostAndFoundPage extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
-            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
@@ -35,23 +47,62 @@ class LostAndFoundPage extends StatelessWidget {
           children: [
             // Back button.
             IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.black87),
+              icon: const Icon(Icons.arrow_back, color: Colors.black87),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             // Centered title.
-            Text(
+            const Text(
               "Lost & Found",
               style: TextStyle(
-                fontSize: 20, 
-                fontWeight: FontWeight.bold, 
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
-            // To balance the row, we add an empty box matching the width of the IconButton.
-            SizedBox(width: 48),
+            // An empty widget to balance the row.
+            const SizedBox(width: 48),
           ],
+        ),
+      ),
+    );
+  }
+
+  // Build a card for the given category.
+  Widget _buildCategoryCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Card(
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: const EdgeInsets.all(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 80, color: Colors.blue),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -76,47 +127,20 @@ class LostAndFoundPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 30),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Lost Items button.
-                      ElevatedButton(
-                        onPressed: () => _navigateToList(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.teal,
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                        ),
-                        child: Column(
-                          children: const [
-                            Icon(Icons.search_off, size: 40, color: Colors.teal),
-                            SizedBox(height: 8),
-                            Text("Lost Items", style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
+                      // Lost Items card.
+                      _buildCategoryCard(
+                        context: context,
+                        title: "Lost Items",
+                        icon: Icons.search_off,
+                        onTap: () => _navigateToList(context, true),
                       ),
-                      // Found Items button.
-                      ElevatedButton(
-                        onPressed: () => _navigateToList(context, false),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.teal,
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                        ),
-                        child: Column(
-                          children: const [
-                            Icon(Icons.check_circle_outline, size: 40, color: Colors.teal),
-                            SizedBox(height: 8),
-                            Text("Found Items", style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
+                      // Found Items card.
+                      _buildCategoryCard(
+                        context: context,
+                        title: "Found Items",
+                        icon: Icons.check_circle_outline,
+                        onTap: () => _navigateToList(context, false),
                       ),
                     ],
                   ),
@@ -129,13 +153,18 @@ class LostAndFoundPage extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.blue,
         onPressed: () {
-          // For demonstration, assume the lost item form.
-          _navigateToForm(context, true);
+          // Navigate to the creation page directly.
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => CreateLostFoundItemPage()),
+          );
         },
         child: const Icon(Icons.add),
       ),
     );
   }
 }
+
+// Stub implementation for LostItemsPage.

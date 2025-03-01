@@ -6,12 +6,12 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-class SexualabuseReportPage extends StatefulWidget {
+class InfrastructureReportPage extends StatefulWidget {
   @override
-  _SexualabuseReportPageState createState() => _SexualabuseReportPageState();
+  _InfrastructureReportPageState createState() => _InfrastructureReportPageState();
 }
 
-class _SexualabuseReportPageState extends State<SexualabuseReportPage>
+class _InfrastructureReportPageState extends State<InfrastructureReportPage>
     with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -20,11 +20,10 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
   List<Map<String, dynamic>> _reports = [];
   bool _isLoading = true;
 
-  // For debugging; set to true to force the trash icon to appear.
+  // Set to true to force trash icon display for debugging.
   bool forceShowTrashIcon = false;
 
-  final LatLng _initialLocation =
-      LatLng(11.194249397596916, 75.85098108272076);
+  final LatLng _initialLocation = LatLng(11.194249397596916, 75.85098108272076);
 
   @override
   void initState() {
@@ -45,21 +44,24 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
           desiredAccuracy: LocationAccuracy.high);
       final double userLat = position.latitude;
       final double userLng = position.longitude;
-      double radiusInMeters = 10000; // 10 km radius (adjustable)
+      // Define a radius in meters (e.g., 10000m for 10 km).
+      double radiusInMeters = 10000;
 
+      // Fetch all 'infrastructure' reports.
       var snapshot = await _firestore
           .collection('reports')
-          .where('category', isEqualTo: 'Sexual Abuse')
+          .where('category', isEqualTo: 'Infrastructure Issues')
           .orderBy('timestamp', descending: true)
           .get();
 
+      // Convert snapshot to a list of reports.
       List<Map<String, dynamic>> allReports = snapshot.docs.map((doc) {
         var data = doc.data();
         data['id'] = doc.id;
         return data;
       }).toList();
 
-      // Filter reports based on distance.
+      // Filter reports based on distance from the user.
       _reports = allReports.where((report) {
         if (report['location'] != null) {
           double reportLat = (report['location']['latitude'] ?? 0).toDouble();
@@ -71,31 +73,32 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
         return false;
       }).toList();
 
-      // Update markers.
+      // Update markers for each report.
       _markers.clear();
       for (var report in _reports) {
         if (report['location'] != null) {
           double lat = (report['location']['latitude'] ?? 0).toDouble();
           double lng = (report['location']['longitude'] ?? 0).toDouble();
-          print("Report Location: Lat: $lat, Lng: $lng");
           _markers.add(
             Marker(
               markerId: MarkerId(report['id']),
               position: LatLng(lat, lng),
-              infoWindow:
-                  InfoWindow(title: report['title'], snippet: report['description']),
+              infoWindow: InfoWindow(
+                  title: report['title'], snippet: report['description']),
+              // Using a different hue for infrastructure markers.
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
             ),
           );
         }
       }
 
-      // Center the map based on the first report (if available).
+      // Center the map on the first report's location (if available).
       if (_markers.isNotEmpty) {
         var firstReport = _reports.first;
         double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
         double lng = (firstReport['location']['longitude'] ?? 0).toDouble();
-        await _mapController.animateCamera(
-          CameraUpdate.newLatLngZoom(LatLng(lat, lng), 15),
+        _mapController.animateCamera(
+          CameraUpdate.newLatLng(LatLng(lat, lng)),
         );
       }
 
@@ -110,7 +113,7 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
     }
   }
 
-  // Animated Snackbar for notifications.
+  // Animated snackbar for notifications.
   void _showAnimatedSnackbar(String message) {
     AnimationController controller = AnimationController(
       vsync: this,
@@ -135,18 +138,18 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
             child: Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 78, 19),
+                color: Colors.orangeAccent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.pregnant_woman, color: Colors.white),
+                  Icon(Icons.build, color: Colors.white),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       message,
-                      style:
-                          TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -167,7 +170,81 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
     });
   }
 
-  // Show a confirmation dialog before deletion.
+  // Floating AppBar widget over the map.
+  Widget _buildFloatingAppBar() {
+    return Positioned(
+      top: 40,
+      left: 20,
+      right: 20,
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Back Button.
+            IconButton(
+              icon: Icon(Icons.arrow_back, color: Colors.black87),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            // Title with Infrastructure Icon.
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.build, size: 30, color: Colors.orangeAccent),
+                SizedBox(width: 8),
+                Text(
+                  "Infrastructure Reports",
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87),
+                ),
+              ],
+            ),
+            // Search Button.
+            IconButton(
+              icon: Icon(Icons.search, color: Colors.black87),
+              onPressed: () {
+                showSearch(
+                  context: context,
+                  delegate: InfrastructureReportSearchDelegate(reports: _reports),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Tappable image that opens a full-screen view.
+  Widget _buildTappableImage(String imageUrl) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
+        );
+      },
+      child: Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 250,
+      ),
+    );
+  }
+
+  // Show a confirmation dialog before deleting a report.
   void _confirmDelete(String reportId) {
     showDialog(
       context: context,
@@ -193,7 +270,7 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
     );
   }
 
-  // Delete the report from Firestore and update local state.
+  // Delete the report from Firestore and update the local state.
   Future<void> _deleteReport(String reportId) async {
     try {
       await _firestore.collection('reports').doc(reportId).delete();
@@ -215,12 +292,14 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
     if (index != -1) {
       setState(() {
         if (isLiked) {
-          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) - 1;
+          _reports[index]['likes'] =
+              ((_reports[index]['likes'] ?? 0) as int) - 1;
           List likedBy = List.from(_reports[index]['likedBy'] ?? []);
           likedBy.remove(userId);
           _reports[index]['likedBy'] = likedBy;
         } else {
-          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) + 1;
+          _reports[index]['likes'] =
+              ((_reports[index]['likes'] ?? 0) as int) + 1;
           List likedBy = List.from(_reports[index]['likedBy'] ?? []);
           likedBy.add(userId);
           _reports[index]['likedBy'] = likedBy;
@@ -257,10 +336,6 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
                       children: comments.map((comment) {
                         if (comment is Map && comment.containsKey('name')) {
                           return ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: AssetImage(
-                                  'assets/images/anonymous_avatar.png'),
-                            ),
                             title: Text(
                               comment['name'],
                               style: TextStyle(fontWeight: FontWeight.bold),
@@ -278,7 +353,10 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
                     decoration: InputDecoration(hintText: "Add a comment..."),
                     onSubmitted: (text) {
                       if (text.isNotEmpty) {
-                        var newComment = {'name': 'Anonymous', 'comment': text};
+                        var newComment = {
+                          'name': 'Anonymous',
+                          'comment': text
+                        };
                         setModalState(() {
                           comments.add(newComment);
                         });
@@ -306,8 +384,8 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
   }
 
   // Share report using share_plus.
-  void _shareReport(String title, String description, String category, String location) {
-    Share.share('$title\n\n$description\n\nCategory: $category\nLocation: $location');
+  void _shareReport(String title, String description) {
+    Share.share('$title\n\n$description');
   }
 
   @override
@@ -332,7 +410,7 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
                   zoomControlsEnabled: true,
                   markers: _markers,
                 ),
-                _buildFloatingAppBar(), // <-- Floating AppBar defined below.
+                _buildFloatingAppBar(),
               ],
             ),
           ),
@@ -347,8 +425,11 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
                         itemCount: _reports.length,
                         itemBuilder: (context, index) {
                           var report = _reports[index];
-                          String reportUserId = report['userId'] ?? report['uid'] ?? "none";
-                          print("Report id: ${report['id']}, report userId: $reportUserId, current user id: $currentUserId");
+                          // Debug: print report userId and current user id.
+                          String reportUserId =
+                              report['userId'] ?? report['uid'] ?? "none";
+                          print(
+                              "Report id: ${report['id']}, report userId: $reportUserId, current user id: $currentUserId");
 
                           List<String> imageUrls = [];
                           if (report['imageUrl'] is List) {
@@ -366,15 +447,17 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
                           String? latitude = report['location']?['latitude']?.toString();
                           String? longitude = report['location']?['longitude']?.toString();
                           int likes = report['likes'] ?? 0;
+
                           List likedBy = List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(currentUserId);
 
                           return InkWell(
-                            onTap: () async {
+                            onTap: () {
+                              // When tapping a report, animate the map to its location and show its info window.
                               if (report['location'] != null) {
                                 double lat = (report['location']['latitude'] ?? 0).toDouble();
                                 double lng = (report['location']['longitude'] ?? 0).toDouble();
-                                await _mapController.animateCamera(
+                                _mapController.animateCamera(
                                   CameraUpdate.newLatLngZoom(LatLng(lat, lng), 18),
                                 );
                                 _mapController.showMarkerInfoWindow(MarkerId(report['id']));
@@ -401,28 +484,23 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.bold)),
                                         SizedBox(height: 5),
-                                        Text(
-                                          description,
-                                          style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[700]),
-                                        ),
+                                        Text(description,
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey[700])),
                                         SizedBox(height: 5),
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text("Category: $category",
-                                                style: TextStyle(
-                                                    fontWeight: FontWeight.bold)),
+                                                style: TextStyle(fontWeight: FontWeight.bold)),
                                             Text("Urgency: $urgency",
-                                                style: TextStyle(
-                                                    color: Colors.blueAccent)),
+                                                style: TextStyle(color: Colors.blueAccent)),
                                           ],
                                         ),
                                         if (latitude != null && longitude != null)
                                           Text("Location: $latitude, $longitude",
-                                              style: TextStyle(
-                                                  color: Colors.blueGrey)),
+                                              style: TextStyle(color: Colors.blueGrey)),
                                         SizedBox(height: 10),
                                         Row(
                                           children: [
@@ -433,27 +511,21 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
                                               ),
                                               onPressed: () {
                                                 _handleLike(reportId, isLiked);
-                                                _showAnimatedSnackbar(
-                                                    isLiked ? "Like removed!" : "Liked!");
+                                                _showAnimatedSnackbar(isLiked
+                                                    ? "Like removed!"
+                                                    : "Liked!");
                                               },
                                             ),
-                                            Text("$likes Likes",
-                                                style: TextStyle(color: Colors.black)),
+                                            Text("$likes Likes", style: TextStyle(color: Colors.black)),
                                             IconButton(
-                                              icon: Icon(Icons.comment_outlined,
-                                                  color: Colors.black),
+                                              icon: Icon(Icons.comment_outlined, color: Colors.black),
                                               onPressed: () => _showComments(context, reportId),
                                             ),
                                             IconButton(
-                                              icon: Icon(Icons.share_outlined,
-                                                  color: Colors.black),
-                                              onPressed: () {
-                                                String locationText = (latitude != null && longitude != null)
-                                                    ? '$latitude, $longitude'
-                                                    : 'Location not available';
-                                                _shareReport(title, description, category, locationText);
-                                              },
+                                              icon: Icon(Icons.share_outlined, color: Colors.black),
+                                              onPressed: () => _shareReport(title, description),
                                             ),
+                                            // Show trash icon if forced or if the report's owner matches the current user.
                                             if (forceShowTrashIcon ||
                                                 ((report['userId'] ?? report['uid']) == currentUserId))
                                               IconButton(
@@ -473,66 +545,6 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
                       ),
           ),
         ],
-      ),
-    );
-  }
-
-  // Floating AppBar widget.
-  Widget _buildFloatingAppBar() {
-    return Positioned(
-      top: 40,
-      left: 20,
-      right: 20,
-      child: Container(
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            )
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Back Button.
-            IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.black87),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            // Title with Sexual Abuse Icon and Text.
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.report, size: 30, color: Colors.redAccent),
-                SizedBox(width: 8),
-                Text(
-                  "Sexual Abuse Reports",
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87),
-                ),
-              ],
-            ),
-            // Search Button.
-            IconButton(
-              icon: Icon(Icons.search, color: Colors.black87),
-              onPressed: () {
-                showSearch(
-                  context: context,
-                  delegate: SexualabuseReportSearchDelegate(reports: _reports),
-                );
-              },
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -570,8 +582,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => FullScreenImagePage(imageUrl: image)),
+                    MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: image)),
                   );
                 },
                 child: Image.network(
@@ -594,7 +605,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
               margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _current == entry.key ? Colors.redAccent : Colors.grey.shade400,
+                color: _current == entry.key ? Colors.orangeAccent : Colors.grey.shade400,
               ),
             );
           }).toList(),
@@ -604,11 +615,11 @@ class _ImageCarouselState extends State<ImageCarousel> {
   }
 }
 
-// Custom SearchDelegate for sexual abuse reports.
-class SexualabuseReportSearchDelegate extends SearchDelegate {
+// Custom SearchDelegate for infrastructure reports.
+class InfrastructureReportSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> reports;
 
-  SexualabuseReportSearchDelegate({required this.reports});
+  InfrastructureReportSearchDelegate({required this.reports});
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -645,7 +656,7 @@ class SexualabuseReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = results[index];
         return ListTile(
-          leading: Icon(Icons.report, color: Colors.redAccent),
+          leading: Icon(Icons.build, color: Colors.orangeAccent),
           title: Text(report['title'] ?? "No Title"),
           subtitle: Text(report['description'] ?? "No Description"),
           onTap: () {
@@ -653,8 +664,7 @@ class SexualabuseReportSearchDelegate extends SearchDelegate {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    SexualabuseReportDetailPage(report: report),
+                builder: (context) => InfrastructureReportDetailPage(report: report),
               ),
             );
           },
@@ -675,7 +685,7 @@ class SexualabuseReportSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final report = suggestions[index];
         return ListTile(
-          leading: Icon(Icons.report, color: Colors.redAccent),
+          leading: Icon(Icons.build, color: Colors.orangeAccent),
           title: Text(report['title'] ?? "No Title"),
           onTap: () {
             query = report['title'] ?? "";
@@ -687,25 +697,24 @@ class SexualabuseReportSearchDelegate extends SearchDelegate {
   }
 }
 
-// Detail page for a sexual abuse report.
-class SexualabuseReportDetailPage extends StatelessWidget {
+// Detail page for an infrastructure report.
+class InfrastructureReportDetailPage extends StatelessWidget {
   final Map<String, dynamic> report;
 
-  SexualabuseReportDetailPage({required this.report});
+  InfrastructureReportDetailPage({required this.report});
 
   @override
   Widget build(BuildContext context) {
     List<String> imageUrls = [];
     if (report['imageUrl'] is List) {
       imageUrls = List<String>.from(report['imageUrl']);
-    } else if (report['imageUrl'] is String &&
-        report['imageUrl'].isNotEmpty) {
+    } else if (report['imageUrl'] is String && report['imageUrl'].isNotEmpty) {
       imageUrls = [report['imageUrl']];
     }
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.redAccent,
-        title: Text(report['title'] ?? "Report Details"),
+        backgroundColor: Colors.orangeAccent,
+        title: Text(report['title'] ?? "Infrastructure Report Details"),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -719,10 +728,7 @@ class SexualabuseReportDetailPage extends StatelessWidget {
                 children: [
                   Text(
                     report['title'] ?? "No Title",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10),
                   Text(
@@ -737,7 +743,7 @@ class SexualabuseReportDetailPage extends StatelessWidget {
                   SizedBox(height: 5),
                   Text(
                     "Urgency: ${report['urgency'] ?? "Normal"}",
-                    style: TextStyle(fontSize: 16, color: Colors.redAccent),
+                    style: TextStyle(fontSize: 16, color: Colors.blueAccent),
                   ),
                 ],
               ),
@@ -749,7 +755,7 @@ class SexualabuseReportDetailPage extends StatelessWidget {
   }
 }
 
-// Full screen image view page.
+// Full screen image view.
 class FullScreenImagePage extends StatelessWidget {
   final String imageUrl;
 

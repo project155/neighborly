@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:neighborly/UserSelectionPage.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:neighborly/Volunteerhome.dart';
 import 'package:neighborly/firebase_options.dart';
 import 'package:neighborly/userhome.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
@@ -66,6 +67,8 @@ Widget getScreen(){
   switch(role){
     case 'user':
       return  Userhome();
+    case 'volunteer':
+      return VolunteerHome();
     
     default:
       return  UserSelectionPage();

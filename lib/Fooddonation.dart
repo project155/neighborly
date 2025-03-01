@@ -63,16 +63,17 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
       });
     }
   }
+  
   List<String> extractPlayerIds(QuerySnapshot snapshot) {
-      return snapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .where((data) =>
-              data.containsKey('playerid') &&
-              data['playerid'] != null &&
-              data['playerid'].toString().trim().isNotEmpty)
-          .map((data) => data['playerid'] as String)
-          .toList();
-    }
+    return snapshot.docs
+        .map((doc) => doc.data() as Map<String, dynamic>)
+        .where((data) =>
+            data.containsKey('playerid') &&
+            data['playerid'] != null &&
+            data['playerid'].toString().trim().isNotEmpty)
+        .map((data) => data['playerid'] as String)
+        .toList();
+  }
 
   Future<void> _submitDonation() async {
     if (_formKey.currentState!.validate()) {
@@ -109,12 +110,15 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
         'orderStatus': 'Pending', // Default status.
         'foodPreference': _foodPreference, // New field.
       });
-       QuerySnapshot volunteersSnapshot =
-        await FirebaseFirestore.instance.collection('volunteers').get();
-            List<String> volunteerPlayerIds = extractPlayerIds(volunteersSnapshot);
+      
+      QuerySnapshot volunteersSnapshot =
+          await FirebaseFirestore.instance.collection('volunteers').get();
+      List<String> volunteerPlayerIds = extractPlayerIds(volunteersSnapshot);
 
-
-      sendNotificationToSpecificUsers(volunteerPlayerIds,'New Food Donation', 'A new food donation is available!');
+      sendNotificationToSpecificUsers(
+          volunteerPlayerIds,
+          'New Food Donation',
+          'A new food donation is available!');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Food donation submitted successfully!')),
@@ -190,6 +194,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
   // Build the donation form view.
   Widget _buildDonationForm() {
     return Padding(
+      key: ValueKey('DonationForm'),
       padding: const EdgeInsets.all(16.0),
       child: Form(
         key: _formKey,
@@ -206,7 +211,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
                   borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide.none,
                 ),
-                prefixIcon: Icon(Icons.fastfood),
+                prefixIcon: Icon(Icons.fastfood, color: Colors.blueAccent),
               ),
               items: _foodTypes
                   .map((type) => DropdownMenuItem<String>(
@@ -348,7 +353,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             ListTile(
               tileColor: Colors.grey[200],
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              leading: Icon(Icons.calendar_today, color: Colors.green),
+              leading: Icon(Icons.calendar_today, color: Colors.blueAccent),
               title: Text(_expiryDate == null
                   ? 'Select Expiry Date'
                   : '${_expiryDate!.toLocal()}'.split(' ')[0]),
@@ -367,7 +372,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             ListTile(
               tileColor: Colors.grey[200],
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              leading: Icon(Icons.access_time, color: Colors.green),
+              leading: Icon(Icons.access_time, color: Colors.blueAccent),
               title: Text(_expiryTimeOfDay == null
                   ? 'Select Expiry Time'
                   : _expiryTimeOfDay!.format(context)),
@@ -401,7 +406,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.location_history, color: Colors.green, size: 22),
+                    Icon(Icons.location_history, color: Colors.blueAccent, size: 22),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -441,7 +446,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             ElevatedButton(
               onPressed: _pickImages,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.blueAccent,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -449,9 +454,9 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.image, size: 20),
+                  Icon(Icons.image, size: 20, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Attach Images'),
+                  Text('Attach Images', style: TextStyle(color: Colors.white)),
                 ],
               ),
             ),
@@ -482,7 +487,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             ElevatedButton(
               onPressed: _submitDonation,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.blueAccent,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -495,6 +500,40 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Build the landing page which shows current user's donation uploads.
+  Widget _buildLandingPage() {
+    return Padding(
+      key: ValueKey('LandingPage'),
+      padding: const EdgeInsets.all(16.0),
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('food_donations')
+            .where('userId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+            .orderBy('timestamp', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Text(
+                'No food donations found.\nTap the + button to add a new donation.',
+                textAlign: TextAlign.center,
+              ),
+            );
+          }
+          return ListView.builder(
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              return _buildDonationCard(snapshot.data!.docs[index]);
+            },
+          );
+        },
       ),
     );
   }
@@ -520,9 +559,9 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
 
     return Card(
       color: cardBackgroundColor,
-      margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 0.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
+      elevation: 5,
       child: Padding(
         padding: EdgeInsets.all(12.0),
         child: Column(
@@ -611,71 +650,66 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
     );
   }
 
-  // Build the landing page which shows current user's donation uploads.
-  Widget _buildLandingPage() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('food_donations')
-          .where('userId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Text(
-              'No food donations found.\nTap the + button to add a new donation.',
-              textAlign: TextAlign.center,
-            ),
-          );
-        }
-        return ListView.builder(
-          itemCount: snapshot.data!.docs.length,
-          itemBuilder: (context, index) {
-            return _buildDonationCard(snapshot.data!.docs[index]);
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Food Donation',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.green, Colors.lightGreen],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        // Back arrow only when the form is visible.
-        leading: _showForm
-            ? IconButton(
-                icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-                onPressed: () {
-                  setState(() {
-                    _showForm = false;
-                  });
-                },
-              )
-            : null,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(
+      bottom: Radius.circular(20), // Adjust the radius as desired.
+    ),
+  ),
+  title: Text(
+    'Food Donation',
+    style: TextStyle(
+      fontSize: 20, 
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+  centerTitle: true,
+  iconTheme: IconThemeData(color: Colors.blueAccent),
+  flexibleSpace: Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Colors.blueAccent, Colors.lightBlueAccent],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
-      body: _showForm ? _buildDonationForm() : _buildLandingPage(),
+      borderRadius: BorderRadius.vertical(
+        bottom: Radius.circular(20),
+      ),
+    ),
+  ),
+  leading: IconButton(
+    icon: Icon(
+      Icons.arrow_back_ios,
+      color: _showForm ? Colors.white : const Color.fromARGB(255, 255, 255, 255),
+    ),
+    onPressed: () {
+      if (_showForm) {
+        setState(() {
+          _showForm = false;
+        });
+      } else {
+        Navigator.of(context).pop();
+      }
+    },
+  ),
+),
+
+
+      // AnimatedSwitcher for smooth transition when form opens.
+      body: AnimatedSwitcher(
+        duration: Duration(milliseconds: 300),
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
+        child: _showForm ? _buildDonationForm() : _buildLandingPage(),
+      ),
       floatingActionButton: _showForm
           ? null
           : FloatingActionButton(
-              backgroundColor: Colors.green,
+              backgroundColor: Colors.blueAccent,
               onPressed: () {
                 setState(() {
                   _showForm = true;

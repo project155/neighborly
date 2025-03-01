@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-// Existing volunteer-related pages.
+// Shared pages from user home.
 import 'package:neighborly/Drought.dart';
 import 'package:neighborly/Landslide.dart';
 import 'package:neighborly/authority.dart';
@@ -16,11 +16,12 @@ import 'package:neighborly/flood.dart';
 import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/newreport.dart';
 import 'package:neighborly/Userprofile.dart';
-import 'package:neighborly/volunteerfood.dart';
-import 'package:neighborly/wildfire.dart';
+import 'package:neighborly/Lostandfound.dart';
+import 'package:neighborly/Infrastructureissues.dart';
+import 'package:neighborly/Transportation.dart';
+import 'package:neighborly/Theft.dart';
+import 'package:neighborly/ChildAbuse.dart';
 import 'package:neighborly/Notificationpage.dart';
-
-// New report pages for additional public issues.
 import 'package:neighborly/Sexualabuse.dart';
 import 'package:neighborly/Narcotics.dart';
 import 'package:neighborly/Roadincidents.dart';
@@ -30,6 +31,14 @@ import 'package:neighborly/Animalabuse.dart';
 import 'package:neighborly/bribery.dart';
 import 'package:neighborly/Foodsafety.dart';
 import 'package:neighborly/Hygieneissues.dart';
+import 'package:neighborly/SOSpage.dart';
+// Volunteer‑specific Food Donation page.
+import 'package:neighborly/volunteerfood.dart';
+// For the extra help feature – assuming a page exists.
+//import 'package:neighborly/ExampleFeature2.dart';
+
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:neighborly/wildfire.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,7 +63,7 @@ class VolunteerHome extends StatefulWidget {
 }
 
 class _VolunteerHomeState extends State<VolunteerHome> {
-  // Updated lists with corrected spellings and additional categories.
+  // Lists updated to include additional options.
   final List<String> disasterTypes = [
     "Flood/Rainfall",
     "Fire",
@@ -70,12 +79,18 @@ class _VolunteerHomeState extends State<VolunteerHome> {
     "Animal Abuse",
     "Bribery",
     "Food Safety",
-    "Hygiene Issues"
+    "Hygiene Issues",
+    "Infrastructure Issues", // Added option
+    "Transportation",        // Added option
+    "Theft",                 // Added option
+    "Child Abuse"            // Added option
   ];
   final List<String> helpAndRecover = [
-    "Food Donation"
+    "Food Donation", // Volunteer-specific page for food donation.
+    "Lost & Found",
+    "Example Feature 2"
   ];
-  // Optional extra section for changing the notification banner.
+  // Volunteer‑only additional feature.
   final List<String> notificationBanner = ["Change Banner"];
 
   // Notice images fetched from Firestore.
@@ -144,7 +159,7 @@ class _VolunteerHomeState extends State<VolunteerHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      // Use a Stack to overlay the floating bottom navigation.
+      // Stack to overlay the floating bottom navigation.
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -155,7 +170,7 @@ class _VolunteerHomeState extends State<VolunteerHome> {
                 _buildSection("Report Disaster", disasterTypes),
                 _buildSection("Report Public Issues", newCategoryItems),
                 _buildSection("Help And Recover", helpAndRecover),
-                // Optional: if you want to allow banner changes as a separate section.
+                // Volunteer‑only section remains.
                 _buildSection("Notification Banner", notificationBanner),
               ],
             ),
@@ -198,24 +213,34 @@ class _VolunteerHomeState extends State<VolunteerHome> {
                   IconButton(
                     icon: Icon(Icons.post_add_rounded, color: Colors.white),
                     onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => CreateReportPage()));
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => CreateReportPage()));
                     },
                   ),
+                  // Updated camera button.
                   IconButton(
                     icon: Icon(Icons.camera_alt, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => LoginUser()));
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final pickedFile =
+                          await picker.pickImage(source: ImageSource.camera);
+                      if (pickedFile != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CreateReportPage(attachment: pickedFile),
+                          ),
+                        );
+                      }
                     },
                   ),
+                  // Updated SOS button.
                   IconButton(
                     icon: Icon(Icons.sos_sharp, color: Colors.white),
                     onPressed: () {
                       Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => LoginUser()));
+                          MaterialPageRoute(builder: (context) => SosPage()));
                     },
                   ),
                 ],
@@ -236,7 +261,6 @@ class _VolunteerHomeState extends State<VolunteerHome> {
                 style: TextStyle(color: Colors.white)),
             backgroundColor: const Color.fromARGB(255, 95, 156, 255),
             actions: [
-              // Notifications icon now navigates to NotificationPage.
               IconButton(
                 icon: Icon(Icons.notifications_active_rounded,
                     color: Colors.white),
@@ -255,7 +279,7 @@ class _VolunteerHomeState extends State<VolunteerHome> {
     );
   }
 
-  // Builds the notice slider section with rounded corners.
+  // Builds the notice slider section.
   Widget _buildNoticeSection() {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 15, horizontal: 15),
@@ -301,7 +325,7 @@ class _VolunteerHomeState extends State<VolunteerHome> {
     );
   }
 
-  // Builds a generic section with a heading and grid of items.
+  // Generic section builder.
   Widget _buildSection(String heading, List<String> items) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 15),
@@ -347,25 +371,30 @@ class _VolunteerHomeState extends State<VolunteerHome> {
     );
   }
 
-  // Builds a clickable grid item for a given service.
+  // Builds each grid item with icon mapping and navigation.
   Widget _buildServiceItem(String title) {
-    // Updated mapping with keys that match the updated lists.
-    final Map<String, String> imageMapping = {
-      "Flood/Rainfall": 'assets/images/flood.png',
-      "Fire": 'assets/images/fire.png',
-      "Drought": 'assets/images/drought.png',
-      "Landslide": 'assets/images/landslide.png',
-      "Sexual Abuse": 'assets/images/sexual_abuse.png',
-      "Narcotics": 'assets/images/narcotics.png',
-      "Road Incidents": 'assets/images/road_incidents.png',
-      "Eco Hazard": 'assets/images/eco_hazard.png',
-      "Alcohol": 'assets/images/alcohol.png',
-      "Animal Abuse": 'assets/images/animal_abuse.png',
-      "Bribery": 'assets/images/bribery.png',
-      "Food Safety": 'assets/images/food_safety.png',
-      "Hygiene Issues": 'assets/images/hygiene.png',
-      "Food Donation": 'assets/images/help.png',
-      "Change Banner": 'assets/images/banner.png',
+    final Map<String, IconData> iconMapping = {
+      "Flood/Rainfall": FontAwesomeIcons.houseFloodWater,
+      "Fire": FontAwesomeIcons.fire,
+      "Landslide": FontAwesomeIcons.mountain,
+      "Drought": FontAwesomeIcons.sunPlantWilt,
+      "Sexual Abuse": FontAwesomeIcons.personHarassing,
+      "Narcotics": FontAwesomeIcons.syringe,
+      "Road Incidents": FontAwesomeIcons.roadCircleExclamation,
+      "Eco Hazard": Icons.eco,
+      "Alcohol": FontAwesomeIcons.wineGlass,
+      "Animal Abuse": FontAwesomeIcons.paw,
+      "Bribery": FontAwesomeIcons.moneyBill1Wave,
+      "Food Safety": FontAwesomeIcons.cutlery,
+      "Hygiene Issues": FontAwesomeIcons.broom,
+      "Infrastructure Issues": FontAwesomeIcons.buildingCircleExclamation,
+      "Transportation": FontAwesomeIcons.bus,
+      "Theft": FontAwesomeIcons.peopleRobbery,
+      "Child Abuse": FontAwesomeIcons.childReaching,
+      "Food Donation": Icons.volunteer_activism,
+      "Lost & Found": FontAwesomeIcons.search,
+      "Example Feature 2": Icons.child_care_sharp,
+      "Change Banner": Icons.image,
     };
 
     return GestureDetector(
@@ -386,10 +415,8 @@ class _VolunteerHomeState extends State<VolunteerHome> {
         }
         // Public issues.
         else if (title == "Sexual Abuse") {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => SexualabuseReportPage()));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => SexualabuseReportPage()));
         } else if (title == "Narcotics") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => NarcoticsReportPage()));
@@ -399,40 +426,49 @@ class _VolunteerHomeState extends State<VolunteerHome> {
               MaterialPageRoute(
                   builder: (context) => RoadIncidentsReportPage()));
         } else if (title == "Eco Hazard") {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => EcohazardReportPage()));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => EcohazardReportPage()));
         } else if (title == "Alcohol") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => AlcoholReportPage()));
         } else if (title == "Animal Abuse") {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => AnimalabuseReportPage()));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => AnimalabuseReportPage()));
         } else if (title == "Bribery") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => BriberyReportPage()));
         } else if (title == "Food Safety") {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => FoodsafetyReportPage()));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => FoodsafetyReportPage()));
         } else if (title == "Hygiene Issues") {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => HygieneissuesReportPage()));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => HygieneissuesReportPage()));
+        } else if (title == "Infrastructure Issues") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => InfrastructureReportPage()));
+        } else if (title == "Transportation") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => TransportationReportPage()));
+        } else if (title == "Theft") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => TheftReportPage()));
+        } else if (title == "Child Abuse") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => ChildAbuseReportPage()));
         }
         // Help and recover.
         else if (title == "Food Donation") {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => FoodDonationVolunteerPage()));
+          // Use the volunteer-specific Food Donation page.
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => FoodDonationVolunteerPage()));
+        } else if (title == "Lost & Found") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => LostAndFoundPage()));
+        } else if (title == "Example Feature 2") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => LostAndFoundPage()));
         }
-        // Notification banner update.
+        // Volunteer-only: Notification banner update.
         else if (title == "Change Banner") {
           Navigator.push(
                   context,
@@ -467,9 +503,10 @@ class _VolunteerHomeState extends State<VolunteerHome> {
                   ),
                 ],
               ),
-              child: Image.asset(
-                imageMapping[title] ?? 'assets/images/default.png',
-                fit: BoxFit.contain,
+              child: Icon(
+                iconMapping[title] ?? Icons.help,
+                size: 30,
+                color: Colors.blue,
               ),
             ),
             SizedBox(height: 5),
@@ -491,7 +528,6 @@ class _VolunteerHomeState extends State<VolunteerHome> {
 }
 
 // Upload form for changing the notification banner.
-// After a successful upload to Cloudinary, the secure URL is returned and saved to Firestore.
 class ChangeNotificationBannerPage extends StatefulWidget {
   @override
   _ChangeNotificationBannerPageState createState() =>
@@ -515,7 +551,7 @@ class _ChangeNotificationBannerPageState
   Future<void> _uploadImage() async {
     if (_selectedImage == null) return;
 
-    // Upload the image to Cloudinary using your existing function.
+    // Upload the image to Cloudinary.
     String? secureUrl = await getClodinaryUrl(_selectedImage!.path);
     if (secureUrl != null) {
       // Save the secureUrl in Firestore under the 'noticeImages' collection.

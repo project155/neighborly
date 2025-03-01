@@ -38,22 +38,45 @@ class _DroughtReportPageState extends State<DroughtReportPage>
 
   Future<void> _fetchReports() async {
     try {
+      // Obtain the user's current position for proximity filtering.
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      final double userLat = position.latitude;
+      final double userLng = position.longitude;
+      double radiusInMeters = 10000; // 10 km radius
+
       var snapshot = await _firestore
           .collection('reports')
           .where('category', isEqualTo: 'Drought')
           .orderBy('timestamp', descending: true)
           .get();
 
+      // Convert snapshot into a list of reports.
+      List<Map<String, dynamic>> allReports = snapshot.docs.map((doc) {
+        var data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+
+      // Filter reports based on distance from the user's location.
+      _reports = allReports.where((report) {
+        if (report['location'] != null) {
+          double reportLat =
+              (report['location']['latitude'] ?? 0).toDouble();
+          double reportLng =
+              (report['location']['longitude'] ?? 0).toDouble();
+          double distanceInMeters = Geolocator.distanceBetween(
+              userLat, userLng, reportLat, reportLng);
+          return distanceInMeters <= radiusInMeters;
+        }
+        return false;
+      }).toList();
+
       setState(() {
-        _reports = snapshot.docs.map((doc) {
-          var data = doc.data();
-          data['id'] = doc.id;
-          return data;
-        }).toList();
         _isLoading = false;
       });
 
-      // Add markers to the map
+      // Add markers for each filtered report.
       _markers.clear();
       for (var report in _reports) {
         if (report['location'] != null) {
@@ -65,17 +88,20 @@ class _DroughtReportPageState extends State<DroughtReportPage>
               markerId: MarkerId(report['id']),
               position: LatLng(lat, lng),
               infoWindow: InfoWindow(
-                  title: report['title'], snippet: report['description']),
+                  title: report['title'],
+                  snippet: report['description']),
             ),
           );
         }
       }
 
-      // Center map based on the first report (if available)
+      // Center the map based on the first report's location (if available).
       if (_markers.isNotEmpty) {
         var firstReport = _reports.first;
-        double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
-        double lng = (firstReport['location']['longitude'] ?? 0).toDouble();
+        double lat =
+            (firstReport['location']['latitude'] ?? 0).toDouble();
+        double lng =
+            (firstReport['location']['longitude'] ?? 0).toDouble();
         _mapController.animateCamera(
           CameraUpdate.newLatLng(LatLng(lat, lng)),
         );
@@ -88,7 +114,7 @@ class _DroughtReportPageState extends State<DroughtReportPage>
     }
   }
 
-  // Animated Snackbar Method
+  // Animated Snackbar for notifications.
   void _showAnimatedSnackbar(String message) {
     AnimationController controller = AnimationController(
       vsync: this,
@@ -124,7 +150,8 @@ class _DroughtReportPageState extends State<DroughtReportPage>
                     child: Text(
                       message,
                       style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -145,7 +172,7 @@ class _DroughtReportPageState extends State<DroughtReportPage>
     });
   }
 
-  // Floating AppBar as an elongated cylinder overlapping the map.
+  // Floating AppBar overlapping the map.
   Widget _buildFloatingAppBar() {
     return Positioned(
       top: 40,
@@ -167,14 +194,14 @@ class _DroughtReportPageState extends State<DroughtReportPage>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Back Button
+            // Back Button.
             IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.black87),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
-            // Title with Drought Icon and Text
+            // Title with Drought Icon and Text.
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -190,7 +217,7 @@ class _DroughtReportPageState extends State<DroughtReportPage>
                 ),
               ],
             ),
-            // Search Button which triggers search
+            // Search Button.
             IconButton(
               icon: Icon(Icons.search, color: Colors.black87),
               onPressed: () {
@@ -206,7 +233,7 @@ class _DroughtReportPageState extends State<DroughtReportPage>
     );
   }
 
-  // Instead of using zoomable InteractiveViewer, we open a full-screen image on tap.
+  // Tappable image that opens a full-screen view.
   Widget _buildTappableImage(String imageUrl) {
     return GestureDetector(
       onTap: () {
@@ -225,13 +252,123 @@ class _DroughtReportPageState extends State<DroughtReportPage>
     );
   }
 
+  // Handle likes.
+  void _handleLike(String docId, bool isLiked) {
+    String userId = _auth.currentUser?.uid ?? "";
+    if (userId.isEmpty) return;
+
+    int index = _reports.indexWhere((report) => report['id'] == docId);
+    if (index != -1) {
+      setState(() {
+        if (isLiked) {
+          _reports[index]['likes'] =
+              ((_reports[index]['likes'] ?? 0) as int) - 1;
+          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
+          likedBy.remove(userId);
+          _reports[index]['likedBy'] = likedBy;
+        } else {
+          _reports[index]['likes'] =
+              ((_reports[index]['likes'] ?? 0) as int) + 1;
+          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
+          likedBy.add(userId);
+          _reports[index]['likedBy'] = likedBy;
+        }
+      });
+    }
+    _firestore.collection('reports').doc(docId).update({
+      'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
+      'likedBy': isLiked
+          ? FieldValue.arrayRemove([userId])
+          : FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  // Display comments in a bottom sheet.
+  void _showComments(BuildContext context, String docId) {
+    int reportIndex = _reports.indexWhere((report) => report['id'] == docId);
+    List<dynamic> comments = reportIndex != -1
+        ? List.from(_reports[reportIndex]['comments'] ?? [])
+        : [];
+    TextEditingController commentController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: EdgeInsets.all(10),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      children: comments.map((comment) {
+                        if (comment is Map && comment.containsKey('name')) {
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: AssetImage(
+                                  'assets/images/anonymous_avatar.png'),
+                            ),
+                            title: Text(
+                              comment['name'],
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(comment['comment'] ?? ""),
+                          );
+                        } else {
+                          return ListTile(title: Text(comment.toString()));
+                        }
+                      }).toList(),
+                    ),
+                  ),
+                  TextField(
+                    controller: commentController,
+                    decoration:
+                        InputDecoration(hintText: "Add a comment..."),
+                    onSubmitted: (text) {
+                      if (text.isNotEmpty) {
+                        var newComment = {'name': 'Anonymous', 'comment': text};
+                        setModalState(() {
+                          comments.add(newComment);
+                        });
+                        if (reportIndex != -1) {
+                          setState(() {
+                            _reports[reportIndex]['comments'] =
+                                List.from(_reports[reportIndex]['comments'] ?? [])
+                                  ..add(newComment);
+                          });
+                        }
+                        _firestore
+                            .collection('reports')
+                            .doc(docId)
+                            .update({
+                          'comments': FieldValue.arrayUnion([newComment]),
+                        });
+                        commentController.clear();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Share report using share_plus.
+  void _shareReport(String title, String description) {
+    Share.share('$title\n\n$description');
+  }
+
   @override
   Widget build(BuildContext context) {
+    String currentUserId = _auth.currentUser?.uid ?? "";
     return Scaffold(
-      // No traditional appBar; using a Stack to overlay a floating bar on the map.
       body: Column(
         children: [
-          // Map section with floating AppBar on top.
+          // Map section with the floating AppBar.
           Expanded(
             flex: 1,
             child: Stack(
@@ -281,96 +418,112 @@ class _DroughtReportPageState extends State<DroughtReportPage>
                           String? longitude =
                               report['location']?['longitude']?.toString();
                           int likes = report['likes'] ?? 0;
-                          // For likes, get the likedBy list and check if the current user is included.
-                          List likedBy = List<String>.from(report['likedBy'] ?? []);
-                          String userId = _auth.currentUser?.uid ?? "";
-                          bool isLiked = likedBy.contains(userId);
+                          List likedBy =
+                              List<String>.from(report['likedBy'] ?? []);
+                          bool isLiked = likedBy.contains(currentUserId);
 
-                          return Card(
-                            margin: EdgeInsets.symmetric(
-                                vertical: 10, horizontal: 16),
-                            elevation: 5,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (imageUrls.isNotEmpty)
-                                  ImageCarousel(imageUrls: imageUrls),
-                                Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(title,
-                                          style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold)),
-                                      SizedBox(height: 5),
-                                      Text(
-                                        description,
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[700]),
-                                      ),
-                                      SizedBox(height: 5),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text("Category: $category",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
-                                          Text("Urgency: $urgency",
-                                              style: TextStyle(
-                                                  color: Colors.redAccent)),
-                                        ],
-                                      ),
-                                      if (latitude != null &&
-                                          longitude != null)
-                                        Text("Location: $latitude, $longitude",
+                          return InkWell(
+                            onTap: () {
+                              // When a report is tapped, animate the map to its location and show its marker info.
+                              if (report['location'] != null) {
+                                double lat = (report['location']['latitude'] ?? 0)
+                                    .toDouble();
+                                double lng = (report['location']['longitude'] ?? 0)
+                                    .toDouble();
+                                _mapController.animateCamera(
+                                  CameraUpdate.newLatLngZoom(
+                                      LatLng(lat, lng), 18),
+                                );
+                                _mapController.showMarkerInfoWindow(
+                                    MarkerId(report['id']));
+                              }
+                            },
+                            child: Card(
+                              margin: EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 16),
+                              elevation: 5,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (imageUrls.isNotEmpty)
+                                    ImageCarousel(imageUrls: imageUrls),
+                                  Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(title,
                                             style: TextStyle(
-                                                color: Colors.blueGrey)),
-                                      SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: Icon(
-                                              isLiked
-                                                  ? Icons.thumb_up
-                                                  : Icons.thumb_up_alt_outlined,
-                                              color: Colors.blue,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold)),
+                                        SizedBox(height: 5),
+                                        Text(
+                                          description,
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[700]),
+                                        ),
+                                        SizedBox(height: 5),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text("Category: $category",
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold)),
+                                            Text("Urgency: $urgency",
+                                                style: TextStyle(
+                                                    color: Colors.redAccent)),
+                                          ],
+                                        ),
+                                        if (latitude != null &&
+                                            longitude != null)
+                                          Text("Location: $latitude, $longitude",
+                                              style: TextStyle(
+                                                  color: Colors.blueGrey)),
+                                        SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(
+                                                isLiked
+                                                    ? Icons.thumb_up
+                                                    : Icons.thumb_up_alt_outlined,
+                                                color: Colors.black,
+                                              ),
+                                              onPressed: () {
+                                                _handleLike(reportId, isLiked);
+                                                _showAnimatedSnackbar(isLiked
+                                                    ? "Like removed!"
+                                                    : "Liked!");
+                                              },
                                             ),
-                                            onPressed: () {
-                                              _handleLike(reportId, isLiked);
-                                              _showAnimatedSnackbar(isLiked
-                                                  ? "Like removed!"
-                                                  : "Liked!");
-                                            },
-                                          ),
-                                          Text("$likes Likes",
-                                              style:
-                                                  TextStyle(color: Colors.blue)),
-                                          IconButton(
-                                            icon: Icon(Icons.comment_outlined,
-                                                color: Colors.green),
-                                            onPressed: () =>
-                                                _showComments(context, reportId),
-                                          ),
-                                          IconButton(
-                                            icon: Icon(Icons.share_outlined,
-                                                color: Colors.orange),
-                                            onPressed: () =>
-                                                _shareReport(title, description),
-                                          ),
-                                        ],
-                                      )
-                                    ],
-                                  ),
-                                )
-                              ],
+                                            Text("$likes Likes",
+                                                style: TextStyle(
+                                                    color: Colors.black)),
+                                            IconButton(
+                                              icon: Icon(Icons.comment_outlined,
+                                                  color: Colors.black),
+                                              onPressed: () =>
+                                                  _showComments(context, reportId),
+                                            ),
+                                            IconButton(
+                                              icon: Icon(Icons.share_outlined,
+                                                  color: Colors.black),
+                                              onPressed: () =>
+                                                  _shareReport(title, description),
+                                            ),
+                                          ],
+                                        )
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -380,119 +533,9 @@ class _DroughtReportPageState extends State<DroughtReportPage>
       ),
     );
   }
-
-  // --- Updated _handleLike method with optimistic UI update ---
-  void _handleLike(String docId, bool isLiked) {
-    String userId = _auth.currentUser?.uid ?? "";
-    if (userId.isEmpty) return;
-
-    int index = _reports.indexWhere((report) => report['id'] == docId);
-    if (index != -1) {
-      setState(() {
-        if (isLiked) {
-          _reports[index]['likes'] =
-              ((_reports[index]['likes'] ?? 0) as int) - 1;
-          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
-          likedBy.remove(userId);
-          _reports[index]['likedBy'] = likedBy;
-        } else {
-          _reports[index]['likes'] =
-              ((_reports[index]['likes'] ?? 0) as int) + 1;
-          List likedBy = List.from(_reports[index]['likedBy'] ?? []);
-          likedBy.add(userId);
-          _reports[index]['likedBy'] = likedBy;
-        }
-      });
-    }
-    _firestore.collection('reports').doc(docId).update({
-      'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
-      'likedBy': isLiked
-          ? FieldValue.arrayRemove([userId])
-          : FieldValue.arrayUnion([userId]),
-    });
-  }
-
-  // --- Updated _showComments method for immediate comment updates ---
-  void _showComments(BuildContext context, String docId) {
-    // Find the report index and get its comments list.
-    int reportIndex = _reports.indexWhere((report) => report['id'] == docId);
-    List<dynamic> comments = reportIndex != -1
-        ? List.from(_reports[reportIndex]['comments'] ?? [])
-        : [];
-    TextEditingController commentController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        // Using StatefulBuilder to update the bottom sheet UI instantly.
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              padding: EdgeInsets.all(10),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      children: comments.map((comment) {
-                        if (comment is Map && comment.containsKey('name')) {
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: AssetImage(
-                                  'assets/images/anonymous_avatar.png'),
-                            ),
-                            title: Text(
-                              comment['name'],
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(comment['comment'] ?? ""),
-                          );
-                        } else {
-                          return ListTile(title: Text(comment.toString()));
-                        }
-                      }).toList(),
-                    ),
-                  ),
-                  TextField(
-                    controller: commentController,
-                    decoration: InputDecoration(hintText: "Add a comment..."),
-                    onSubmitted: (text) {
-                      if (text.isNotEmpty) {
-                        var newComment = {'name': 'Anonymous', 'comment': text};
-                        // Update the bottom sheet UI immediately.
-                        setModalState(() {
-                          comments.add(newComment);
-                        });
-                        // Also update the local _reports list.
-                        if (reportIndex != -1) {
-                          setState(() {
-                            _reports[reportIndex]['comments'] =
-                                List.from(_reports[reportIndex]['comments'] ?? [])
-                                  ..add(newComment);
-                          });
-                        }
-                        // Update Firestore.
-                        _firestore.collection('reports').doc(docId).update({
-                          'comments': FieldValue.arrayUnion([newComment]),
-                        });
-                        commentController.clear();
-                      }
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _shareReport(String title, String description) {
-    Share.share('$title\n\n$description');
-  }
 }
 
-// A new widget for the carousel with dot indicators.
+// Carousel widget for displaying report images.
 class ImageCarousel extends StatefulWidget {
   final List<String> imageUrls;
   ImageCarousel({required this.imageUrls});
@@ -546,7 +589,8 @@ class _ImageCarouselState extends State<ImageCarousel> {
             return Container(
               width: 8.0,
               height: 8.0,
-              margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+              margin:
+                  EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _current == entry.key
@@ -697,7 +741,6 @@ class DroughtReportDetailPage extends StatelessWidget {
                     "Urgency: ${report['urgency'] ?? "Normal"}",
                     style: TextStyle(fontSize: 16, color: Colors.redAccent),
                   ),
-                  // Add additional details as needed...
                 ],
               ),
             )

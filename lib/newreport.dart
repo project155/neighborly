@@ -50,6 +50,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
     'Bribery',
     'Food Safety',
     'Hygiene Issues',
+    'Infrastructure Issues',
+    'Transportation',
+    'Theft',
+    'Child Abuse'
   ];
 
   final List<String> _urgencyLevels = ['Low', 'Medium', 'High'];
@@ -93,6 +97,14 @@ class _CreateReportPageState extends State<CreateReportPage> {
         return Icon(Icons.restaurant, color: Colors.orange);
       case 'hygiene issues':
         return Icon(Icons.clean_hands, color: Colors.blue);
+      case 'infrastructure issues':
+        return Icon(Icons.build, color: Colors.grey);
+      case 'transportation':
+        return Icon(Icons.directions_car, color: Colors.teal);
+      case 'theft':
+        return Icon(Icons.security_rounded, color: Colors.black);
+        case 'Child Abuse':
+        return Icon(Icons.security_rounded, color: Colors.black);
       default:
         return Icon(Icons.help_outline, color: Colors.grey);
     }
@@ -237,9 +249,6 @@ class _CreateReportPageState extends State<CreateReportPage> {
       // Send a notification with:
       // Notification title: "<type of report> reported"
       // Notification description: "<report title>"
-      //
-      // If the sendNotificationToSpecificUsers function expects (playerIds, message, title)
-      // then we need to swap the order from what we might normally assume.
       sendNotificationToSpecificUsers(
           pidlist,
           _titleController.text,
@@ -254,7 +263,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
       setState(() {
         _isSubmitting = false;
       });
-      // Return to the homepage (pop the current page).
+      // Return to the previous page.
       Navigator.of(context).pop();
     } else {
       // If form is not valid, re-enable the button.
@@ -275,7 +284,11 @@ class _CreateReportPageState extends State<CreateReportPage> {
       appBar: AppBar(
         title: Text(
           'Create Report',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         centerTitle: true,
         flexibleSpace: Container(
@@ -300,7 +313,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
           key: _formKey,
           child: ListView(
             children: [
-              // Category Dropdown with icons.
+              // Category Dropdown with icons and a max height for the dropdown menu.
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
                 decoration: InputDecoration(
@@ -311,8 +324,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     borderRadius: BorderRadius.circular(15),
                     borderSide: BorderSide.none,
                   ),
-                  prefixIcon: Icon(Icons.category),
                 ),
+                menuMaxHeight: 500.0,
                 items: _categories
                     .map(
                       (category) => DropdownMenuItem<String>(
@@ -368,9 +381,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Please enter a title'
-                    : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Please enter a title' : null,
               ),
               SizedBox(height: 12),
               TextFormField(
@@ -416,8 +428,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading:
-                    Icon(Icons.access_time, color: Colors.blueAccent),
+                leading: Icon(Icons.access_time, color: Colors.blueAccent),
                 title: Text(_timeOfDay == null
                     ? 'Select Time'
                     : _timeOfDay!.format(context)),
@@ -435,8 +446,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading:
-                    Icon(Icons.location_on, color: Colors.blueAccent),
+                leading: Icon(Icons.location_on, color: Colors.blueAccent),
                 title: Text(
                   _currentLocation == null
                       ? 'Fetch Current Location'
