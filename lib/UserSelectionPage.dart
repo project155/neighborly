@@ -54,21 +54,23 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
               children: [
                 // User page.
                 UserTypePage(
-                  color: const Color.fromARGB(255, 0, 189, 202),
+                  color: const Color.fromARGB(255, 52, 109, 246),
                   title: 'USER',
                   titleStyle: TextStyle(
                     fontSize: 120,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'proxima',
-                    color: Colors.white.withOpacity(0.8),
+                    color: const Color.fromARGB(100, 155, 253, 255)
+                        .withOpacity(0.7),
                   ),
-                  description: 'Login as a regular user to explore the app.',
-                  image: 'assets/back.jpg',
-                  titlePosition: Offset(6, 400),
+                  description:
+                      'Login as a regular user to explore the app. This is a longer description to illustrate how the text will be confined within the designated container.',
+                  image: 'assetss/back.jpg',
+                  titlePosition: Offset(-15, 300),
                   imagePosition: Offset(0.25, 0.15),
                   imageWidth: 350,
                   imageHeight: 500,
-                  descriptionPosition: Offset(0.1, 0.6),
+                  descriptionPosition: Offset(0.2, 0.6),
                   buttonPosition: Offset(0.3, 0.75),
                   onProceed: () {
                     Navigator.push(
@@ -76,25 +78,27 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                       MaterialPageRoute(builder: (context) => UserLoginPage()),
                     );
                   },
+                  // Optional: You can also define a descriptionStyle here
                 ),
                 // Volunteer page.
                 UserTypePage(
-                  color: const Color.fromARGB(255, 174, 218, 255),
+                  color: const Color.fromARGB(255, 246, 52, 64),
                   title: 'VOLUNTEER',
                   titleStyle: TextStyle(
-                    fontSize: 110,
+                    fontSize: 100,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'proxima',
                     color: Colors.white.withOpacity(0.8),
                   ),
-                  description: 'Login as a volunteer to contribute and assist.',
+                  description:
+                      'Login as a volunteer to contribute and assist. This longer description demonstrates how the text will be limited within the container, ensuring consistency across pages.',
                   descriptionStyle: TextStyle(
                     fontSize: 18,
                     fontFamily: 'Roboto',
                     color: Colors.white,
                   ),
                   image: 'assets/volunteer.png',
-                  titlePosition: Offset(6, 220),
+                  titlePosition: Offset(-15, 180),
                   imagePosition: Offset(0.2, 0.2),
                   imageWidth: 180,
                   imageHeight: 250,
@@ -110,15 +114,16 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                 ),
                 // Authority page.
                 UserTypePage(
-                  color: const Color.fromARGB(255, 255, 21, 21),
+                  color: const Color.fromARGB(255, 203, 32, 45),
                   title: 'AUTHORITY',
                   titleStyle: TextStyle(
                     fontSize: 110,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Roboto',
-                    color: Colors.white.withOpacity(0.8),
+                    color: const Color.fromARGB(255, 255, 166, 166).withOpacity(0.9),
                   ),
-                  description: 'LOGIN AS AN ADMIN.',
+                  description:
+                      'LOGIN AS AN ADMIN. This description is made longer to show how text confinement works uniformly across pages.',
                   image: 'assets/authority.png',
                   titlePosition: Offset(6, 200),
                   imagePosition: Offset(0.25, 0.25),
@@ -237,18 +242,25 @@ class UserTypePage extends StatelessWidget {
               fit: BoxFit.cover,
             ),
           ),
-          // Description positioned.
+          // Description positioned inside a container to confine text.
           Positioned(
-            bottom: screenHeight * (1 - descriptionPosition.dy),
-            left: screenWidth * descriptionPosition.dx,
-            child: SizedBox(
-              width: screenWidth * 0.8,
+            bottom: screenWidth *0.5,
+            left: screenWidth * 0.3,
+            child: Container(
+              padding: EdgeInsets.all(6),
+              width: screenWidth * 0.7,
+              decoration: BoxDecoration(
+                //color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Text(
                 description,
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.left,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
                 style: descriptionStyle ??
                     TextStyle(
-                      fontSize: 18,
+                      fontSize: 12,
                       color: Colors.white,
                       fontFamily: 'proxima',
                     ),
@@ -262,7 +274,7 @@ class UserTypePage extends StatelessWidget {
             child: ElevatedButton(
               onPressed: onProceed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: const Color.fromARGB(255, 255, 255, 255),
                 foregroundColor: color,
                 padding: EdgeInsets.symmetric(horizontal: 100, vertical: 18),
                 shape: StadiumBorder(),

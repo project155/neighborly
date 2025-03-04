@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:neighborly/lost.dart';
+import 'package:neighborly/found.dart'; // Import your FoundItemsPage.
 import 'package:neighborly/lostandfoundreport.dart'; // Existing import for your report page.
 
 class LostAndFoundPage extends StatelessWidget {
@@ -13,10 +14,13 @@ class LostAndFoundPage extends StatelessWidget {
         MaterialPageRoute(builder: (context) => LostItemsPage()),
       );
     } else {
-      // Add navigation for Found Items if needed.
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => FoundItemsPage()),
+      );
     }
   }
-
+  
   // Navigate to the form page for posting an item.
   void _navigateToForm(BuildContext context, bool isLost) {
     // Replace with your navigation code.
@@ -166,5 +170,3 @@ class LostAndFoundPage extends StatelessWidget {
     );
   }
 }
-
-// Stub implementation for LostItemsPage.

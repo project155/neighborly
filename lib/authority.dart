@@ -17,7 +17,6 @@ import 'package:neighborly/authorityreports/authoritybribery.dart';
 import 'package:neighborly/authorityreports/authoritydrought.dart';
 import 'package:neighborly/authorityreports/authorityecohazard.dart';
 import 'package:neighborly/authorityreports/authorityfire.dart';
-
 import 'package:neighborly/authorityreports/authorityflood.dart';
 import 'package:neighborly/authorityreports/authorityfoodi.dart';
 import 'package:neighborly/authorityreports/authorityhygiene.dart';
@@ -368,6 +367,61 @@ class _AuthorityHomeState extends State<AuthorityHome> {
     );
   }
 
+  /// Adds the floating navigation bar at the bottom using userhome.dart style.
+  Widget _buildFloatingNavBar() {
+    return Positioned(
+      left: 20,
+      right: 20,
+      bottom: 20,
+      child: Container(
+        height: 70,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 95, 156, 255),
+          borderRadius: BorderRadius.circular(35),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: Icon(Icons.post_add_rounded, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GenerateReports()),
+                );
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.person, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => UserProfilePage()),
+                );
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.settings, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SettingsPage()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -407,8 +461,36 @@ class _AuthorityHomeState extends State<AuthorityHome> {
               ],
             ),
           ),
+          // Added floating navigation bar
+          _buildFloatingNavBar(),
         ],
       ),
+    );
+  }
+}
+
+/// Simple placeholder for the User Profile page.
+class UserProfilePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("User Profile"),
+      ),
+      body: Center(child: Text("User Profile Page")),
+    );
+  }
+}
+
+/// Simple placeholder for the Settings page.
+class SettingsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Settings"),
+      ),
+      body: Center(child: Text("Settings Page")),
     );
   }
 }
@@ -492,7 +574,7 @@ class CategorizedReportsPage extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20),
-            // New Big Card for Crimes Reports.
+            // Big Card for Crimes Reports.
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -658,8 +740,7 @@ class FireReportsPage extends StatelessWidget {
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
               DocumentSnapshot doc = snapshot.data!.docs[index];
-              Map<String, dynamic> data =
-                  doc.data() as Map<String, dynamic>;
+              Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
               String title = data['title'] ?? "No Title";
               String description = data['description'] ?? "";
               // Assume location is stored as a map with 'latitude' and 'longitude'
@@ -965,6 +1046,3 @@ class CrimesReportsPage extends StatelessWidget {
     );
   }
 }
-
-
-

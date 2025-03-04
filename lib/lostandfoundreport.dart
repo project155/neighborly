@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:neighborly/incidentlocation.dart'; // Adjust the path if necessary
+import 'package:intl/intl.dart'; // Import intl package for date formatting
 import 'clodinary_upload.dart'; // Import your Cloudinary helper
 
 class CreateLostFoundItemPage extends StatefulWidget {
@@ -38,6 +39,11 @@ class _CreateLostFoundItemPageState extends State<CreateLostFoundItemPage> {
   // Common fields
   final _itemNameController = TextEditingController();
   final _descriptionController = TextEditingController();
+
+  // Contact Information Controllers
+  final _contactNameController = TextEditingController();
+  final _contactPhoneController = TextEditingController();
+  final _contactEmailController = TextEditingController();
 
   // Date and Time pickers
   DateTime? _dateTime;
@@ -130,7 +136,8 @@ class _CreateLostFoundItemPageState extends State<CreateLostFoundItemPage> {
       'itemCategory': _itemCategory,
       'itemName': _itemNameController.text,
       'description': _descriptionController.text,
-      'date': _dateTime != null ? _dateTime!.toIso8601String() : null,
+      // Format the date to only include year, month, and day.
+      'date': _dateTime != null ? DateFormat('yyyy-MM-dd').format(_dateTime!) : null,
       'time': _timeOfDay != null ? _timeOfDay!.format(context) : null,
       'imageUrls': imageUrls,
       'currentLocation': _currentLocation != null
@@ -147,6 +154,10 @@ class _CreateLostFoundItemPageState extends State<CreateLostFoundItemPage> {
           : null,
       'timestamp': FieldValue.serverTimestamp(),
       'userId': FirebaseAuth.instance.currentUser?.uid ?? 'anonymous',
+      // Include contact information
+      'contactName': _contactNameController.text,
+      'contactPhone': _contactPhoneController.text,
+      'contactEmail': _contactEmailController.text,
     };
 
     // Include conditional fields based on item type.
@@ -289,8 +300,9 @@ class _CreateLostFoundItemPageState extends State<CreateLostFoundItemPage> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Please enter item name' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter item name'
+                    : null,
               ),
               SizedBox(height: 12),
               // Description
@@ -306,27 +318,83 @@ class _CreateLostFoundItemPageState extends State<CreateLostFoundItemPage> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Please enter a description' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter a description'
+                    : null,
               ),
               SizedBox(height: 12),
               // Date Picker
               ListTile(
                 tileColor: Colors.grey[200],
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
                 leading: Icon(Icons.calendar_today, color: Colors.blueAccent),
-                title: Text(
-                    _dateTime == null ? 'Select Date' : '${_dateTime!.toLocal()}'.split(' ')[0]),
+                title: Text(_dateTime == null
+                    ? 'Select Date'
+                    : DateFormat('yyyy-MM-dd').format(_dateTime!)),
                 onTap: _selectDate,
               ),
               SizedBox(height: 12),
               // Time Picker
               ListTile(
                 tileColor: Colors.grey[200],
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
                 leading: Icon(Icons.access_time, color: Colors.blueAccent),
-                title: Text(_timeOfDay == null ? 'Select Time' : _timeOfDay!.format(context)),
+                title: Text(_timeOfDay == null
+                    ? 'Select Time'
+                    : _timeOfDay!.format(context)),
                 onTap: _selectTime,
+              ),
+              SizedBox(height: 12),
+              // Contact Information Section
+              Text(
+                "Contact Information",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              TextFormField(
+                controller: _contactNameController,
+                decoration: InputDecoration(
+                  hintText: 'Your Name',
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter your name'
+                    : null,
+              ),
+              SizedBox(height: 12),
+              TextFormField(
+                controller: _contactPhoneController,
+                decoration: InputDecoration(
+                  hintText: 'Phone Number',
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none),
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter your phone number'
+                    : null,
+              ),
+              SizedBox(height: 12),
+              TextFormField(
+                controller: _contactEmailController,
+                decoration: InputDecoration(
+                  hintText: 'Email Address (Optional)',
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none),
+                ),
+                keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 12),
               // Conditional fields for lost items
@@ -355,7 +423,8 @@ class _CreateLostFoundItemPageState extends State<CreateLostFoundItemPage> {
                   ),
                 ),
                 SizedBox(height: 12),
-              ] else if (_itemType != null && _itemType!.toLowerCase() == 'found') ...[
+              ] else if (_itemType != null &&
+                  _itemType!.toLowerCase() == 'found') ...[
                 DropdownButtonFormField<String>(
                   value: _itemWhereabouts,
                   decoration: InputDecoration(
@@ -439,7 +508,8 @@ class _CreateLostFoundItemPageState extends State<CreateLostFoundItemPage> {
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -481,7 +551,8 @@ class _CreateLostFoundItemPageState extends State<CreateLostFoundItemPage> {
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: _isSubmitting
                     ? SizedBox(

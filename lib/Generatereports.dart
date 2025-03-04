@@ -28,7 +28,9 @@ class GenerateReports extends StatelessWidget {
   Future<List<Map<String, dynamic>>> fetchData() async {
     try {
       QuerySnapshot snapshot =
-          await FirebaseFirestore.instance.collection('reports').get();
+          await FirebaseFirestore.instance.collection('reports')
+          .orderBy('timestamp', descending: true)
+          .get();
       return snapshot.docs
           .map((doc) => doc.data() as Map<String, dynamic>)
           .toList();
@@ -206,38 +208,131 @@ class GenerateReports extends StatelessWidget {
     );
   }
 
+  // Helper widget to build a card for each option.
+  Widget _buildCard(BuildContext context, String title, VoidCallback onTap) {
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Reports PDF Generator'),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: generatePdf,
-                child: Text('Generate All Reports PDF'),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => generatePdfByCategory('Flood'),
-                child: Text('Generate Flood Reports PDF'),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => generatePdfByCategory('Drought'),
-                child: Text('Generate Drought Reports PDF'),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => generatePdfByCategory('Landslide'),
-                child: Text('Generate Landslide Reports PDF'),
-              ),
-            ],
-          ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: GridView.count(
+          crossAxisCount: 3,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          children: [
+           _buildCard(
+  context,
+  'Generate All Reports PDF',
+  () => generatePdf(),
+),
+_buildCard(
+  context,
+  'Generate Flood Reports PDF',
+  () => generatePdfByCategory('flood'),
+),
+_buildCard(
+  context,
+  'Generate Drought Reports PDF',
+  () => generatePdfByCategory('Drought'),
+),
+_buildCard(
+  context,
+  'Generate Landslide Reports PDF',
+  () => generatePdfByCategory('Landslide'),
+),
+_buildCard(
+  context,
+  'Generate Fire Reports PDF',
+  () => generatePdfByCategory('Fire'),
+),
+_buildCard(
+  context,
+  'Generate Sexual Abuse Reports PDF',
+  () => generatePdfByCategory('Sexual Abuse'),
+),
+_buildCard(
+  context,
+  'Generate Narcotics Reports PDF',
+  () => generatePdfByCategory('Narcotics'),
+),
+_buildCard(
+  context,
+  'Generate Road Incidents Reports PDF',
+  () => generatePdfByCategory('Road Incidents'),
+),
+_buildCard(
+  context,
+  'Generate Eco Hazard Reports PDF',
+  () => generatePdfByCategory('Eco Hazard'),
+),
+_buildCard(
+  context,
+  'Generate Alcohol Reports PDF',
+  () => generatePdfByCategory('Alcohol'),
+),
+_buildCard(
+  context,
+  'Generate Animal Abuse Reports PDF',
+  () => generatePdfByCategory('Animal Abuse'),
+),
+_buildCard(
+  context,
+  'Generate Bribery Reports PDF',
+  () => generatePdfByCategory('Bribery'),
+),
+_buildCard(
+  context,
+  'Generate Food Safety Reports PDF',
+  () => generatePdfByCategory('Food Safety'),
+),
+_buildCard(
+  context,
+  'Generate Hygiene Issues Reports PDF',
+  () => generatePdfByCategory('Hygiene Issues'),
+),
+_buildCard(
+  context,
+  'Generate Infrastructure Issues Reports PDF',
+  () => generatePdfByCategory('Infrastructure Issues'),
+),
+_buildCard(
+  context,
+  'Generate Transportation Reports PDF',
+  () => generatePdfByCategory('Transportation'),
+),
+_buildCard(
+  context,
+  'Generate Theft Reports PDF',
+  () => generatePdfByCategory('Theft'),
+),
+_buildCard(
+  context,
+  'Generate Child Abuse Reports PDF',
+  () => generatePdfByCategory('Child Abuse'),
+),
+
+          ],
         ),
       ),
     );

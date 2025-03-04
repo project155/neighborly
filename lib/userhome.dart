@@ -20,6 +20,7 @@ import 'package:neighborly/Theft.dart';
 import 'package:neighborly/Transportation.dart';
 import 'package:neighborly/alcohol.dart';
 import 'package:neighborly/authority.dart';
+import 'package:neighborly/bloodsignup.dart';
 import 'package:neighborly/bribery.dart';
 import 'package:neighborly/flood.dart';
 import 'package:neighborly/loginuser.dart';
@@ -72,7 +73,7 @@ class _UserhomeState extends State<Userhome> {
   final List<String> helpandrecover = [
     "Food Donation",
     "Lost & Found",
-    "Example Feature 2",
+    "Blood Donation",
   ];
 
   // Notice images are fetched from Firestore.
@@ -149,7 +150,8 @@ class _UserhomeState extends State<Userhome> {
           ),
           child: AppBar(
             title: Text("Neighborly", style: TextStyle(color: Colors.white)),
-            backgroundColor: const Color.fromARGB(255, 95, 156, 255),
+            backgroundColor: const Color.fromARGB(255, 58, 133, 255),
+            
             actions: [
               // Bell icon navigates to NotificationPage.
               IconButton(
@@ -300,7 +302,7 @@ class _UserhomeState extends State<Userhome> {
   // Builds a generic section with a heading and grid items.
   Widget _buildSection(String heading, List<String> items) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 30, horizontal: 15),
+      padding: EdgeInsets.symmetric(vertical: 30, horizontal: 10),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -429,6 +431,9 @@ class _UserhomeState extends State<Userhome> {
         } else if (title == "Alcohol") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => AlcoholReportPage()));
+              } else if (title == "Blood Donation") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => BloodDonationFormPage()));
         }
       },
       child: Container(

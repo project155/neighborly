@@ -187,7 +187,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
                   child: const Text(
                     'Forgot Password?',
                     style: TextStyle(
-                      color: Colors.blue,
+                      color: Color.fromARGB(255, 52, 109, 246),
                       fontSize: 16,
                     ),
                   ),
@@ -196,14 +196,14 @@ class _UserLoginPageState extends State<UserLoginPage> {
             ),
             // Sign In button.
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 110, vertical: 50),
+              padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 50),
               child: ElevatedButton(
                 onPressed: _signIn,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 0, 111, 237),
-                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 70),
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 90),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20), // Slightly rounder corners.
+                    borderRadius: BorderRadius.circular(25), // Slightly rounder corners.
                   ),
                 ),
                 child: const Text(
@@ -236,7 +236,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
                     child: const Text(
                       'Register now',
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: Color.fromARGB(255, 52, 109, 246),
                       ),
                     ),
                   ),

@@ -9,6 +9,7 @@ import 'package:neighborly/notification.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart'; // Import intl for date formatting
 
 class CreateReportPage extends StatefulWidget {
   final XFile? attachment; // Optional image attachment
@@ -103,7 +104,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
         return Icon(Icons.directions_car, color: Colors.teal);
       case 'theft':
         return Icon(Icons.security_rounded, color: Colors.black);
-        case 'Child Abuse':
+      case 'child abuse':
         return Icon(Icons.security_rounded, color: Colors.black);
       default:
         return Icon(Icons.help_outline, color: Colors.grey);
@@ -229,7 +230,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
         'category': _selectedCategory,
         'title': _titleController.text,
         'description': _descriptionController.text,
-        'date': _dateTime?.toIso8601String(),
+        // Format the date to store only the date part (YYYY-MM-DD).
+        'date': _dateTime != null ? DateFormat('yyyy-MM-dd').format(_dateTime!) : null,
         'time': _timeOfDay != null ? _timeOfDay!.format(context) : null,
         // Use the selected location if available, otherwise use the current location.
         'location': _selectedLatLng != null
@@ -407,11 +409,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading:
-                    Icon(Icons.lock_clock_rounded, color: Colors.blueAccent),
+                leading: Icon(Icons.lock_clock_rounded, color: Colors.blueAccent),
                 title: Text(_dateTime == null
                     ? 'Select Date'
-                    : '${_dateTime!.toLocal()}'.split(' ')[0]),
+                    : DateFormat('yyyy-MM-dd').format(_dateTime!)),
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
@@ -470,8 +471,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                   }
                 },
                 child: Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(8),
@@ -508,8 +508,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
-                  padding:
-                      EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -552,8 +551,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

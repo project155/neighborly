@@ -6,20 +6,20 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-class LostItemsPage extends StatefulWidget {
+class FoundItemsPage extends StatefulWidget {
   @override
-  _LostItemsPageState createState() => _LostItemsPageState();
+  _FoundItemsPageState createState() => _FoundItemsPageState();
 }
 
-class _LostItemsPageState extends State<LostItemsPage>
+class _FoundItemsPageState extends State<FoundItemsPage>
     with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late GoogleMapController _mapController;
   Set<Marker> _markers = Set();
-  List<Map<String, dynamic>> _lostItems = [];
+  List<Map<String, dynamic>> _foundItems = [];
   bool _isLoading = true;
-  // Set to true to force trash icon display for debugging.
+  // For debugging or admin purposes.
   bool forceShowTrashIcon = false;
   final LatLng _initialLocation =
       LatLng(11.194249397596916, 75.85098108272076);
@@ -27,7 +27,7 @@ class _LostItemsPageState extends State<LostItemsPage>
   @override
   void initState() {
     super.initState();
-    _fetchLostItems();
+    _fetchFoundItems();
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -36,7 +36,7 @@ class _LostItemsPageState extends State<LostItemsPage>
     });
   }
 
-  Future<void> _fetchLostItems() async {
+  Future<void> _fetchFoundItems() async {
     try {
       // Get user's current position.
       Position position = await Geolocator.getCurrentPosition(
@@ -45,10 +45,10 @@ class _LostItemsPageState extends State<LostItemsPage>
       final double userLng = position.longitude;
       double radiusInMeters = 10000; // e.g., 10 km
 
-      // Fetch lost items with itemType "Lost"
+      // Fetch found items with itemType "Found"
       var snapshot = await _firestore
           .collection('lostFoundItems')
-          .where('itemType', isEqualTo: 'Lost')
+          .where('itemType', isEqualTo: 'Found')
           .orderBy('timestamp', descending: true)
           .get();
 
@@ -59,15 +59,15 @@ class _LostItemsPageState extends State<LostItemsPage>
         return data;
       }).toList();
 
-      // Filter lost items based on distance.
-      _lostItems = allItems.where((item) {
+      // Filter found items based on distance using the itemLocation field.
+      _foundItems = allItems.where((item) {
         if (item['itemLocation'] != null) {
           double itemLat =
               (item['itemLocation']['latitude'] ?? 0).toDouble();
           double itemLng =
               (item['itemLocation']['longitude'] ?? 0).toDouble();
-          double distanceInMeters =
-              Geolocator.distanceBetween(userLat, userLng, itemLat, itemLng);
+          double distanceInMeters = Geolocator.distanceBetween(
+              userLat, userLng, itemLat, itemLng);
           return distanceInMeters <= radiusInMeters;
         }
         return false;
@@ -75,10 +75,12 @@ class _LostItemsPageState extends State<LostItemsPage>
 
       // Update markers.
       _markers.clear();
-      for (var item in _lostItems) {
+      for (var item in _foundItems) {
         if (item['itemLocation'] != null) {
-          double lat = (item['itemLocation']['latitude'] ?? 0).toDouble();
-          double lng = (item['itemLocation']['longitude'] ?? 0).toDouble();
+          double lat =
+              (item['itemLocation']['latitude'] ?? 0).toDouble();
+          double lng =
+              (item['itemLocation']['longitude'] ?? 0).toDouble();
           _markers.add(
             Marker(
               markerId: MarkerId(item['id']),
@@ -94,9 +96,9 @@ class _LostItemsPageState extends State<LostItemsPage>
         }
       }
 
-      // Optionally center the map on the first lost item's location.
+      // Optionally center the map on the first found item's location.
       if (_markers.isNotEmpty) {
-        var firstItem = _lostItems.first;
+        var firstItem = _foundItems.first;
         double lat =
             (firstItem['itemLocation']['latitude'] ?? 0).toDouble();
         double lng =
@@ -110,7 +112,7 @@ class _LostItemsPageState extends State<LostItemsPage>
         _isLoading = false;
       });
     } catch (e) {
-      print("Error fetching lost items: $e");
+      print("Error fetching found items: $e");
       setState(() {
         _isLoading = false;
       });
@@ -200,11 +202,11 @@ class _LostItemsPageState extends State<LostItemsPage>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.report_problem,
+                Icon(Icons.check_circle,
                     size: 30, color: Colors.blueAccent),
                 SizedBox(width: 8),
                 Text(
-                  "Lost Items",
+                  "Found Items",
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -217,7 +219,7 @@ class _LostItemsPageState extends State<LostItemsPage>
               onPressed: () {
                 showSearch(
                   context: context,
-                  delegate: LostItemsSearchDelegate(items: _lostItems),
+                  delegate: FoundItemsSearchDelegate(items: _foundItems),
                 );
               },
             ),
@@ -227,14 +229,15 @@ class _LostItemsPageState extends State<LostItemsPage>
     );
   }
 
-  void _confirmMarkFound(String itemId) {
+  void _confirmMarkReturned(String itemId) {
+    // For found items, marking as returned (i.e. given back to the owner)
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Mark as Found"),
+          title: Text("Mark as Returned"),
           content: Text(
-              "Are you sure you want to mark this item as found? This will let everyone know it is no longer lost."),
+              "Are you sure you want to mark this found item as returned? This will let everyone know it has been returned to its owner."),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -243,9 +246,10 @@ class _LostItemsPageState extends State<LostItemsPage>
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _markFound(itemId);
+                _markReturned(itemId);
               },
-              child: Text("Mark Found", style: TextStyle(color: Colors.blue)),
+              child:
+                  Text("Mark Returned", style: TextStyle(color: Colors.blue)),
             ),
           ],
         );
@@ -253,21 +257,22 @@ class _LostItemsPageState extends State<LostItemsPage>
     );
   }
 
-  Future<void> _markFound(String itemId) async {
+  Future<void> _markReturned(String itemId) async {
     try {
       await _firestore
           .collection('lostFoundItems')
           .doc(itemId)
-          .update({'isFound': true});
-      int index = _lostItems.indexWhere((item) => item['id'] == itemId);
+          .update({'isReturned': true});
+      int index =
+          _foundItems.indexWhere((item) => item['id'] == itemId);
       if (index != -1) {
         setState(() {
-          _lostItems[index]['isFound'] = true;
+          _foundItems[index]['isReturned'] = true;
         });
       }
-      _showAnimatedSnackbar("Item marked as found!");
+      _showAnimatedSnackbar("Item marked as returned!");
     } catch (e) {
-      print("Error marking item as found: $e");
+      print("Error marking item as returned: $e");
       _showAnimatedSnackbar("Failed to update status!");
     }
   }
@@ -296,17 +301,17 @@ class _LostItemsPageState extends State<LostItemsPage>
               ],
             ),
           ),
-          // Lost Items List.
+          // Found Items List.
           Expanded(
             flex: 1,
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
-                : _lostItems.isEmpty
-                    ? Center(child: Text("No lost items available"))
+                : _foundItems.isEmpty
+                    ? Center(child: Text("No found items available"))
                     : ListView.builder(
-                        itemCount: _lostItems.length,
+                        itemCount: _foundItems.length,
                         itemBuilder: (context, index) {
-                          var item = _lostItems[index];
+                          var item = _foundItems[index];
                           String itemUserId =
                               item['userId'] ?? item['uid'] ?? "none";
                           List<String> imageUrls = [];
@@ -319,33 +324,42 @@ class _LostItemsPageState extends State<LostItemsPage>
                           }
 
                           String itemId = item['id'];
-                          String itemName = item['itemName'] ?? "No Name";
+                          String itemName =
+                              item['itemName'] ?? "No Name";
                           String description =
                               item['description'] ?? "No Description";
                           String category =
                               item['itemCategory'] ?? "Unknown";
-                          String lastSeenDetails = item['lastSeenDetails'] ?? "";
-                          String rewardOffered = item['rewardOffered'] ?? "";
+                          String whereabouts =
+                              item['itemWhereabouts'] ?? "";
+                          String preferredHandover =
+                              item['preferredHandoverMethod'] ?? "";
                           String time = item['time'] ?? "";
                           String date = item['date'] ?? "";
-                          bool isFound = item['isFound'] == true;
+                          bool isReturned = item['isReturned'] == true;
                           int likes = item['likes'] ?? 0;
-                          List likedBy = List.from(item['likedBy'] ?? []);
+                          List likedBy =
+                              List.from(item['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(currentUserId);
 
-                          // Change card background to a light blue if the item is found.
+                          // Change card background if the item is returned.
                           Color cardBackgroundColor =
-                              isFound ? Colors.blue.shade50 : Colors.white;
+                              isReturned ? Colors.blue.shade50 : Colors.white;
 
                           return InkWell(
                             onTap: () {
                               if (item['itemLocation'] != null) {
-                                double lat = (item['itemLocation']['latitude'] ?? 0)
+                                double lat = (item['itemLocation']
+                                            ['latitude'] ??
+                                        0)
                                     .toDouble();
-                                double lng = (item['itemLocation']['longitude'] ?? 0)
+                                double lng = (item['itemLocation']
+                                            ['longitude'] ??
+                                        0)
                                     .toDouble();
                                 _mapController.animateCamera(
-                                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 18),
+                                  CameraUpdate.newLatLngZoom(
+                                      LatLng(lat, lng), 18),
                                 );
                                 _mapController.showMarkerInfoWindow(
                                     MarkerId(item['id']));
@@ -360,22 +374,24 @@ class _LostItemsPageState extends State<LostItemsPage>
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
-                                  // Show images (if available).
+                                  // Display images (if available).
                                   if (imageUrls.isNotEmpty)
                                     ImageCarousel(imageUrls: imageUrls)
-                                  else if (isFound)
+                                  else if (isReturned)
                                     Container(
                                       width: double.infinity,
                                       padding: EdgeInsets.all(8),
                                       color: Colors.blue,
                                       child: Center(
                                         child: Text(
-                                          "Item Found",
+                                          "Item Returned",
                                           style: TextStyle(
                                               color: Colors.white,
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight:
+                                                  FontWeight.bold,
                                               fontSize: 16),
                                         ),
                                       ),
@@ -383,12 +399,14 @@ class _LostItemsPageState extends State<LostItemsPage>
                                   Padding(
                                     padding: EdgeInsets.all(10),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(itemName,
                                             style: TextStyle(
                                                 fontSize: 18,
-                                                fontWeight: FontWeight.bold)),
+                                                fontWeight:
+                                                    FontWeight.bold)),
                                         SizedBox(height: 5),
                                         Text(description,
                                             style: TextStyle(
@@ -397,34 +415,39 @@ class _LostItemsPageState extends State<LostItemsPage>
                                         SizedBox(height: 5),
                                         Row(
                                           mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                              MainAxisAlignment
+                                                  .spaceBetween,
                                           children: [
                                             Text("Category: $category",
                                                 style: TextStyle(
-                                                    fontWeight: FontWeight.bold)),
+                                                    fontWeight:
+                                                        FontWeight.bold)),
                                             Text("Time: $time",
                                                 style: TextStyle(
                                                     color: Colors.blueAccent)),
                                           ],
                                         ),
-                                        if (lastSeenDetails.isNotEmpty)
-                                          Text("Last Seen: $lastSeenDetails",
+                                        if (whereabouts.isNotEmpty)
+                                          Text("Whereabouts: $whereabouts",
                                               style: TextStyle(
                                                   color: Colors.blueGrey)),
-                                        if (rewardOffered.isNotEmpty)
-                                          Text("Reward: $rewardOffered",
+                                        if (preferredHandover.isNotEmpty)
+                                          Text("Handover: $preferredHandover",
                                               style: TextStyle(
                                                   color: Colors.green)),
                                         if (date.isNotEmpty)
                                           Text("Date: $date",
                                               style: TextStyle(
-                                                  color: Colors.black87)),          
-                                                  if (item['contactName'] != null &&
-                      item['contactPhone'] != null)
-                    Text(
-                      "Contact: ${item['contactName']} (${item['contactPhone']})",
-                      style: TextStyle(fontSize: 13, color: Colors.black87),
-                    ),
+                                                  color: Colors.black87)),
+                                        // Optionally, add contact information if available.
+                                        if (item['contactName'] != null &&
+                                            item['contactPhone'] != null)
+                                          Text(
+                                            "Contact: ${item['contactName']} (${item['contactPhone']})",
+                                            style: TextStyle(
+                                                color: Colors.black87),
+                                          ),
+                                          
                                         // Action buttons.
                                         Row(
                                           children: [
@@ -436,10 +459,12 @@ class _LostItemsPageState extends State<LostItemsPage>
                                                 color: Colors.black,
                                               ),
                                               onPressed: () {
-                                                _handleLike(itemId, isLiked);
-                                                _showAnimatedSnackbar(isLiked
-                                                    ? "Like removed!"
-                                                    : "Liked!");
+                                                _handleLike(
+                                                    itemId, isLiked);
+                                                _showAnimatedSnackbar(
+                                                    isLiked
+                                                        ? "Like removed!"
+                                                        : "Liked!");
                                               },
                                             ),
                                             Text("$likes Likes",
@@ -449,7 +474,8 @@ class _LostItemsPageState extends State<LostItemsPage>
                                               icon: Icon(Icons.comment_outlined,
                                                   color: Colors.black),
                                               onPressed: () =>
-                                                  _showComments(context, itemId),
+                                                  _showComments(
+                                                      context, itemId),
                                             ),
                                             IconButton(
                                               icon: Icon(Icons.share_outlined,
@@ -457,17 +483,19 @@ class _LostItemsPageState extends State<LostItemsPage>
                                               onPressed: () =>
                                                   _shareReport(itemName, description),
                                             ),
-                                            if ((item['userId'] ?? item['uid']) ==
+                                            if ((item['userId'] ??
+                                                        item['uid']) ==
                                                     currentUserId &&
-                                                !isFound)
+                                                !isReturned)
                                               IconButton(
                                                 icon: Icon(Icons.check_circle,
                                                     color: Colors.green),
                                                 onPressed: () =>
-                                                    _confirmMarkFound(itemId),
+                                                    _confirmMarkReturned(itemId),
                                               ),
                                             if (forceShowTrashIcon ||
-                                                ((item['userId'] ?? item['uid']) ==
+                                                ((item['userId'] ??
+                                                        item['uid']) ==
                                                     currentUserId))
                                               IconButton(
                                                 icon: Icon(Icons.delete,
@@ -480,18 +508,20 @@ class _LostItemsPageState extends State<LostItemsPage>
                                       ],
                                     ),
                                   ),
-                                  // Blue banner at the bottom if the item is found.
-                                  isFound
+                                  // Blue banner at the bottom if the item is returned.
+                                  isReturned
                                       ? Container(
                                           width: double.infinity,
-                                          padding: EdgeInsets.symmetric(vertical: 6),
+                                          padding:
+                                              EdgeInsets.symmetric(vertical: 6),
                                           decoration: BoxDecoration(
                                             color: Colors.blue,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                           ),
                                           child: Center(
                                             child: Text(
-                                              'Item Found',
+                                              'Item Returned',
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.bold,
@@ -518,8 +548,8 @@ class _LostItemsPageState extends State<LostItemsPage>
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Delete Lost Item"),
-          content: Text("Are you sure you want to delete this lost item?"),
+          title: Text("Delete Found Item"),
+          content: Text("Are you sure you want to delete this found item?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -542,33 +572,36 @@ class _LostItemsPageState extends State<LostItemsPage>
     try {
       await _firestore.collection('lostFoundItems').doc(itemId).delete();
       setState(() {
-        _lostItems.removeWhere((item) => item['id'] == itemId);
+        _foundItems.removeWhere((item) => item['id'] == itemId);
       });
-      _showAnimatedSnackbar("Lost item deleted successfully!");
+      _showAnimatedSnackbar("Found item deleted successfully!");
     } catch (e) {
-      print("Error deleting lost item: $e");
-      _showAnimatedSnackbar("Failed to delete lost item!");
+      print("Error deleting found item: $e");
+      _showAnimatedSnackbar("Failed to delete found item!");
     }
   }
 
   void _handleLike(String docId, bool isLiked) {
     String userId = _auth.currentUser?.uid ?? "";
     if (userId.isEmpty) return;
-    int index = _lostItems.indexWhere((item) => item['id'] == docId);
+    int index =
+        _foundItems.indexWhere((item) => item['id'] == docId);
     if (index != -1) {
       setState(() {
         if (isLiked) {
-          _lostItems[index]['likes'] =
-              ((_lostItems[index]['likes'] ?? 0) as int) - 1;
-          List likedBy = List.from(_lostItems[index]['likedBy'] ?? []);
+          _foundItems[index]['likes'] =
+              ((_foundItems[index]['likes'] ?? 0) as int) - 1;
+          List likedBy =
+              List.from(_foundItems[index]['likedBy'] ?? []);
           likedBy.remove(userId);
-          _lostItems[index]['likedBy'] = likedBy;
+          _foundItems[index]['likedBy'] = likedBy;
         } else {
-          _lostItems[index]['likes'] =
-              ((_lostItems[index]['likes'] ?? 0) as int) + 1;
-          List likedBy = List.from(_lostItems[index]['likedBy'] ?? []);
+          _foundItems[index]['likes'] =
+              ((_foundItems[index]['likes'] ?? 0) as int) + 1;
+          List likedBy =
+              List.from(_foundItems[index]['likedBy'] ?? []);
           likedBy.add(userId);
-          _lostItems[index]['likedBy'] = likedBy;
+          _foundItems[index]['likedBy'] = likedBy;
         }
       });
     }
@@ -581,9 +614,10 @@ class _LostItemsPageState extends State<LostItemsPage>
   }
 
   void _showComments(BuildContext context, String docId) {
-    int itemIndex = _lostItems.indexWhere((item) => item['id'] == docId);
+    int itemIndex =
+        _foundItems.indexWhere((item) => item['id'] == docId);
     List<dynamic> comments = itemIndex != -1
-        ? List.from(_lostItems[itemIndex]['comments'] ?? [])
+        ? List.from(_foundItems[itemIndex]['comments'] ?? [])
         : [];
     TextEditingController commentController = TextEditingController();
 
@@ -599,24 +633,27 @@ class _LostItemsPageState extends State<LostItemsPage>
                   Expanded(
                     child: ListView(
                       children: comments.map((comment) {
-                        if (comment is Map && comment.containsKey('name')) {
+                        if (comment is Map &&
+                            comment.containsKey('name')) {
                           return ListTile(
                             title: Text(
                               comment['name'],
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  TextStyle(fontWeight: FontWeight.bold),
                             ),
                             subtitle: Text(comment['comment'] ?? ""),
                           );
                         } else {
-                          return ListTile(title: Text(comment.toString()));
+                          return ListTile(
+                              title: Text(comment.toString()));
                         }
                       }).toList(),
                     ),
                   ),
                   TextField(
                     controller: commentController,
-                    decoration:
-                        InputDecoration(hintText: "Add a comment..."),
+                    decoration: InputDecoration(
+                        hintText: "Add a comment..."),
                     onSubmitted: (text) {
                       if (text.isNotEmpty) {
                         var newComment = {
@@ -628,8 +665,10 @@ class _LostItemsPageState extends State<LostItemsPage>
                         });
                         if (itemIndex != -1) {
                           setState(() {
-                            _lostItems[itemIndex]['comments'] =
-                                List.from(_lostItems[itemIndex]['comments'] ?? [])
+                            _foundItems[itemIndex]['comments'] =
+                                List.from(_foundItems[itemIndex]
+                                        ['comments'] ??
+                                    [])
                                   ..add(newComment);
                           });
                         }
@@ -726,9 +765,9 @@ class _ImageCarouselState extends State<ImageCarousel> {
   }
 }
 
-class LostItemsSearchDelegate extends SearchDelegate {
+class FoundItemsSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> items;
-  LostItemsSearchDelegate({required this.items});
+  FoundItemsSearchDelegate({required this.items});
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -764,7 +803,8 @@ class LostItemsSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final item = results[index];
         return ListTile(
-          leading: Icon(Icons.report_problem, color: Colors.blueAccent),
+          leading:
+              Icon(Icons.check_circle, color: Colors.blueAccent),
           title: Text(item['itemName'] ?? "No Name"),
           subtitle: Text(item['description'] ?? "No Description"),
           onTap: () {
@@ -772,7 +812,8 @@ class LostItemsSearchDelegate extends SearchDelegate {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => LostItemDetailPage(item: item),
+                builder: (context) =>
+                    FoundItemDetailPage(item: item),
               ),
             );
           },
@@ -792,7 +833,8 @@ class LostItemsSearchDelegate extends SearchDelegate {
       itemBuilder: (context, index) {
         final item = suggestions[index];
         return ListTile(
-          leading: Icon(Icons.report_problem, color: Colors.blueAccent),
+          leading:
+              Icon(Icons.check_circle, color: Colors.blueAccent),
           title: Text(item['itemName'] ?? "No Name"),
           onTap: () {
             query = item['itemName'] ?? "";
@@ -804,9 +846,9 @@ class LostItemsSearchDelegate extends SearchDelegate {
   }
 }
 
-class LostItemDetailPage extends StatelessWidget {
+class FoundItemDetailPage extends StatelessWidget {
   final Map<String, dynamic> item;
-  LostItemDetailPage({required this.item});
+  FoundItemDetailPage({required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -817,11 +859,11 @@ class LostItemDetailPage extends StatelessWidget {
         item['imageUrls'].isNotEmpty) {
       imageUrls = [item['imageUrls']];
     }
-    bool isFound = item['isFound'] == true;
+    bool isReturned = item['isReturned'] == true;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blueAccent,
-        title: Text(item['itemName'] ?? "Lost Item Details"),
+        title: Text(item['itemName'] ?? "Found Item Details"),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -831,7 +873,7 @@ class LostItemDetailPage extends StatelessWidget {
               Stack(
                 children: [
                   ImageCarousel(imageUrls: imageUrls),
-                  if (isFound)
+                  if (isReturned)
                     Positioned(
                       top: 8,
                       left: 8,
@@ -840,7 +882,7 @@ class LostItemDetailPage extends StatelessWidget {
                             vertical: 4, horizontal: 8),
                         color: Colors.blue,
                         child: Text(
-                          "Item Found",
+                          "Item Returned",
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -850,14 +892,14 @@ class LostItemDetailPage extends StatelessWidget {
                     ),
                 ],
               )
-            else if (isFound)
+            else if (isReturned)
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(8),
                 color: Colors.blue,
                 child: Center(
                   child: Text(
-                    "Item Found",
+                    "Item Returned",
                     style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -888,14 +930,18 @@ class LostItemDetailPage extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w500),
                   ),
-                  if (item['lastSeenDetails'] != null)
-                    Text("Last Seen: ${item['lastSeenDetails']}"),
-                  if (item['rewardOffered'] != null)
-                    Text("Reward: ${item['rewardOffered']}"),
+                  if (item['itemWhereabouts'] != null)
+                    Text("Whereabouts: ${item['itemWhereabouts']}"),
+                  if (item['preferredHandoverMethod'] != null)
+                    Text("Handover Method: ${item['preferredHandoverMethod']}"),
                   if (item['time'] != null)
                     Text("Time: ${item['time']}"),
                   if (item['date'] != null)
                     Text("Date: ${item['date']}"),
+                  // Display the top-level report location.
+                  if (item['latitude'] != null && item['longitude'] != null)
+                    Text(
+                        "Report Location: (${item['latitude']}, ${item['longitude']})"),
                   // New contact information section.
                   if (item['contactName'] != null &&
                       item['contactPhone'] != null)
@@ -903,7 +949,6 @@ class LostItemDetailPage extends StatelessWidget {
                       "Contact: ${item['contactName']} (${item['contactPhone']})",
                       style: TextStyle(fontSize: 16, color: Colors.black87),
                     ),
-                    
                 ],
               ),
             )
