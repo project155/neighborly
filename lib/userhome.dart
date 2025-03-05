@@ -563,7 +563,7 @@ class BloodDonationPopup extends StatelessWidget {
                   Navigator.of(context).pop(); // Close dialog
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => BloodSignupPage()),
+                    MaterialPageRoute(builder: (context) => BloodDonationFormPage()),
                   );
                 },
               ),

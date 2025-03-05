@@ -1,12 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart'; // Still imported if needed elsewhere.
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // No longer used for location selection.
 import 'package:intl/intl.dart'; // Import intl for date formatting
 
 class BloodDonationFormPage extends StatefulWidget {
-  const BloodDonationFormPage({Key? key}) : super(key: key);
+   BloodDonationFormPage({Key? key}) : super(key: key);
 
   @override
   _BloodDonationFormPageState createState() => _BloodDonationFormPageState();
@@ -19,49 +19,38 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
   final _lastDonationController = TextEditingController();
   String? _selectedBloodGroup;
   DateTime? _lastDonationDate;
-  Position? _currentLocation;
-  LatLng? _selectedLatLng;
   bool _isSubmitting = false;
-
+  
+  // List of blood groups.
   final List<String> _bloodGroups = [
     'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'
   ];
 
+  // List of Kerala districts.
+  final List<String> _districts = [
+    'Thiruvananthapuram',
+    'Kollam',
+    'Pathanamthitta',
+    'Alappuzha',
+    'Kottayam',
+    'Idukki',
+    'Ernakulam',
+    'Thrissur',
+    'Palakkad',
+    'Malappuram',
+    'Kozhikode',
+    'Wayanad',
+    'Kannur',
+    'Kasaragod'
+  ];
+
+  // Selected preferred district.
+  String? _selectedDistrict;
+
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
-  }
-
-  Future<void> _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return;
-    }
-
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-
-    setState(() {
-      _currentLocation = position;
-      _selectedLatLng ??= LatLng(position.latitude, position.longitude);
-    });
+    // Removed location fetching as it's replaced by a dropdown.
   }
 
   Future<void> _submitForm() async {
@@ -77,12 +66,8 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
         'last_donation': _lastDonationDate != null
             ? DateFormat('yyyy-MM-dd').format(_lastDonationDate!)
             : null,
-        'preferred_location': _selectedLatLng != null
-            ? {
-                'latitude': _selectedLatLng!.latitude,
-                'longitude': _selectedLatLng!.longitude,
-              }
-            : null,
+        // Save the preferred district.
+        'preferred_location': _selectedDistrict,
         'userId': FirebaseAuth.instance.currentUser!.uid,
         'timestamp': FieldValue.serverTimestamp(),
       });
@@ -106,7 +91,13 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Updated AppBar to match Food donation design.
       appBar: AppBar(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
         title: Text(
           'Blood Donation Sign-Up',
           style: TextStyle(
@@ -116,7 +107,16 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.redAccent,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blueAccent, Colors.lightBlueAccent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+        ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
@@ -130,6 +130,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
           key: _formKey,
           child: ListView(
             children: [
+              // Name field.
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -145,6 +146,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                     value == null || value.isEmpty ? 'Please enter your name' : null,
               ),
               SizedBox(height: 12),
+              // Contact field.
               TextFormField(
                 controller: _contactController,
                 keyboardType: TextInputType.phone,
@@ -161,6 +163,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                     value == null || value.isEmpty ? 'Please enter your contact number' : null,
               ),
               SizedBox(height: 12),
+              // Blood Group Dropdown.
               DropdownButtonFormField<String>(
                 value: _selectedBloodGroup,
                 decoration: InputDecoration(
@@ -182,12 +185,13 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                 validator: (value) => value == null ? 'Please select your blood group' : null,
               ),
               SizedBox(height: 12),
+              // Last Donation Date picker.
               ListTile(
                 tileColor: Colors.grey[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading: Icon(Icons.calendar_today, color: Colors.redAccent),
+                leading: Icon(Icons.calendar_today, color: Colors.blueAccent),
                 title: Text(_lastDonationDate == null
                     ? 'Select Last Donation Date'
                     : DateFormat('yyyy-MM-dd').format(_lastDonationDate!)),
@@ -202,24 +206,34 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                 },
               ),
               SizedBox(height: 12),
-              ListTile(
-                tileColor: Colors.grey[200],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+              // Preferred District dropdown.
+              DropdownButtonFormField<String>(
+                value: _selectedDistrict,
+                decoration: InputDecoration(
+                  hintText: 'Select Preferred District',
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
-                leading: Icon(Icons.location_on, color: Colors.redAccent),
-                title: Text(
-                  _currentLocation == null
-                      ? 'Fetch Current Location'
-                      : 'Current Location: ${_currentLocation!.latitude}, ${_currentLocation!.longitude}',
-                ),
-                onTap: _getCurrentLocation,
+                items: _districts
+                    .map((district) => DropdownMenuItem<String>(
+                          value: district,
+                          child: Text(district),
+                        ))
+                    .toList(),
+                onChanged: (value) => setState(() => _selectedDistrict = value),
+                validator: (value) =>
+                    value == null ? 'Please select your preferred district' : null,
               ),
               SizedBox(height: 12),
+              // Submit button.
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(
