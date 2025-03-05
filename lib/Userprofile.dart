@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:neighborly/UserSelectionPage.dart';
 import 'dart:io';
+import 'package:neighborly/UserSelectionPage.dart';
 import 'package:neighborly/clodinary_upload.dart';
-import 'package:neighborly/Userlogin.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import the login page
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
-  
+
   @override
   _UserProfileState createState() => _UserProfileState();
 }
@@ -25,7 +24,7 @@ class _UserProfileState extends State<UserProfile> {
   String? userPhone;
   String? userLocation;
   String? userRole;
-  bool isLoading = true; // Loading indicator
+  bool isLoading = true;
   late String collectionName;
 
   @override
@@ -34,37 +33,45 @@ class _UserProfileState extends State<UserProfile> {
     _fetchUserData();
   }
 
-  // Fetch user data from Firestore
+  // Fetch user data for users, volunteers, and authorities
   Future<void> _fetchUserData() async {
     User? user = _auth.currentUser;
     if (user != null) {
       try {
-        // Check "users" collection first
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        DocumentSnapshot userDoc;
 
-        // If not found, check "volunteers" collection
-        if (!userDoc.exists) {
-          userDoc = await _firestore.collection('volunteers').doc(user.uid).get();
-          collectionName = 'volunteers';
-        } else {
-          collectionName = 'users';
-        }
-
+        // Check "users" collection
+        userDoc = await _firestore.collection('users').doc(user.uid).get();
         if (userDoc.exists) {
-          setState(() {
-            userName = userDoc.get('name') ?? 'No Name';
-            userEmail = userDoc.get('email') ?? 'No Email';
-            userPhone = userDoc.get('phone') ?? 'No Phone';
-            userLocation = userDoc.get('location') ?? 'No Location';
-            profileImageUrl = userDoc.get('profileImage') ?? '';
-            userRole = userDoc.get('role') ?? 'User';
-            isLoading = false;
-          });
+          collectionName = 'users';
         } else {
-          setState(() {
-            isLoading = false;
-          });
+          // Check "volunteers" collection
+          userDoc = await _firestore.collection('volunteers').doc(user.uid).get();
+          if (userDoc.exists) {
+            collectionName = 'volunteers';
+          } else {
+            // Check "authorities" collection
+            userDoc = await _firestore.collection('authorities').doc(user.uid).get();
+            if (userDoc.exists) {
+              collectionName = 'authorities';
+            } else {
+              setState(() {
+                isLoading = false;
+              });
+              return;
+            }
+          }
         }
+
+        setState(() {
+          userName = userDoc.get('name') ?? 'No Name';
+          userEmail = userDoc.get('email') ?? 'No Email';
+          userPhone = userDoc.get('phone') ?? 'No Phone';
+          userLocation = userDoc.get('location') ?? 'No Location';
+          profileImageUrl = userDoc.get('profileImage') ?? '';
+          userRole = userDoc.get('role') ?? 'User';
+          isLoading = false;
+        });
       } catch (e) {
         print("Error fetching user data: $e");
         setState(() {
@@ -104,26 +111,26 @@ class _UserProfileState extends State<UserProfile> {
   Future<void> _signOut() async {
     await _auth.signOut();
     SharedPreferences pref = await SharedPreferences.getInstance();
-
     await pref.remove('role');
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) =>  UserSelectionPage()),
+      MaterialPageRoute(builder: (context) => UserSelectionPage()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100], // Light background color
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(title: const Text('User Profile')),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator()) // Show loading while fetching data
+          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Column(
                 children: [
                   const SizedBox(height: 40),
-                  // Profile Image (Large & Centered)
+                  // Profile Image
                   Center(
                     child: Stack(
                       children: [

@@ -5,6 +5,7 @@ import 'package:neighborly/Authorityregister.dart';
 import 'package:neighborly/authority.dart';
 import 'package:neighborly/password.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthorityLoginPage extends StatefulWidget {
   const AuthorityLoginPage({super.key});
@@ -22,6 +23,7 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
 
   void _signIn() async {
     try {
+      // Sign in the user with email and password
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -30,7 +32,7 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
       if (userCredential.user != null) {
         String uid = userCredential.user!.uid;
 
-        // Retrieve the document for this user from the "authorities" collection
+        // Retrieve the document for this volunteer from the "volunteers" collection
         DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
             .collection('authorities')
             .doc(uid)
@@ -39,7 +41,7 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
         if (docSnapshot.exists) {
           var data = docSnapshot.data() as Map<String, dynamic>;
 
-          // Check if the account is approved; if not, show an error message and exit
+          // Check if the account is approved
           if (data['isApproved'] != true) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Your account is not approved yet.")),
@@ -48,7 +50,7 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("No authority data found for this user.")),
+            const SnackBar(content: Text("No Authority data found for this user.")),
           );
           return;
         }
@@ -57,19 +59,23 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
         final deviceState = await OneSignal.shared.getDeviceState();
         String? pId = deviceState?.userId;
 
-        // Update the Firestore document with the OneSignal Player ID
+        // Update Firestore document with the OneSignal Player ID
         await FirebaseFirestore.instance.collection('authorities').doc(uid).update({
           'playerid': pId,
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login Successful")),
+           SnackBar(content: Text("Login Successful")),
         );
 
-        // Navigate to the AuthorityHome screen
-        Navigator.pushReplacement(
+        SharedPreferences pref = await SharedPreferences.getInstance();
+        pref.setString('role', 'authority');
+
+        // Navigate to the VolunteerHome screen
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => AuthorityHome()),
+          (route) => false,
         );
       }
     } catch (e) {
@@ -91,17 +97,17 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
               height: MediaQuery.of(context).size.height * 0.45,
               width: MediaQuery.of(context).size.width,
               decoration: BoxDecoration(
-                image: const DecorationImage(
+                image:  DecorationImage(
                   image: AssetImage('assets/upperimage.png'),
                   fit: BoxFit.fill,
                 ),
                 borderRadius: BorderRadius.circular(0),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(40),
+                padding:  EdgeInsets.all(40),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children:  [
                     Text(
                       'Welcome Back!!',
                       style: TextStyle(
@@ -130,22 +136,22 @@ class _AuthorityLoginPageState extends State<AuthorityLoginPage> {
                 controller: _emailController,
                 decoration: InputDecoration(
                   hintText: 'Enter Email',
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  prefixIcon: const Icon(Icons.email, color: Colors.grey),
+                  hintStyle:  TextStyle(color: Colors.grey),
+                  prefixIcon:  Icon(Icons.email, color: Colors.grey),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  contentPadding:  EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 ),
               ),
             ),
             // Password TextField.
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
               child: TextField(
                 controller: _passwordController,
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  hintStyle: const TextStyle(color: Colors.grey),
+                  hintStyle:  TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),

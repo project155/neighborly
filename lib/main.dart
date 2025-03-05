@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:neighborly/UserSelectionPage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:neighborly/Volunteerhome.dart';
+import 'package:neighborly/admin.dart';
+import 'package:neighborly/authority.dart';
 import 'package:neighborly/firebase_options.dart';
 import 'package:neighborly/userhome.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
@@ -25,6 +27,7 @@ print('oooooo');
 SharedPreferences pref = await SharedPreferences.getInstance();
 
  role =   pref.getString('role');
+ print(role);
 
 
 
@@ -52,6 +55,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    print( getScreen());
     return MaterialApp(
       title: 'Flutter Demo',
       
@@ -69,6 +73,11 @@ Widget getScreen(){
       return  Userhome();
     case 'volunteer':
       return VolunteerHome();
+    case 'authority':
+    print('nnnn');
+      return AuthorityHome(); 
+    // case 'admin':
+    //   return AdminHome();   
     
     default:
       return  UserSelectionPage();

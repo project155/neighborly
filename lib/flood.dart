@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';  // Added for date/time formatting
 
 class FloodReportPage extends StatefulWidget {
   @override
@@ -539,6 +540,14 @@ class _FloodReportPageState extends State<FloodReportPage>
                                                 fontSize: 14,
                                                 color:
                                                     Colors.grey[700])),
+                                        // Date and time display added here
+                                        SizedBox(height: 5),
+                                        Text(
+                                          "Reported on: ${report['timestamp'] != null ? DateFormat('dd MMM yyyy, hh:mm a').format((report['timestamp'] as Timestamp).toDate()) : 'Unknown'}",
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600]),
+                                        ),
                                         SizedBox(height: 5),
                                         Row(
                                           mainAxisAlignment:
@@ -828,6 +837,12 @@ class FloodReportDetailPage extends StatelessWidget {
                   Text(
                     report['description'] ?? "No Description",
                     style: TextStyle(fontSize: 16),
+                  ),
+                  // Date and time display added here in detail view
+                  SizedBox(height: 5),
+                  Text(
+                    "Reported on: ${report['timestamp'] != null ? DateFormat('dd MMM yyyy, hh:mm a').format((report['timestamp'] as Timestamp).toDate()) : 'Unknown'}",
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   ),
                   SizedBox(height: 10),
                   Text(

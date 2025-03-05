@@ -172,31 +172,9 @@ class _ViewAuthoritiesPageState extends State<ViewAuthoritiesPage> {
 }
 
 // Dummy management pages – replace these with your actual pages.
-class ManageAuthoritiesPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Manage Authorities"),
-        backgroundColor: Colors.teal,
-      ),
-      body: Center(child: Text("Authorities management page.")),
-    );
-  }
-}
 
-class ManageVolunteersPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Manage Volunteers"),
-        backgroundColor: Colors.teal,
-      ),
-      body: Center(child: Text("Volunteers management page.")),
-    );
-  }
-}
+
+
 
 class AdminHome extends StatelessWidget {
   const AdminHome({Key? key}) : super(key: key);

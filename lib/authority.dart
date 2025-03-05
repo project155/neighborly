@@ -9,6 +9,7 @@ import 'package:neighborly/Notificationpage.dart';
 import 'package:neighborly/SOSpage.dart';
 import 'package:neighborly/Sosreports.dart';
 import 'package:neighborly/Userlogin.dart';
+import 'package:neighborly/Userprofile.dart';
 import 'package:neighborly/authorityreports/authorityflood.dart';
 import 'package:neighborly/authorityreports/authorityChildabuse.dart';
 import 'package:neighborly/authorityreports/authorityalcohol.dart';
@@ -28,12 +29,6 @@ import 'package:neighborly/authorityreports/authoritysexual.dart';
 import 'package:neighborly/authorityreports/authoritytheft.dart';
 import 'package:neighborly/authorityreports/authoritytransportation.dart';
 
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: AuthorityHome(),
-  ));
-}
 
 class AuthorityHome extends StatefulWidget {
   @override
@@ -166,10 +161,15 @@ class _AuthorityHomeState extends State<AuthorityHome> {
         "icon": Icons.analytics,
         "page": GenerateReports(),
       },
+      {
+        "title": "Generate Reports",
+        "icon": Icons.analytics,
+        "page": GenerateReports(),
+      },
     ];
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 30, horizontal: 15),
+      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -227,7 +227,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: (MediaQuery.of(context).size.width - 65) / 2,
+        width: (MediaQuery.of(context).size.width - 45) / 3,
         height: 150,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -403,7 +403,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => UserProfilePage()),
+                  MaterialPageRoute(builder: (context) => UserProfile()),
                 );
               },
             ),
@@ -470,17 +470,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
 }
 
 /// Simple placeholder for the User Profile page.
-class UserProfilePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("User Profile"),
-      ),
-      body: Center(child: Text("User Profile Page")),
-    );
-  }
-}
+
 
 /// Simple placeholder for the Settings page.
 class SettingsPage extends StatelessWidget {

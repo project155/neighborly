@@ -123,6 +123,7 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
                     value == null || value.isEmpty ? 'Please enter a title' : null,
               ),
               SizedBox(height: 16.0),
+              
               // Description input field
               TextFormField(
                 controller: _descriptionController,

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -419,10 +420,20 @@ class _SexualabuseReportPageState extends State<SexualabuseReportPage>
                                                     color: Colors.blueAccent)),
                                           ],
                                         ),
-                                        if (latitude != null && longitude != null)
+                                        if (latitude!.isNotEmpty &&
+                                            longitude!.isNotEmpty)
                                           Text("Location: $latitude, $longitude",
                                               style: TextStyle(
-                                                  color: Colors.blueGrey)),
+                                                  color:
+                                                      Colors.blueGrey,
+                                                      fontSize: 12,)),
+                                                      SizedBox(height: 5),
+                                        Text(
+                                          "Reported on: ${report['timestamp'] != null ? DateFormat('dd MMM yyyy, hh:mm a').format((report['timestamp'] as Timestamp).toDate()) : 'Unknown'}",
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600]),
+                                        ),
                                         SizedBox(height: 10),
                                         Row(
                                           children: [

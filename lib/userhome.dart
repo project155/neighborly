@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -22,14 +21,19 @@ import 'package:neighborly/alcohol.dart';
 import 'package:neighborly/authority.dart';
 import 'package:neighborly/bloodsignup.dart';
 import 'package:neighborly/bribery.dart';
+import 'package:neighborly/crimeanalytics.dart';
+import 'package:neighborly/disasteranalytics.dart';
 import 'package:neighborly/flood.dart';
 import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/newreport.dart';
 import 'package:neighborly/Sexualabuse.dart';
 import 'package:neighborly/Userprofile.dart';
+import 'package:neighborly/publicissuesanalytics.dart';
 import 'package:neighborly/wildfire.dart';
 import 'package:neighborly/Lostandfound.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(MyApp());
 
@@ -76,7 +80,6 @@ class _UserhomeState extends State<Userhome> {
     "Blood Donation",
   ];
 
-  // Notice images are fetched from Firestore.
   List<String> noticeImages = [];
   bool _isLoading = true;
 
@@ -86,13 +89,22 @@ class _UserhomeState extends State<Userhome> {
   @override
   void initState() {
     super.initState();
+    _askPermissions();
     _pageController = PageController();
     _fetchNoticeImages().then((_) {
       _startTimer();
     });
   }
 
-  /// Fetch notice image URLs from Firestore collection 'noticeImages'.
+  Future<void> _askPermissions() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool hasAsked = prefs.getBool('hasAskedPermissions') ?? false;
+    if (!hasAsked) {
+      await [Permission.location, Permission.camera].request();
+      await prefs.setBool('hasAskedPermissions', true);
+    }
+  }
+
   Future<void> _fetchNoticeImages() async {
     try {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
@@ -149,11 +161,9 @@ class _UserhomeState extends State<Userhome> {
             bottomRight: Radius.circular(30),
           ),
           child: AppBar(
-            title: Text("Neighborly", style: TextStyle(color: Colors.white)),
+            title: Text("reportify", style: TextStyle(color: Colors.white)),
             backgroundColor: const Color.fromARGB(255, 58, 133, 255),
-            
             actions: [
-              // Bell icon navigates to NotificationPage.
               IconButton(
                 icon: Icon(Icons.notifications_active_rounded, color: Colors.white),
                 onPressed: () {
@@ -169,7 +179,6 @@ class _UserhomeState extends State<Userhome> {
       backgroundColor: Colors.grey[200],
       body: Stack(
         children: [
-          // Main content.
           SingleChildScrollView(
             padding: EdgeInsets.only(bottom: 100),
             child: Column(
@@ -181,7 +190,6 @@ class _UserhomeState extends State<Userhome> {
               ],
             ),
           ),
-          // Floating bottom navigation bar.
           Positioned(
             left: 20,
             right: 20,
@@ -223,7 +231,6 @@ class _UserhomeState extends State<Userhome> {
                           MaterialPageRoute(builder: (context) => CreateReportPage()));
                     },
                   ),
-                  // Updated camera button: Opens the camera, takes a photo, then navigates to CreateReportPage with the image attached.
                   IconButton(
                     icon: Icon(Icons.camera_alt, color: Colors.white),
                     onPressed: () async {
@@ -255,7 +262,6 @@ class _UserhomeState extends State<Userhome> {
     );
   }
 
-  // Builds the notice slider section with rounded corners.
   Widget _buildNoticeSection() {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 15, horizontal: 15),
@@ -264,7 +270,7 @@ class _UserhomeState extends State<Userhome> {
         height: 200,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(50), // More rounded look.
+          borderRadius: BorderRadius.circular(50),
           boxShadow: [
             BoxShadow(
               color: Colors.white.withOpacity(0.3),
@@ -274,7 +280,7 @@ class _UserhomeState extends State<Userhome> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(50), // Enforce rounded clipping.
+          borderRadius: BorderRadius.circular(50),
           child: _isLoading
               ? Center(child: CircularProgressIndicator())
               : PageView.builder(
@@ -299,7 +305,6 @@ class _UserhomeState extends State<Userhome> {
     );
   }
 
-  // Builds a generic section with a heading and grid items.
   Widget _buildSection(String heading, List<String> items) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 10),
@@ -322,7 +327,7 @@ class _UserhomeState extends State<Userhome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(heading,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
               GridView.builder(
                 shrinkWrap: true,
@@ -331,7 +336,7 @@ class _UserhomeState extends State<Userhome> {
                   crossAxisCount: 4,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: 1,
+                  childAspectRatio: 0.9,
                 ),
                 itemCount: items.length,
                 itemBuilder: (context, index) {
@@ -345,14 +350,13 @@ class _UserhomeState extends State<Userhome> {
     );
   }
 
-  // Builds a clickable grid item for a given service using icons.
   Widget _buildServiceItem(String title) {
     final Map<String, IconData> iconMapping = {
       "Flood/Rainfall": FontAwesomeIcons.houseFloodWater,
       "Fire": FontAwesomeIcons.fire,
       "Landslide": FontAwesomeIcons.mountain,
       "Drought": FontAwesomeIcons.sunPlantWilt,
-      "Sexual Abuse":FontAwesomeIcons.personHarassing,
+      "Sexual Abuse": FontAwesomeIcons.personHarassing,
       "Narcotics": FontAwesomeIcons.syringe,
       "Road Incidents": FontAwesomeIcons.roadCircleExclamation,
       "Eco Hazard": Icons.eco,
@@ -363,13 +367,11 @@ class _UserhomeState extends State<Userhome> {
       "Hygiene Issues": FontAwesomeIcons.broom,
       "Lost & Found": FontAwesomeIcons.search,
       "Food Donation": Icons.volunteer_activism,
-      "Example Feature 2":Icons.child_care_sharp,
       "Infrastructure Issues": FontAwesomeIcons.buildingCircleExclamation,
       "Transportation": FontAwesomeIcons.bus,
-      "Theft":FontAwesomeIcons.peopleRobbery,
-      "Child Abuse":FontAwesomeIcons.childReaching
-     
-      
+      "Theft": FontAwesomeIcons.peopleRobbery,
+      "Child Abuse": FontAwesomeIcons.childReaching,
+      "Blood Donation": Icons.bloodtype,
     };
 
     return GestureDetector(
@@ -431,9 +433,27 @@ class _UserhomeState extends State<Userhome> {
         } else if (title == "Alcohol") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => AlcoholReportPage()));
-              } else if (title == "Blood Donation") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => BloodDonationFormPage()));
+        } else if (title == "Blood Donation") {
+          // Use showGeneralDialog to create a slow transition popup.
+          showGeneralDialog(
+            context: context,
+            barrierDismissible: true,
+            barrierLabel: "BloodDonationOptions",
+            transitionDuration: Duration(milliseconds: 250),
+            pageBuilder: (context, animation, secondaryAnimation) {
+              // Center the dialog.
+              return Center(child: BloodDonationPopup());
+            },
+            transitionBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: animation,
+                  child: child,
+                ),
+              );
+            },
+          );
         }
       },
       child: Container(
@@ -441,7 +461,6 @@ class _UserhomeState extends State<Userhome> {
         height: 150,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               width: 60,
@@ -458,7 +477,7 @@ class _UserhomeState extends State<Userhome> {
                 ],
               ),
               child: Icon(
-                iconMapping[title] ?? Icons.help, // default icon if not mapped
+                iconMapping[title] ?? Icons.help,
                 size: 30,
                 color: Colors.blue,
               ),
@@ -477,6 +496,143 @@ class _UserhomeState extends State<Userhome> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Custom popup widget for blood donation options.
+class BloodDonationPopup extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: _buildDialogContent(context),
+    );
+  }
+
+  Widget _buildDialogContent(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      height: 250,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.rectangle,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10.0,
+            offset: Offset(0.0, 10.0),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Blood Donation Options",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 20),
+          // Two options in a horizontal row.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildOption(
+                context,
+                label: "Request Blood",
+                icon: Icons.bloodtype,
+                color: Colors.red,
+                onTap: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => RequestBloodPage()),
+                  );
+                },
+              ),
+              _buildOption(
+                context,
+                label: "Donation Sign Up",
+                icon: Icons.person_add_alt_rounded,
+                color: Colors.green,
+                onTap: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => BloodSignupPage()),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption(BuildContext context,
+      {required String label,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 40,
+              color: color,
+            ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Dummy placeholder for RequestBloodPage.
+// Replace with your actual implementation.
+class RequestBloodPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Request Blood"),
+      ),
+      body: Center(
+        child: Text("Request Blood Page Content"),
+      ),
+    );
+  }
+}
+
+// Dummy placeholder for BloodSignupPage.
+// Replace with your actual implementation.
+class BloodSignupPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Blood Donation Sign Up"),
+      ),
+      body: Center(
+        child: Text("Blood Donation Sign Up Page Content"),
       ),
     );
   }
