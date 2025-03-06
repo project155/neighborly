@@ -55,6 +55,11 @@ dependencies:
   shared_preferences: ^2.5.2
   font_awesome_flutter: ^10.8.0
   syncfusion_flutter_charts: ^20.2.45
+  fluentui_system_icons: ^1.1.273
+  flutter_svg: ^2.0.9
+  line_icons: ^2.0.3
+  flutter_animated_icons: ^1.0.1
+  iconify_flutter: ^0.0.7
   
 
 
@@ -83,7 +88,9 @@ flutter:
   assets:
     - assets/
     - assets/fonts/
-    - assets/back.jpg
+    - assets/back.png
+    - assets/icons/icon2.svg
+    - assets/icons/sirenn.svg
   
   # - assets/userphoto.jpg
   # - assets/upperimage.png

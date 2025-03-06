@@ -6,6 +6,14 @@ import 'package:neighborly/VolunteerLoginPage.dart';
 
 void main() => runApp(MyApp());
 
+/// Helper function to darken a color by a given [amount].
+/// [amount] should be between 0.0 and 1.0.
+Color darken(Color color, [double amount = .1]) {
+  final hsl = HSLColor.fromColor(color);
+  final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+  return hslDark.toColor();
+}
+
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -54,7 +62,7 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
               children: [
                 // User page.
                 UserTypePage(
-                  color: const Color.fromARGB(255, 52, 109, 246),
+                  color: const Color.fromARGB(255, 24, 169, 236),
                   title: 'USER',
                   titleStyle: TextStyle(
                     fontSize: 120,
@@ -65,11 +73,11 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                   ),
                   description:
                       'Login as a regular user to explore the app. This is a longer description to illustrate how the text will be confined within the designated container.',
-                  image: 'assetss/back.jpg',
+                  image: 'assets/back.png',
                   titlePosition: Offset(-15, 300),
-                  imagePosition: Offset(0.25, 0.15),
-                  imageWidth: 350,
-                  imageHeight: 500,
+                  imagePosition: Offset(0.15, 0.11),
+                  imageWidth: 330,
+                  imageHeight: 480,
                   descriptionPosition: Offset(0.2, 0.6),
                   buttonPosition: Offset(0.3, 0.75),
                   onProceed: () {
@@ -78,7 +86,6 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                       MaterialPageRoute(builder: (context) => UserLoginPage()),
                     );
                   },
-                  // Optional: You can also define a descriptionStyle here
                 ),
                 // Volunteer page.
                 UserTypePage(
@@ -120,7 +127,8 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                     fontSize: 110,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Roboto',
-                    color: const Color.fromARGB(255, 255, 166, 166).withOpacity(0.9),
+                    color: const Color.fromARGB(255, 255, 166, 166)
+                        .withOpacity(0.9),
                   ),
                   description:
                       'LOGIN AS AN ADMIN. This description is made longer to show how text confinement works uniformly across pages.',
@@ -157,7 +165,7 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                     decoration: BoxDecoration(
                       color: _currentPage == index
                           ? Colors.white
-                          : const Color.fromARGB(255, 255, 255, 255),
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(5),
                     ),
                   );
@@ -209,7 +217,17 @@ class UserTypePage extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     return Container(
-      color: color,
+      // Apply a gradient background instead of a solid color.
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            color,
+            darken(color, 0.15), // Darker shade of the base color.
+          ],
+        ),
+      ),
       child: Stack(
         children: [
           // Title positioned.
@@ -244,13 +262,12 @@ class UserTypePage extends StatelessWidget {
           ),
           // Description positioned inside a container to confine text.
           Positioned(
-            bottom: screenWidth *0.5,
+            bottom: screenWidth * 0.5,
             left: screenWidth * 0.3,
             child: Container(
               padding: EdgeInsets.all(6),
               width: screenWidth * 0.7,
               decoration: BoxDecoration(
-                //color: Colors.black.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -287,6 +304,7 @@ class UserTypePage extends StatelessWidget {
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'proxima',
+                  color:const Color.fromARGB(255, 0, 0, 0)
                 ),
               ),
             ),

@@ -288,7 +288,7 @@ class _VolunteerHomeState extends State<VolunteerHome> {
         height: 200,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(35),
           boxShadow: [
             BoxShadow(
               color: Colors.white.withOpacity(0.3),
@@ -298,7 +298,7 @@ class _VolunteerHomeState extends State<VolunteerHome> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(35),
           child: _isLoading
               ? Center(child: CircularProgressIndicator())
               : (noticeImages.isEmpty
@@ -582,7 +582,7 @@ class _ChangeNotificationBannerPageState
         child: Column(
           children: [
             _selectedImage != null
-                ? Image.file(_selectedImage!, height: 200, fit: BoxFit.cover)
+                ? Image.file(_selectedImage!, height: 200, fit: BoxFit.fill)
                 : Container(
                     height: 200,
                     color: Colors.grey[300],

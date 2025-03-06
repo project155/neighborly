@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:neighborly/UserSelectionPage.dart';
 import 'package:neighborly/clodinary_upload.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:neighborly/Notificationpage.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -122,8 +124,53 @@ class _UserProfileState extends State<UserProfile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(title: const Text('User Profile')),
+      backgroundColor: Colors.white, // matching userhome's background
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              'User Profile',
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.notifications_outlined, color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => NotificationPage()),
+                  );
+                },
+              ),
+            ],
+            automaticallyImplyLeading: false,
+          ),
+        ),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -157,7 +204,7 @@ class _UserProfileState extends State<UserProfile> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // User Details
+                  // User Details Card
                   Card(
                     margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -169,12 +216,20 @@ class _UserProfileState extends State<UserProfile> {
                         children: [
                           Text(
                             userName ?? "No Name",
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'proxima',
+                            ),
                           ),
                           const SizedBox(height: 5),
                           Text(
                             "📍 $userLocation",
-                            style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[700],
+                              fontFamily: 'proxima',
+                            ),
                           ),
                           const Divider(thickness: 1, height: 30),
                           _buildDetailRow(Icons.email, "Email", userEmail),
@@ -193,7 +248,10 @@ class _UserProfileState extends State<UserProfile> {
                     child: ElevatedButton.icon(
                       onPressed: _signOut,
                       icon: const Icon(Icons.logout, color: Colors.white),
-                      label: const Text("Sign Out", style: TextStyle(fontSize: 18, color: Colors.white)),
+                      label: const Text(
+                        "Sign Out",
+                        style: TextStyle(fontSize: 18, color: Colors.white, fontFamily: 'proxima'),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 30),
@@ -219,7 +277,11 @@ class _UserProfileState extends State<UserProfile> {
         Expanded(
           child: Text(
             value ?? "Not Available",
-            style: const TextStyle(fontSize: 18, color: Colors.black87),
+            style: const TextStyle(
+              fontSize: 18,
+              color: Colors.black87,
+              fontFamily: 'proxima',
+            ),
           ),
         ),
       ],

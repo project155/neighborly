@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:line_icons/line_icons.dart';
 import 'package:neighborly/Animalabuse.dart';
 import 'package:neighborly/ChildAbuse.dart';
 import 'package:neighborly/Drought.dart';
@@ -34,6 +36,7 @@ import 'package:neighborly/Lostandfound.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 void main() => runApp(MyApp());
 
@@ -82,6 +85,20 @@ class _UserhomeState extends State<Userhome> {
 
   List<String> noticeImages = [];
   bool _isLoading = true;
+  String _searchQuery = ""; // For filtering search
+
+  // For animated search suggestions.
+  List<String> _searchSuggestions = [
+    "Search Flood/Rainfall",
+    "Search Fire",
+    "Search Landslide",
+    "Search Drought"
+  ];
+  int _currentSuggestionIndex = 0;
+  Timer? _suggestionTimer;
+
+  // A FocusNode to hide the animated hint when the field is focused.
+  final FocusNode _focusNode = FocusNode();
 
   late PageController _pageController;
   int _currentIndex = 0;
@@ -94,6 +111,27 @@ class _UserhomeState extends State<Userhome> {
     _fetchNoticeImages().then((_) {
       _startTimer();
     });
+    _startSuggestionTimer();
+    _focusNode.addListener(() {
+      setState(() {}); // Update to hide/show animated hint.
+    });
+  }
+
+  void _startSuggestionTimer() {
+    _suggestionTimer = Timer.periodic(Duration(seconds: 3), (timer) {
+      setState(() {
+        _currentSuggestionIndex =
+            (_currentSuggestionIndex + 1) % _searchSuggestions.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _suggestionTimer?.cancel();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _askPermissions() async {
@@ -110,6 +148,7 @@ class _UserhomeState extends State<Userhome> {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('noticeImages')
           .orderBy('uploadedAt', descending: true)
+          .limit(3)
           .get();
       List<String> urls = snapshot.docs
           .map((doc) => doc.get('imageUrl') as String)
@@ -144,10 +183,69 @@ class _UserhomeState extends State<Userhome> {
     });
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  // Updated search bar widget with a stacked AnimatedSwitcher overlay.
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 255, 255, 255),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  const Color.fromARGB(255, 109, 109, 109).withOpacity(0.2),
+              blurRadius: 10,
+              offset: Offset(4, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            TextField(
+              focusNode: _focusNode,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: "", // Leave empty since we'll show our custom hint.
+                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 15),
+              ),
+            ),
+            // Show the animated hint only when the TextField is not focused and empty.
+            if (!_focusNode.hasFocus && _searchQuery.isEmpty)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 00), // adjust to avoid prefix icon
+                    child: AnimatedSwitcher(
+                      duration: Duration(milliseconds: 100),
+                      transitionBuilder: (child, animation) =>
+                          FadeTransition(opacity: animation, child: child),
+                      child: Text(
+                        _searchSuggestions[_currentSuggestionIndex],
+                        key: ValueKey<String>(
+                            _searchSuggestions[_currentSuggestionIndex]),
+                        style: TextStyle(
+                          fontFamily: 'proxima', // Replace with your font
+                          fontSize: 16,
+                          color: Colors.grey,
+                          fontStyle: FontStyle.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -161,14 +259,65 @@ class _UserhomeState extends State<Userhome> {
             bottomRight: Radius.circular(30),
           ),
           child: AppBar(
-            title: Text("reportify", style: TextStyle(color: Colors.white)),
-            backgroundColor: const Color.fromARGB(255, 58, 133, 255),
+            backgroundColor: const Color.fromARGB(233, 0, 0, 0),
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Row(
+              children: [
+                Transform.translate(
+                  offset: Offset(-6, 0),
+                  child: SvgPicture.asset(
+                    'assets/icons/icon2.svg',
+                    height: 60,
+                    width: 50,
+                    colorFilter:
+                        ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  ),
+                ),
+                Transform.translate(
+                  offset: Offset(-13, 0),
+                  child: Text(
+                    "reportify",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'proxima',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Transform.translate(
+                  offset: Offset(-10, 0),
+                  child: Text(
+                    "Public",
+                    style: TextStyle(
+                      color: Color.fromARGB(179, 223, 223, 223),
+                      fontSize: 14,
+                      fontFamily: 'proxima',
+                    ),
+                  ),
+                ),
+              ],
+            ),
             actions: [
               IconButton(
-                icon: Icon(Icons.notifications_active_rounded, color: Colors.white),
+                icon: Icon(Icons.notifications_outlined, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => NotificationPage()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => NotificationPage()),
+                  );
                 },
               ),
             ],
@@ -176,13 +325,15 @@ class _UserhomeState extends State<Userhome> {
           ),
         ),
       ),
-      backgroundColor: Colors.grey[200],
+      backgroundColor: const Color.fromARGB(255, 240, 242, 255),
       body: Stack(
         children: [
           SingleChildScrollView(
             padding: EdgeInsets.only(bottom: 100),
             child: Column(
               children: [
+                // Insert search bar between AppBar and notice section.
+                _buildSearchBar(),
                 _buildNoticeSection(),
                 _buildSection("Report Disaster", disasterTypes),
                 _buildSection("Report public issues", newCategoryItems),
@@ -190,67 +341,102 @@ class _UserhomeState extends State<Userhome> {
               ],
             ),
           ),
+          // Bottom navigation bar with the original SOS button order.
           Positioned(
             left: 20,
             right: 20,
             bottom: 20,
             child: Container(
-              height: 70,
+              height: 60,
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 95, 156, 255),
-                borderRadius: BorderRadius.circular(35),
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(238, 9, 59, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+                borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withOpacity(0.2),
                     blurRadius: 10,
-                    offset: Offset(0, 4),
+                    offset: Offset(0, 7),
                   ),
                 ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
+                  // Home button
                   IconButton(
-                    icon: Icon(Icons.home, color: Colors.white),
+                    icon:
+                        Icon(FluentIcons.home_20_regular, color: Colors.white),
                     onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => LoginUser()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => LoginUser()),
+                      );
+                    },
+                  ),
+                  // Person button
+                  IconButton(
+                    icon: Icon(FluentIcons.person_20_regular,
+                        color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => UserProfile()),
+                      );
+                    },
+                  ),
+                  // Copy Add button
+                  IconButton(
+                    icon: Icon(FluentIcons.copy_add_20_regular,
+                        color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => CreateReportPage()),
+                      );
                     },
                   ),
                   IconButton(
-                    icon: Icon(Icons.person, color: Colors.white),
+                    icon: Transform.translate(
+                      offset: Offset(3, -3),
+                      child: SvgPicture.asset(
+                        'assets/icons/sirenn.svg',
+                        color: Colors.white,
+                        width: 29,
+                        height: 29,
+                      ),
+                    ),
                     onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => UserProfile()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => SosPage()),
+                      );
                     },
                   ),
+                  // Camera button
                   IconButton(
-                    icon: Icon(Icons.post_add_rounded, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => CreateReportPage()));
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.camera_alt, color: Colors.white),
+                    icon: Icon(FluentIcons.camera_20_regular,
+                        color: Colors.white),
                     onPressed: () async {
                       final picker = ImagePicker();
-                      final pickedFile = await picker.pickImage(source: ImageSource.camera);
+                      final pickedFile =
+                          await picker.pickImage(source: ImageSource.camera);
                       if (pickedFile != null) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CreateReportPage(attachment: pickedFile),
+                            builder: (context) =>
+                                CreateReportPage(attachment: pickedFile),
                           ),
                         );
                       }
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.sos_sharp, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => SosPage()));
                     },
                   ),
                 ],
@@ -270,7 +456,7 @@ class _UserhomeState extends State<Userhome> {
         height: 200,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(35),
           boxShadow: [
             BoxShadow(
               color: Colors.white.withOpacity(0.3),
@@ -280,7 +466,7 @@ class _UserhomeState extends State<Userhome> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(35),
           child: _isLoading
               ? Center(child: CircularProgressIndicator())
               : PageView.builder(
@@ -305,7 +491,19 @@ class _UserhomeState extends State<Userhome> {
     );
   }
 
+  // Updated _buildSection that filters service items based on the search query.
   Widget _buildSection(String heading, List<String> items) {
+    List<String> filteredItems = _searchQuery.isEmpty
+        ? items
+        : items
+            .where((item) =>
+                item.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .toList();
+
+    if (filteredItems.isEmpty) {
+      return Container();
+    }
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 10),
       child: Container(
@@ -326,8 +524,14 @@ class _UserhomeState extends State<Userhome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(heading,
-                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+              Text(
+                heading,
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'proxima',
+                ),
+              ),
               SizedBox(height: 10),
               GridView.builder(
                 shrinkWrap: true,
@@ -338,9 +542,9 @@ class _UserhomeState extends State<Userhome> {
                   mainAxisSpacing: 10,
                   childAspectRatio: 0.9,
                 ),
-                itemCount: items.length,
+                itemCount: filteredItems.length,
                 itemBuilder: (context, index) {
-                  return _buildServiceItem(items[index]);
+                  return _buildServiceItem(filteredItems[index]);
                 },
               ),
             ],
@@ -434,14 +638,12 @@ class _UserhomeState extends State<Userhome> {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => AlcoholReportPage()));
         } else if (title == "Blood Donation") {
-          // Use showGeneralDialog to create a slow transition popup.
           showGeneralDialog(
             context: context,
             barrierDismissible: true,
             barrierLabel: "BloodDonationOptions",
             transitionDuration: Duration(milliseconds: 250),
             pageBuilder: (context, animation, secondaryAnimation) {
-              // Center the dialog.
               return Center(child: BloodDonationPopup());
             },
             transitionBuilder: (context, animation, secondaryAnimation, child) {
@@ -478,8 +680,8 @@ class _UserhomeState extends State<Userhome> {
               ),
               child: Icon(
                 iconMapping[title] ?? Icons.help,
-                size: 30,
-                color: Colors.blue,
+                size: 25,
+                color: Color.fromARGB(255, 57, 57, 57),
               ),
             ),
             SizedBox(height: 5),
@@ -489,8 +691,9 @@ class _UserhomeState extends State<Userhome> {
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                fontFamily: 'proxima',
+                fontWeight: FontWeight.w100,
                 color: Colors.black,
               ),
             ),
@@ -501,7 +704,6 @@ class _UserhomeState extends State<Userhome> {
   }
 }
 
-// Custom popup widget for blood donation options.
 class BloodDonationPopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -537,7 +739,6 @@ class BloodDonationPopup extends StatelessWidget {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 20),
-          // Two options in a horizontal row.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -547,7 +748,7 @@ class BloodDonationPopup extends StatelessWidget {
                 icon: Icons.bloodtype,
                 color: Colors.red,
                 onTap: () {
-                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pop();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => RequestBloodPage()),
@@ -560,10 +761,10 @@ class BloodDonationPopup extends StatelessWidget {
                 icon: Icons.person_add_alt_rounded,
                 color: Colors.green,
                 onTap: () {
-                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pop();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => BloodDonationFormPage()),
+                    MaterialPageRoute(builder: (context) => BloodSignupPage()),
                   );
                 },
               ),
@@ -592,7 +793,7 @@ class BloodDonationPopup extends StatelessWidget {
             child: Icon(
               icon,
               size: 40,
-              color: color,
+              color: Color.fromARGB(255, 9, 60, 83),
             ),
           ),
           SizedBox(height: 10),
@@ -606,8 +807,6 @@ class BloodDonationPopup extends StatelessWidget {
   }
 }
 
-// Dummy placeholder for RequestBloodPage.
-// Replace with your actual implementation.
 class RequestBloodPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -622,8 +821,6 @@ class RequestBloodPage extends StatelessWidget {
   }
 }
 
-// Dummy placeholder for BloodSignupPage.
-// Replace with your actual implementation.
 class BloodSignupPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
