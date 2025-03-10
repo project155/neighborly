@@ -23,9 +23,11 @@ class _UserRegisterState extends State<Userregister> {
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  // Using a LatLng variable to store the selected location
+  // Using a LatLng variable to store the selected location.
   LatLng? _selectedLatLng;
 
+  final Color primaryColor = const Color.fromARGB(255, 9, 60, 83);
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,13 +45,7 @@ class _UserRegisterState extends State<Userregister> {
                   const SizedBox(height: 10),
                   _buildTextField(_emailController, 'Email', Icons.email),
                   const SizedBox(height: 10),
-                  _buildTextField(
-                    _phoneController,
-                    'Phone Number',
-                    Icons.phone,
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  ),
+                  _buildPhoneField(),
                   const SizedBox(height: 10),
                   _buildTextField(
                     _passwordController,
@@ -74,7 +70,7 @@ class _UserRegisterState extends State<Userregister> {
                       child: ElevatedButton(
                         onPressed: _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6495ED),
+                          backgroundColor: primaryColor,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -82,7 +78,11 @@ class _UserRegisterState extends State<Userregister> {
                         ),
                         child: const Text(
                           'Register',
-                          style: TextStyle(fontSize: 18, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontFamily: 'proxima',
+                          ),
                         ),
                       ),
                     ),
@@ -96,42 +96,48 @@ class _UserRegisterState extends State<Userregister> {
     );
   }
 
-  // Header widget with background image and text shifted upward
+  // Modified Header widget to use the same banner as UserLogin (asset image).
   Widget _buildHeader() {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.40,
+      height: MediaQuery.of(context).size.height * 0.45,
       width: double.infinity,
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: NetworkImage(
-            'https://res.cloudinary.com/dkwnu8zei/image/upload/v1740293549/upperimage_k8cepq.png',
-          ),
+          image: AssetImage('assets/upperimage.png'),
           fit: BoxFit.fill,
         ),
         borderRadius: BorderRadius.circular(0),
       ),
       child: Padding(
-        padding:  EdgeInsets.all(20),
-        child: Transform.translate(
-          offset:  Offset(0, -50), // Move text upward by 20 pixels
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children:  [
-              Text(
-                'Welcome!',
-                style: TextStyle(fontSize: 55, fontWeight: FontWeight.bold, color: Colors.white),
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'Welcome to Reportify!',
+              style: TextStyle(
+                fontSize: 45,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'proxima',
+                color: Colors.white,
               ),
-              SizedBox(height: 25),
-              Text('Join us as a User!', style: TextStyle(fontSize: 20, color: Colors.white)),
-            ],
-          ),
+            ),
+            SizedBox(height: 10, width: 40),
+            Text(
+              'Report, Stay Informed, and Make a Difference.!',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'proxima',
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // General text field widget with outlined borders
+  // General text field widget with outlined borders.
   Widget _buildTextField(
     TextEditingController controller,
     String hint,
@@ -148,9 +154,14 @@ class _UserRegisterState extends State<Userregister> {
         obscureText: obscureText,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
+        style: const TextStyle(fontFamily: 'proxima'),
         decoration: InputDecoration(
           hintText: hint,
-          prefixIcon: Icon(icon, color: Colors.grey),
+          hintStyle: TextStyle(
+            color: primaryColor,
+            fontFamily: 'proxima',
+          ),
+          prefixIcon: Icon(icon, color: primaryColor),
           border: OutlineInputBorder(
             borderSide: const BorderSide(color: Color.fromARGB(255, 214, 214, 214)),
             borderRadius: BorderRadius.circular(15),
@@ -170,7 +181,35 @@ class _UserRegisterState extends State<Userregister> {
     );
   }
 
-  // Location selector widget with outlined border and transparent background.
+  // Builds the phone field widget.
+  Widget _buildPhoneField() {
+    return TextField(
+      controller: _phoneController,
+      keyboardType: TextInputType.phone,
+      style: const TextStyle(fontFamily: 'proxima'),
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      decoration: InputDecoration(
+        hintText: 'Phone Number',
+        hintStyle: TextStyle(color: primaryColor, fontFamily: 'proxima'),
+        prefixIcon: Icon(Icons.phone, color: primaryColor),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+        border: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color.fromARGB(255, 214, 214, 214)),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color.fromARGB(255, 235, 235, 235)),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.blue),
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+    );
+  }
+
+  // Location selector widget with outlined border.
   Widget _buildLocationSelector() {
     return InkWell(
       onTap: () async {
@@ -181,7 +220,6 @@ class _UserRegisterState extends State<Userregister> {
         if (result != null && result is LatLng) {
           setState(() {
             _selectedLatLng = result;
-            // For debugging: print the selected location.
             print("Selected location: $_selectedLatLng");
           });
         }
@@ -195,7 +233,7 @@ class _UserRegisterState extends State<Userregister> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.location_on, color: Colors.grey, size: 22),
+            Icon(Icons.location_on, color: primaryColor, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -205,24 +243,25 @@ class _UserRegisterState extends State<Userregister> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: _selectedLatLng != null ? Colors.black : Colors.grey.shade600,
+                  color: _selectedLatLng != null ? Colors.black : primaryColor,
+                  fontFamily: 'proxima',
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24),
+            Icon(Icons.keyboard_arrow_down, color: primaryColor, size: 24),
           ],
         ),
       ),
     );
   }
 
-  // Password visibility toggle icon
+  // Password visibility toggle icon.
   Widget _buildPasswordVisibilityIcon() {
     return IconButton(
       icon: Icon(
         _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-        color: Colors.grey,
+        color: primaryColor,
       ),
       onPressed: () {
         setState(() {
@@ -232,7 +271,7 @@ class _UserRegisterState extends State<Userregister> {
     );
   }
 
-  // Registration function that saves user data along with the selected location
+  // Registration function with validations and email verification.
   Future<void> _register() async {
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
@@ -253,11 +292,27 @@ class _UserRegisterState extends State<Userregister> {
       _showError('Passwords do not match.');
       return;
     }
+    // Validate phone number to be exactly 10 digits.
+    if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
+      _showError('Phone number must have exactly 10 digits.');
+      return;
+    }
+    // Validate password to be exactly 8 digits.
+    if (!RegExp(r'^\d{8}$').hasMatch(password)) {
+      _showError('Password must have exactly 8 digits.');
+      return;
+    }
+
     try {
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      
+      // Send email verification.
+      await userCredential.user!.sendEmailVerification();
+      
+      // Save user data to Firestore.
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'name': name,
         'email': email,
@@ -267,10 +322,18 @@ class _UserRegisterState extends State<Userregister> {
           'longitude': _selectedLatLng!.longitude,
         },
       });
+      
+      // Inform the user to verify their email.
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration Successful!')),
+        const SnackBar(
+          content: Text(
+            'Registration Successful! Please check your email for verification.',
+            style: TextStyle(fontFamily: 'proxima'),
+          ),
+        ),
       );
 
+      // Optionally, navigate to the login page.
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => UserLoginPage()),
@@ -280,8 +343,15 @@ class _UserRegisterState extends State<Userregister> {
     }
   }
 
-  // Helper function to display error messages
+  // Helper function to display error messages.
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(fontFamily: 'proxima'),
+        ),
+      ),
+    );
   }
 }

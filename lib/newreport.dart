@@ -9,7 +9,7 @@ import 'package:neighborly/notification.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:intl/intl.dart'; // Import intl for date formatting
+import 'package:intl/intl.dart';
 
 class CreateReportPage extends StatefulWidget {
   final XFile? attachment; // Optional image attachment
@@ -283,30 +283,46 @@ class _CreateReportPageState extends State<CreateReportPage> {
         : 'No location selected';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Create Report',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 240, 242, 255),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
           ),
-        ),
-        centerTitle: true,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blueAccent, Colors.lightBlueAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+          child: AppBar(
+            title: Text(
+              'Create Report',
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
+            centerTitle: true,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
           ),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
         ),
       ),
       body: Padding(
@@ -315,7 +331,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
           key: _formKey,
           child: ListView(
             children: [
-              // Category Dropdown with icons and a max height for the dropdown menu.
+              // Category Dropdown with icons.
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
                 decoration: InputDecoration(
@@ -348,10 +364,12 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     value == null ? 'Please select a category' : null,
               ),
               SizedBox(height: 12),
+              // Urgency Level Dropdown.
               DropdownButtonFormField<String>(
                 value: _urgencyLevel,
                 decoration: InputDecoration(
                   hintText: 'Select Urgency Level',
+                  prefixIcon: Icon(Icons.priority_high, color: const Color.fromARGB(255, 9, 60, 83)),
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
@@ -372,10 +390,12 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     value == null ? 'Please select urgency level' : null,
               ),
               SizedBox(height: 12),
+              // Title field.
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
                   hintText: 'Enter Title',
+                  prefixIcon: Icon(Icons.title, color:Color.fromARGB(255, 9, 60, 83)),
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
@@ -387,11 +407,17 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     value == null || value.isEmpty ? 'Please enter a title' : null,
               ),
               SizedBox(height: 12),
+              // Description field.
               TextFormField(
                 controller: _descriptionController,
-                maxLines: 4,
+                maxLines: 3,
                 decoration: InputDecoration(
                   hintText: 'Enter Description',
+                  prefixIcon: Transform.translate(
+                    offset: Offset(0, -23),
+                    child: Icon(Icons.description, color: Color.fromARGB(255, 9, 60, 83)),
+                  ),
+                  alignLabelWithHint: true,
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
@@ -404,12 +430,13 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     : null,
               ),
               SizedBox(height: 12),
+              // Date picker.
               ListTile(
                 tileColor: Colors.grey[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading: Icon(Icons.lock_clock_rounded, color: Colors.blueAccent),
+                leading: Icon(Icons.lock_clock_rounded, color:Color.fromARGB(255, 9, 60, 83)),
                 title: Text(_dateTime == null
                     ? 'Select Date'
                     : DateFormat('yyyy-MM-dd').format(_dateTime!)),
@@ -424,12 +451,13 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 },
               ),
               SizedBox(height: 12),
+              // Time picker.
               ListTile(
                 tileColor: Colors.grey[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading: Icon(Icons.access_time, color: Colors.blueAccent),
+                leading: Icon(Icons.access_time, color:Color.fromARGB(255, 9, 60, 83)),
                 title: Text(_timeOfDay == null
                     ? 'Select Time'
                     : _timeOfDay!.format(context)),
@@ -442,12 +470,13 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 },
               ),
               SizedBox(height: 12),
+              // Current location fetch.
               ListTile(
                 tileColor: Colors.grey[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                leading: Icon(Icons.location_on, color: Colors.blueAccent),
+                leading: Icon(Icons.location_on, color: Color.fromARGB(255, 9, 60, 83)),
                 title: Text(
                   _currentLocation == null
                       ? 'Fetch Current Location'
@@ -456,6 +485,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 onTap: _getCurrentLocation,
               ),
               SizedBox(height: 12),
+              // Incident location picker.
               InkWell(
                 onTap: () async {
                   final result = await Navigator.push(
@@ -478,8 +508,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.location_history,
-                          color: Colors.blueAccent, size: 22),
+                      Icon(Icons.location_history, color:Color.fromARGB(255, 9, 60, 83),size: 22),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -496,17 +525,17 @@ class _CreateReportPageState extends State<CreateReportPage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Icon(Icons.keyboard_arrow_down,
-                          color: Colors.grey, size: 24),
+                      Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24),
                     ],
                   ),
                 ),
               ),
               SizedBox(height: 12),
+              // Attach Images button.
               ElevatedButton(
                 onPressed: _pickImages,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: Color.fromARGB(255, 9, 60, 83),
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   shape: RoundedRectangleBorder(
@@ -546,10 +575,11 @@ class _CreateReportPageState extends State<CreateReportPage> {
                   ),
                 ),
               SizedBox(height: 12),
+              // Submit Report button.
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitReport,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: Color.fromARGB(255, 9, 60, 83),
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(

@@ -6,7 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'; // No longer used
 import 'package:intl/intl.dart'; // Import intl for date formatting
 
 class BloodDonationFormPage extends StatefulWidget {
-   BloodDonationFormPage({Key? key}) : super(key: key);
+  BloodDonationFormPage({Key? key}) : super(key: key);
 
   @override
   _BloodDonationFormPageState createState() => _BloodDonationFormPageState();
@@ -91,37 +91,47 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Updated AppBar to match Food donation design.
-      appBar: AppBar(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(20),
+      // Updated AppBar with Lost & Found theme.
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
           ),
-        ),
-        title: Text(
-          'Blood Donation Sign-Up',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: true,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blueAccent, Colors.lightBlueAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+          child: AppBar(
+            title: Text(
+              'Blood Donation Sign-Up',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'proxima',
+              ),
             ),
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+            centerTitle: true,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+            ),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
           ),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
         ),
       ),
       body: Padding(
@@ -135,6 +145,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                 controller: _nameController,
                 decoration: InputDecoration(
                   hintText: 'Full Name',
+                  hintStyle: TextStyle(fontFamily: 'proxima'),
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
@@ -152,6 +163,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
                   hintText: 'Contact Number',
+                  hintStyle: TextStyle(fontFamily: 'proxima'),
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
@@ -168,6 +180,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                 value: _selectedBloodGroup,
                 decoration: InputDecoration(
                   hintText: 'Select Blood Group',
+                  hintStyle: TextStyle(fontFamily: 'proxima'),
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
@@ -178,23 +191,27 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                 items: _bloodGroups
                     .map((group) => DropdownMenuItem<String>(
                           value: group,
-                          child: Text(group),
+                          child: Text(group, style: TextStyle(fontFamily: 'proxima')),
                         ))
                     .toList(),
                 onChanged: (value) => setState(() => _selectedBloodGroup = value),
-                validator: (value) => value == null ? 'Please select your blood group' : null,
+                validator: (value) =>
+                    value == null ? 'Please select your blood group' : null,
               ),
               SizedBox(height: 12),
               // Last Donation Date picker.
               ListTile(
                 tileColor: Colors.grey[200],
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(15),
                 ),
-                leading: Icon(Icons.calendar_today, color: Colors.blueAccent),
-                title: Text(_lastDonationDate == null
-                    ? 'Select Last Donation Date'
-                    : DateFormat('yyyy-MM-dd').format(_lastDonationDate!)),
+                leading: Icon(Icons.calendar_today, color: Color.fromARGB(255, 9, 60, 83)),
+                title: Text(
+                  _lastDonationDate == null
+                      ? 'Select Last Donation Date'
+                      : DateFormat('yyyy-MM-dd').format(_lastDonationDate!),
+                  style: TextStyle(fontFamily: 'proxima'),
+                ),
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
@@ -211,6 +228,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                 value: _selectedDistrict,
                 decoration: InputDecoration(
                   hintText: 'Select Preferred District',
+                  hintStyle: TextStyle(fontFamily: 'proxima'),
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
@@ -221,7 +239,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                 items: _districts
                     .map((district) => DropdownMenuItem<String>(
                           value: district,
-                          child: Text(district),
+                          child: Text(district, style: TextStyle(fontFamily: 'proxima')),
                         ))
                     .toList(),
                 onChanged: (value) => setState(() => _selectedDistrict = value),
@@ -233,7 +251,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: Color.fromARGB(255, 9, 60, 83),
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -256,6 +274,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
+                          fontFamily: 'proxima',
                         ),
                       ),
               ),

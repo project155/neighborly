@@ -28,6 +28,7 @@ import 'package:neighborly/authorityreports/authorityroadincident.dart';
 import 'package:neighborly/authorityreports/authoritysexual.dart';
 import 'package:neighborly/authorityreports/authoritytheft.dart';
 import 'package:neighborly/authorityreports/authoritytransportation.dart';
+import 'package:neighborly/publicissuesanalytics.dart';
 
 
 class AuthorityHome extends StatefulWidget {
@@ -158,13 +159,13 @@ class _AuthorityHomeState extends State<AuthorityHome> {
       },
       {
         "title": "Generate Reports",
-        "icon": Icons.analytics,
+        "icon": Icons.download_outlined,
         "page": GenerateReports(),
       },
       {
-        "title": "Generate Reports",
+        "title": "Report Analytics",
         "icon": Icons.analytics,
-        "page": GenerateReports(),
+        "page": PublicIssuesAnalyticsPage(),
       },
     ];
 

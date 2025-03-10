@@ -532,14 +532,17 @@ class _FloodReportPageState extends State<FloodReportPage>
                                         Text(title,
                                             style: TextStyle(
                                                 fontSize: 18,
+                                                fontFamily: 'proxima',
                                                 fontWeight:
-                                                    FontWeight.bold)),
+                                                    FontWeight.bold,
+                                                    )),
                                         SizedBox(height: 5),
                                         Text(description,
                                             style: TextStyle(
                                                 fontSize: 14,
+                                                 fontFamily: 'proxima',
                                                 color:
-                                                    Colors.grey[700])),
+                                                    Colors.black)),
                                         // Date and time display added here
                                         SizedBox(height: 5),
                                         Text(
@@ -570,7 +573,8 @@ class _FloodReportPageState extends State<FloodReportPage>
                                               "Location: $latitude, $longitude",
                                               style: TextStyle(
                                                   color:
-                                                      Colors.blueGrey)),
+                                                      const Color.fromARGB(255, 0, 0, 0),
+                                                      fontSize: 12)),
                                         SizedBox(height: 10),
                                         Row(
                                           children: [

@@ -91,7 +91,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -112,18 +112,20 @@ class _UserLoginPageState extends State<UserLoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
                     Text(
-                      'Welcome Back!!',
+                      'Welcome to Reportify!',
                       style: TextStyle(
-                        fontSize: 55,
+                        fontSize: 45,
                         fontWeight: FontWeight.bold,
+                        fontFamily: 'proxima',
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 10,width: 40,),
                     Text(
-                      'Welcome back, we\'re glad to see you again!',
+                      'Report, Stay Informed, and Make a Difference.!',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 16,
+                        fontFamily: 'proxima',
                         color: Colors.white,
                       ),
                     ),
@@ -139,8 +141,8 @@ class _UserLoginPageState extends State<UserLoginPage> {
                 controller: _emailController,
                 decoration: InputDecoration(
                   hintText: 'Enter Email',
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  prefixIcon: const Icon(Icons.email, color: Colors.grey),
+                  hintStyle: const TextStyle(color: Color.fromARGB(255, 9, 60, 83)),
+                  prefixIcon: const Icon(Icons.email, color: Color.fromARGB(255, 9, 60, 83)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 ),
@@ -154,14 +156,14 @@ class _UserLoginPageState extends State<UserLoginPage> {
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  hintStyle: const TextStyle(color: Color.fromARGB(255, 168, 168, 168)),
-                  prefixIcon: const Icon(Icons.lock, color: Colors.grey),
+                  hintStyle: const TextStyle(color: Color.fromARGB(255, 9, 60, 83)),
+                  prefixIcon: const Icon(Icons.lock, color:  Color.fromARGB(255, 9, 60, 83)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                      color: Colors.grey,
+                      color: const Color.fromARGB(255, 9, 60, 83),
                     ),
                     onPressed: () {
                       setState(() {
@@ -187,7 +189,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
                   child: const Text(
                     'Forgot Password?',
                     style: TextStyle(
-                      color: Color.fromARGB(255, 52, 109, 246),
+                      color:  Color.fromARGB(255, 0, 141, 206),
                       fontSize: 16,
                     ),
                   ),
@@ -200,7 +202,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
               child: ElevatedButton(
                 onPressed: _signIn,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 0, 111, 237),
+                  backgroundColor: const Color.fromARGB(255, 9, 60, 83),
                   padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 90),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25), // Slightly rounder corners.
@@ -215,7 +217,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 80),
+            const SizedBox(height: 20),
             // Register now button.
             Padding(
               padding: const EdgeInsets.only(bottom: 0),

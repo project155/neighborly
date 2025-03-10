@@ -9,6 +9,7 @@ import 'package:neighborly/clodinary_upload.dart';
 import 'package:neighborly/incidentlocation.dart';
 import 'package:neighborly/notification.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 class FoodDonationPage extends StatefulWidget {
   @override
@@ -31,8 +32,8 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
   DateTime? _expiryDate;
   TimeOfDay? _expiryTimeOfDay;
   
-  // New variable for Veg/Non-Veg selection.
-  String _foodPreference = 'Veg';
+  // Using dropdown menu for food preference.
+  String? _foodPreference; // "Veg" or "Non-Veg"
 
   // For pickup location.
   LatLng? _selectedLatLng;
@@ -48,10 +49,14 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
     "Other"
   ];
 
+  // Options for food preference.
+  final List<String> _foodPreferences = ["Veg", "Non-Veg"];
+
   @override
   void initState() {
     super.initState();
-    // Removed current location fetching as it's no longer needed.
+    // Set default food preference.
+    _foodPreference = _foodPreferences[0];
   }
 
   Future<void> _pickImages() async {
@@ -91,7 +96,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
         'category': 'Food Donation',
         'foodType': _selectedFoodType,
         'foodName': _foodNameController.text,
-        'donatorName': _donatorNameController.text, // New field.
+        'donatorName': _donatorNameController.text,
         'description': _descriptionController.text,
         'quantity': _quantityController.text,
         'expiryDate': _expiryDate?.toIso8601String(),
@@ -107,8 +112,8 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
         'imageUrls': imageUrls,
         'timestamp': FieldValue.serverTimestamp(),
         'userId': FirebaseAuth.instance.currentUser!.uid,
-        'orderStatus': 'Pending', // Default status.
-        'foodPreference': _foodPreference, // New field.
+        'orderStatus': 'Pending',
+        'foodPreference': _foodPreference,
       });
       
       QuerySnapshot volunteersSnapshot =
@@ -137,13 +142,13 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
         _expiryDate = null;
         _expiryTimeOfDay = null;
         _images = [];
-        _foodPreference = 'Veg';
+        _foodPreference = _foodPreferences[0];
         _selectedLatLng = null;
       });
     }
   }
 
-  // Build a status indicator widget with an icon and colored badge.
+  // Build a status indicator widget.
   Widget _buildStatusIndicator(String status) {
     IconData icon;
     Color color;
@@ -191,7 +196,21 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
     );
   }
 
-  // Build the donation form view.
+  // InputDecoration that accepts any Widget as prefixIcon.
+  InputDecoration _buildInputDecoration(String hint, {required Widget prefixIcon}) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.grey[200],
+      prefixIcon: prefixIcon,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
+  // Build the donation form.
   Widget _buildDonationForm() {
     return Padding(
       key: ValueKey('DonationForm'),
@@ -203,15 +222,9 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             // Food Type dropdown.
             DropdownButtonFormField<String>(
               value: _selectedFoodType,
-              decoration: InputDecoration(
-                hintText: 'Select Food Type',
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
-                prefixIcon: Icon(Icons.fastfood, color: Colors.blueAccent),
+              decoration: _buildInputDecoration(
+                'Select Food Type',
+                prefixIcon: Icon(Icons.fastfood, color: Color.fromARGB(255, 9, 60, 83)),
               ),
               items: _foodTypes
                   .map((type) => DropdownMenuItem<String>(
@@ -227,106 +240,63 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             // Food Name.
             TextFormField(
               controller: _foodNameController,
-              decoration: InputDecoration(
-                hintText: 'Enter Food Name',
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
+              decoration: _buildInputDecoration(
+                'Enter Food Name',
+                prefixIcon: Icon(Icons.restaurant_menu, color: Color.fromARGB(255, 9, 60, 83)),
               ),
               validator: (value) =>
                   value == null || value.isEmpty ? 'Please enter food name' : null,
             ),
             SizedBox(height: 12),
-            // Row for Donator Name and Contact Information.
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _donatorNameController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter Your Name',
-                      filled: true,
-                      fillColor: Colors.grey[200],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    validator: (value) =>
-                        value == null || value.isEmpty ? 'Please enter your name' : null,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: _contactController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter Phone Number',
-                      filled: true,
-                      fillColor: Colors.grey[200],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    validator: (value) =>
-                        value == null || value.isEmpty ? 'Please enter contact info' : null,
-                  ),
-                ),
-              ],
+            // Donator Name.
+            TextFormField(
+              controller: _donatorNameController,
+              decoration: _buildInputDecoration(
+                'Enter Your Name',
+                prefixIcon: Icon(Icons.person, color: Color.fromARGB(255, 9, 60, 83)),
+              ),
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Please enter your name' : null,
             ),
             SizedBox(height: 12),
-            // Veg / Non-Veg option.
-            Container(
-              padding: EdgeInsets.all(1),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(15),
+            // Phone Number.
+            TextFormField(
+              controller: _contactController,
+              decoration: _buildInputDecoration(
+                'Enter Phone Number',
+                prefixIcon: Icon(Icons.phone, color: Color.fromARGB(255, 9, 60, 83)),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Text("Veg"),
-                      value: "Veg",
-                      groupValue: _foodPreference,
-                      onChanged: (val) {
-                        setState(() {
-                          _foodPreference = val!;
-                        });
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Text("Non-Veg"),
-                      value: "Non-Veg",
-                      groupValue: _foodPreference,
-                      onChanged: (val) {
-                        setState(() {
-                          _foodPreference = val!;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Please enter contact info' : null,
             ),
             SizedBox(height: 12),
-            // Description.
+            // Food Preference dropdown.
+            DropdownButtonFormField<String>(
+              value: _foodPreference,
+              decoration: _buildInputDecoration(
+                'Select Food Preference',
+                prefixIcon: Icon(Icons.restaurant, color: Color.fromARGB(255, 9, 60, 83)),
+              ),
+              items: _foodPreferences
+                  .map((pref) => DropdownMenuItem<String>(
+                        value: pref,
+                        child: Text(pref),
+                      ))
+                  .toList(),
+              onChanged: (value) => setState(() => _foodPreference = value),
+              validator: (value) =>
+                  value == null ? 'Please select a food preference' : null,
+            ),
+            SizedBox(height: 12),
+            // Description with offset icon.
             TextFormField(
               controller: _descriptionController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Enter Description',
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
+              maxLines: 3,
+              decoration: _buildInputDecoration(
+                'Enter Description',
+                prefixIcon: Transform.translate(
+                  offset: Offset(0, -5),
+                  child: Icon(Icons.description, color: Color.fromARGB(255, 9, 60, 83)),
                 ),
               ),
               validator: (value) =>
@@ -336,14 +306,9 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             // Quantity.
             TextFormField(
               controller: _quantityController,
-              decoration: InputDecoration(
-                hintText: 'Enter Quantity (e.g., 20 meals)',
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
+              decoration: _buildInputDecoration(
+                'Enter Quantity (e.g., 20 meals)',
+                prefixIcon: Icon(Icons.confirmation_number, color: Color.fromARGB(255, 9, 60, 83)),
               ),
               validator: (value) =>
                   value == null || value.isEmpty ? 'Please enter quantity' : null,
@@ -353,7 +318,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             ListTile(
               tileColor: Colors.grey[200],
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              leading: Icon(Icons.calendar_today, color: Colors.blueAccent),
+              leading: Icon(Icons.calendar_today, color: Color.fromARGB(255, 9, 60, 83)),
               title: Text(_expiryDate == null
                   ? 'Select Expiry Date'
                   : '${_expiryDate!.toLocal()}'.split(' ')[0]),
@@ -372,7 +337,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             ListTile(
               tileColor: Colors.grey[200],
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              leading: Icon(Icons.access_time, color: Colors.blueAccent),
+              leading: Icon(Icons.access_time, color: Color.fromARGB(255, 9, 60, 83)),
               title: Text(_expiryTimeOfDay == null
                   ? 'Select Expiry Time'
                   : _expiryTimeOfDay!.format(context)),
@@ -401,12 +366,12 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.location_history, color: Colors.blueAccent, size: 22),
+                    Icon(Icons.location_on, color: Color.fromARGB(255, 9, 60, 83), size: 22),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -431,14 +396,9 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             TextFormField(
               controller: _instructionsController,
               maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Enter Special Instructions (optional)',
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
+              decoration: _buildInputDecoration(
+                'Enter Special Instructions (optional)',
+                prefixIcon: Icon(Icons.notes, color: Color.fromARGB(255, 9, 60, 83)),
               ),
             ),
             SizedBox(height: 12),
@@ -446,10 +406,12 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             ElevatedButton(
               onPressed: _pickImages,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
+                backgroundColor: Color.fromARGB(255, 9, 60, 83),
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -484,13 +446,16 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
                 ),
               ),
             SizedBox(height: 12),
+            // Submit Donation Button.
             ElevatedButton(
               onPressed: _submitDonation,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
+                backgroundColor: Color.fromARGB(255, 9, 60, 83),
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 elevation: 2,
               ),
               child: Text(
@@ -504,7 +469,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
     );
   }
 
-  // Build the landing page which shows current user's donation uploads.
+  // Build the landing page to display current donation uploads.
   Widget _buildLandingPage() {
     return Padding(
       key: ValueKey('LandingPage'),
@@ -538,7 +503,7 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
     );
   }
 
-  // Build a card to display each donation's details with real-time order status.
+  // Build a card for each donation.
   Widget _buildDonationCard(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     String expiryDateStr = data['expiryDate'] ?? '';
@@ -560,14 +525,14 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
     return Card(
       color: cardBackgroundColor,
       margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 0.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       elevation: 5,
       child: Padding(
         padding: EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Show images if available.
+            // Display images if available.
             imageUrls.isNotEmpty
                 ? Container(
                     height: 100,
@@ -577,9 +542,9 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
                       itemCount: imageUrls.length,
                       itemBuilder: (context, index) {
                         return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
+                          padding: EdgeInsets.only(right: 8.0),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                             child: Image.network(
                               imageUrls[index],
                               width: 100,
@@ -607,7 +572,6 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             SizedBox(height: 4),
             Text('Pickup Location: $pickupLocationStr', style: TextStyle(fontSize: 14)),
             SizedBox(height: 4),
-            // Row for Contact and Donator Name.
             Row(
               children: [
                 Expanded(
@@ -621,17 +585,15 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
             SizedBox(height: 4),
             Text('Instructions: ${data['instructions'] ?? ''}', style: TextStyle(fontSize: 14)),
             SizedBox(height: 8),
-            // Status indicator.
             _buildStatusIndicator(orderStatus),
             SizedBox(height: 8),
-            // Completed banner.
             orderStatus.toLowerCase() == 'completed'
                 ? Container(
                     width: double.infinity,
                     padding: EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.green,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Center(
                       child: Text(
@@ -653,69 +615,99 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.vertical(
-      bottom: Radius.circular(20), // Adjust the radius as desired.
-    ),
-  ),
-  title: Text(
-    'Food Donation',
-    style: TextStyle(
-      fontSize: 20, 
-      fontWeight: FontWeight.bold,
-      color: Colors.white,
-    ),
-  ),
-  centerTitle: true,
-  iconTheme: IconThemeData(color: Colors.blueAccent),
-  flexibleSpace: Container(
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Colors.blueAccent, Colors.lightBlueAccent],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
+      backgroundColor: Color.fromARGB(255, 240, 242, 255),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Color.fromARGB(233, 0, 0, 0),
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              'Food Donation',
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: true,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                if (_showForm) {
+                  setState(() {
+                    _showForm = false;
+                  });
+                } else {
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ),
+        ),
       ),
-      borderRadius: BorderRadius.vertical(
-        bottom: Radius.circular(20),
-      ),
-    ),
-  ),
-  leading: IconButton(
-    icon: Icon(
-      Icons.arrow_back_ios,
-      color: _showForm ? Colors.white : const Color.fromARGB(255, 255, 255, 255),
-    ),
-    onPressed: () {
-      if (_showForm) {
-        setState(() {
-          _showForm = false;
-        });
-      } else {
-        Navigator.of(context).pop();
-      }
-    },
-  ),
-),
-
-
-      // AnimatedSwitcher for smooth transition when form opens.
+      // AnimatedSwitcher for smooth transition between form and landing page.
       body: AnimatedSwitcher(
         duration: Duration(milliseconds: 300),
         transitionBuilder: (child, animation) =>
             FadeTransition(opacity: animation, child: child),
         child: _showForm ? _buildDonationForm() : _buildLandingPage(),
       ),
+      // Custom Floating Action Button with a rounded rectangle shape.
       floatingActionButton: _showForm
           ? null
-          : FloatingActionButton(
-              backgroundColor: Colors.blueAccent,
-              onPressed: () {
-                setState(() {
-                  _showForm = true;
-                });
-              },
-              child: Icon(Icons.add),
+          : Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF093C53),
+                    Color(0xFF0075A8),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: IconButton(
+                  icon: Icon(FluentIcons.add_20_regular, color: Colors.white),
+                  onPressed: () {
+                    setState(() {
+                      _showForm = true;
+                    });
+                  },
+                ),
+              ),
             ),
     );
   }

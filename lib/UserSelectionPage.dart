@@ -63,7 +63,7 @@ class _UserSelectionPageState extends State<UserSelectionPage> {
                 // User page.
                 UserTypePage(
                   color: const Color.fromARGB(255, 24, 169, 236),
-                  title: 'USER',
+                  title: 'PUBLIC',
                   titleStyle: TextStyle(
                     fontSize: 120,
                     fontWeight: FontWeight.bold,

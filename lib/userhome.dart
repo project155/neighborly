@@ -21,6 +21,7 @@ import 'package:neighborly/Theft.dart';
 import 'package:neighborly/Transportation.dart';
 import 'package:neighborly/alcohol.dart';
 import 'package:neighborly/authority.dart';
+import 'package:neighborly/bloodrerequest.dart';
 import 'package:neighborly/bloodsignup.dart';
 import 'package:neighborly/bribery.dart';
 import 'package:neighborly/crimeanalytics.dart';
@@ -97,7 +98,7 @@ class _UserhomeState extends State<Userhome> {
   int _currentSuggestionIndex = 0;
   Timer? _suggestionTimer;
 
-  // A FocusNode to hide the animated hint when the field is focused.
+  // FocusNode for the search field.
   final FocusNode _focusNode = FocusNode();
 
   late PageController _pageController;
@@ -113,7 +114,7 @@ class _UserhomeState extends State<Userhome> {
     });
     _startSuggestionTimer();
     _focusNode.addListener(() {
-      setState(() {}); // Update to hide/show animated hint.
+      setState(() {}); // Rebuild when focus changes.
     });
   }
 
@@ -183,18 +184,17 @@ class _UserhomeState extends State<Userhome> {
     });
   }
 
-  // Updated search bar widget with a stacked AnimatedSwitcher overlay.
+  // Search bar widget with controlled cursor visibility.
   Widget _buildSearchBar() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
       child: Container(
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 255, 255, 255),
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(22),
           boxShadow: [
             BoxShadow(
-              color:
-                  const Color.fromARGB(255, 109, 109, 109).withOpacity(0.2),
+              color: const Color.fromARGB(255, 109, 109, 109).withOpacity(0.2),
               blurRadius: 10,
               offset: Offset(4, 4),
             ),
@@ -205,24 +205,25 @@ class _UserhomeState extends State<Userhome> {
           children: [
             TextField(
               focusNode: _focusNode,
+              showCursor: _focusNode.hasFocus,
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
                 });
               },
               decoration: InputDecoration(
-                hintText: "", // Leave empty since we'll show our custom hint.
+                hintText: "",
                 prefixIcon: Icon(Icons.search, color: Colors.grey),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(vertical: 15),
               ),
             ),
-            // Show the animated hint only when the TextField is not focused and empty.
+            // Show animated hint when not focused and empty.
             if (!_focusNode.hasFocus && _searchQuery.isEmpty)
               Positioned.fill(
                 child: IgnorePointer(
                   child: Padding(
-                    padding: EdgeInsets.only(left: 00), // adjust to avoid prefix icon
+                    padding: EdgeInsets.only(left: 0),
                     child: AnimatedSwitcher(
                       duration: Duration(milliseconds: 100),
                       transitionBuilder: (child, animation) =>
@@ -232,10 +233,9 @@ class _UserhomeState extends State<Userhome> {
                         key: ValueKey<String>(
                             _searchSuggestions[_currentSuggestionIndex]),
                         style: TextStyle(
-                          fontFamily: 'proxima', // Replace with your font
+                          fontFamily: 'proxima',
                           fontSize: 16,
                           color: Colors.grey,
-                          fontStyle: FontStyle.normal,
                         ),
                       ),
                     ),
@@ -250,200 +250,200 @@ class _UserhomeState extends State<Userhome> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(65),
-        child: ClipRRect(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(30),
-            bottomRight: Radius.circular(30),
-          ),
-          child: AppBar(
-            backgroundColor: const Color.fromARGB(233, 0, 0, 0),
-            elevation: 0,
-            flexibleSpace: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color.fromARGB(255, 9, 60, 83),
-                    Color.fromARGB(255, 0, 115, 168),
-                  ],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
+    return WillPopScope(
+      // Intercept back button press.
+      onWillPop: () async {
+        if (_focusNode.hasFocus) {
+          _focusNode.unfocus(); // Unfocus search field.
+          return false;         // Prevent navigation.
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(65),
+          child: ClipRRect(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
+            child: AppBar(
+              backgroundColor: const Color.fromARGB(233, 0, 0, 0),
+              elevation: 0,
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 9, 60, 83),
+                      Color.fromARGB(255, 0, 115, 168),
+                    ],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
                 ),
               ),
-            ),
-            title: Row(
-              children: [
-                Transform.translate(
-                  offset: Offset(-6, 0),
-                  child: SvgPicture.asset(
-                    'assets/icons/icon2.svg',
-                    height: 60,
-                    width: 50,
-                    colorFilter:
-                        ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                  ),
-                ),
-                Transform.translate(
-                  offset: Offset(-13, 0),
-                  child: Text(
-                    "reportify",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'proxima',
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Transform.translate(
-                  offset: Offset(-10, 0),
-                  child: Text(
-                    "Public",
-                    style: TextStyle(
-                      color: Color.fromARGB(179, 223, 223, 223),
-                      fontSize: 14,
-                      fontFamily: 'proxima',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => NotificationPage()),
-                  );
-                },
-              ),
-            ],
-            automaticallyImplyLeading: false,
-          ),
-        ),
-      ),
-      backgroundColor: const Color.fromARGB(255, 240, 242, 255),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.only(bottom: 100),
-            child: Column(
-              children: [
-                // Insert search bar between AppBar and notice section.
-                _buildSearchBar(),
-                _buildNoticeSection(),
-                _buildSection("Report Disaster", disasterTypes),
-                _buildSection("Report public issues", newCategoryItems),
-                _buildSection("Help And Recover", helpandrecover),
-              ],
-            ),
-          ),
-          // Bottom navigation bar with the original SOS button order.
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 20,
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color.fromARGB(238, 9, 59, 83),
-                    Color.fromARGB(255, 0, 115, 168),
-                  ],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                ),
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: Offset(0, 7),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              title: Row(
                 children: [
-                  // Home button
-                  IconButton(
-                    icon:
-                        Icon(FluentIcons.home_20_regular, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginUser()),
-                      );
-                    },
+                  Transform.translate(
+                    offset: Offset(-6, 0),
+                    child: SvgPicture.asset(
+                      'assets/icons/icon2.svg',
+                      height: 60,
+                      width: 50,
+                      colorFilter:
+                          ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    ),
                   ),
-                  // Person button
-                  IconButton(
-                    icon: Icon(FluentIcons.person_20_regular,
-                        color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => UserProfile()),
-                      );
-                    },
-                  ),
-                  // Copy Add button
-                  IconButton(
-                    icon: Icon(FluentIcons.copy_add_20_regular,
-                        color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => CreateReportPage()),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: Transform.translate(
-                      offset: Offset(3, -3),
-                      child: SvgPicture.asset(
-                        'assets/icons/sirenn.svg',
+                  Transform.translate(
+                    offset: Offset(-13, 0),
+                    child: Text(
+                      "reportify",
+                      style: TextStyle(
                         color: Colors.white,
-                        width: 29,
-                        height: 29,
+                        fontFamily: 'proxima',
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => SosPage()),
-                      );
-                    },
                   ),
-                  // Camera button
-                  IconButton(
-                    icon: Icon(FluentIcons.camera_20_regular,
-                        color: Colors.white),
-                    onPressed: () async {
-                      final picker = ImagePicker();
-                      final pickedFile =
-                          await picker.pickImage(source: ImageSource.camera);
-                      if (pickedFile != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                CreateReportPage(attachment: pickedFile),
-                          ),
-                        );
-                      }
-                    },
+                  Transform.translate(
+                    offset: Offset(-10, 0),
+                    child: Text(
+                      "Public",
+                      style: TextStyle(
+                        color: Color.fromARGB(179, 223, 223, 223),
+                        fontSize: 14,
+                        fontFamily: 'proxima',
+                      ),
+                    ),
                   ),
                 ],
               ),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.notifications_outlined, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => NotificationPage()),
+                    );
+                  },
+                ),
+              ],
+              automaticallyImplyLeading: false,
             ),
           ),
-        ],
+        ),
+        backgroundColor: const Color.fromARGB(238, 255, 255, 255),
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: 100),
+              child: Column(
+                children: [
+                  _buildSearchBar(),
+                  // Show notice board only when search field is not focused.
+                  if (!_focusNode.hasFocus) _buildNoticeSection(),
+                  _buildSection("REPORT DISASTERS", disasterTypes),
+                  _buildSection("REPORT PUBLIC ISSUES", newCategoryItems),
+                  _buildSection("HELP AND RECOVER", helpandrecover),
+                ],
+              ),
+            ),
+            // Show bottom navigation bar only when search field is not focused.
+            if (!_focusNode.hasFocus)
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 20,
+                child: Container(
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color.fromARGB(238, 9, 59, 83),
+                        Color.fromARGB(255, 0, 115, 168),
+                      ],
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: Offset(0, 7),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      IconButton(
+                        icon: Icon(FluentIcons.home_20_regular, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => LoginUser()),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(FluentIcons.person_20_regular, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => UserProfile()),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(FluentIcons.copy_add_20_regular, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => CreateReportPage()),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: Transform.translate(
+                          offset: Offset(3, -3),
+                          child: SvgPicture.asset(
+                            'assets/icons/sirenn.svg',
+                            color: Colors.white,
+                            width: 29,
+                            height: 29,
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => SosPage()),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(FluentIcons.camera_20_regular, color: Colors.white),
+                        onPressed: () async {
+                          final picker = ImagePicker();
+                          final pickedFile = await picker.pickImage(source: ImageSource.camera);
+                          if (pickedFile != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => CreateReportPage(attachment: pickedFile)),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -491,14 +491,10 @@ class _UserhomeState extends State<Userhome> {
     );
   }
 
-  // Updated _buildSection that filters service items based on the search query.
   Widget _buildSection(String heading, List<String> items) {
     List<String> filteredItems = _searchQuery.isEmpty
         ? items
-        : items
-            .where((item) =>
-                item.toLowerCase().contains(_searchQuery.toLowerCase()))
-            .toList();
+        : items.where((item) => item.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
 
     if (filteredItems.isEmpty) {
       return Container();
@@ -509,11 +505,11 @@ class _UserhomeState extends State<Userhome> {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: const Color.fromARGB(173, 255, 255, 255),
+          borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
-              color: Colors.white.withOpacity(0.3),
+              color: const Color.fromARGB(255, 88, 88, 88).withOpacity(0.1),
               blurRadius: 4,
               offset: Offset(0, 4),
             ),
@@ -614,8 +610,25 @@ class _UserhomeState extends State<Userhome> {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => HygieneissuesReportPage()));
         } else if (title == "Lost & Found") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => LostAndFoundPage()));
+          // Show popup instead of full page.
+          showGeneralDialog(
+            context: context,
+            barrierDismissible: true,
+            barrierLabel: "LostAndFoundOptions",
+            transitionDuration: Duration(milliseconds: 250),
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return Center(child: LostAndFoundPopup());
+            },
+            transitionBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: animation,
+                  child: child,
+                ),
+              );
+            },
+          );
         } else if (title == "Food Donation") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => FoodDonationPage()));
@@ -665,23 +678,30 @@ class _UserhomeState extends State<Userhome> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 60,
-              height: 50,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.grey.withOpacity(0.3),
                     blurRadius: 4,
-                    offset: Offset(0, 0),
+                    offset: Offset(0, 2),
                   ),
                 ],
               ),
               child: Icon(
                 iconMapping[title] ?? Icons.help,
-                size: 25,
-                color: Color.fromARGB(255, 57, 57, 57),
+                size: 22,
+                color: Colors.white,
               ),
             ),
             SizedBox(height: 5),
@@ -704,6 +724,9 @@ class _UserhomeState extends State<Userhome> {
   }
 }
 
+// ---------------------
+// BloodDonationPopup widget definition.
+// ---------------------
 class BloodDonationPopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -751,7 +774,7 @@ class BloodDonationPopup extends StatelessWidget {
                   Navigator.of(context).pop();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => RequestBloodPage()),
+                    MaterialPageRoute(builder: (context) => BloodRequestFormPage()),
                   );
                 },
               ),
@@ -764,7 +787,7 @@ class BloodDonationPopup extends StatelessWidget {
                   Navigator.of(context).pop();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => BloodSignupPage()),
+                    MaterialPageRoute(builder: (context) => BloodDonationFormPage()),
                   );
                 },
               ),
@@ -802,34 +825,6 @@ class BloodDonationPopup extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class RequestBloodPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Request Blood"),
-      ),
-      body: Center(
-        child: Text("Request Blood Page Content"),
-      ),
-    );
-  }
-}
-
-class BloodSignupPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Blood Donation Sign Up"),
-      ),
-      body: Center(
-        child: Text("Blood Donation Sign Up Page Content"),
       ),
     );
   }

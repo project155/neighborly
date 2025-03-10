@@ -76,8 +76,8 @@ Widget getScreen(){
     case 'authority':
     print('nnnn');
       return AuthorityHome(); 
-    // case 'admin':
-    //   return AdminHome();   
+    case 'admin':
+      return AdminHome();   
     
     default:
       return  UserSelectionPage();
