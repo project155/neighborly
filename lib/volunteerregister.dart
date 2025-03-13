@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloudinary/cloudinary.dart'; // Import Cloudinary package
+import 'package:cloudinary/cloudinary.dart'; // Cloudinary package for image upload.
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:neighborly/incidentlocation.dart'; // Ensure PickLocationPage returns a LatLng
+import 'package:neighborly/incidentlocation.dart'; // For picking location.
 import 'package:neighborly/Userlogin.dart';
 
 /// Uploads the image at [image] path to Cloudinary and returns the secure URL.
@@ -32,6 +32,8 @@ class VolunteerRegister extends StatefulWidget {
 }
 
 class _VolunteerRegisterState extends State<VolunteerRegister> {
+  // Define primaryColor and common font family as in Userregister.
+  final Color primaryColor = const Color.fromARGB(255, 9, 60, 83);
   bool _isPasswordVisible = false;
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
@@ -41,7 +43,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  // Using a LatLng variable to store the selected location.
+  // Store the selected location.
   LatLng? _selectedLatLng;
 
   // Identity card image file.
@@ -56,7 +58,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
         children: [
           _buildHeader(),
           Expanded(
-            flex: 2,
+            flex: 1, // Matching the flex used in Userregister.
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -92,18 +94,27 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
                   const SizedBox(height: 10),
                   _buildIdentityCardPicker(),
                   const SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: _register,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6495ED),
-                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
+                  Center(
+                    child: Container(
+                      width: 250, // Fixed width as in Userregister.
+                      child: ElevatedButton(
+                        onPressed: _register,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: const Text(
+                          'Register',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontFamily: 'proxima',
+                          ),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Register',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                   ),
                 ],
@@ -115,41 +126,47 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     );
   }
 
-  // Header with background image and upward-shifted text.
+  // Header copied from Userregister with asset image and updated text.
   Widget _buildHeader() {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.39,
+      height: MediaQuery.of(context).size.height * 0.45,
       width: double.infinity,
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: NetworkImage(
-            'https://res.cloudinary.com/dkwnu8zei/image/upload/v1740293549/upperimage_k8cepq.png',
-          ),
+          image: AssetImage('assets/upperimage.png'),
           fit: BoxFit.fill,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Transform.translate(
-          offset: const Offset(0, -20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Text(
-                'Welcome!',
-                style: TextStyle(fontSize: 55, fontWeight: FontWeight.bold, color: Colors.white),
+      child: Padding( 
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome to Reportify!',
+              style: TextStyle(
+                fontSize: 45,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'proxima',
+                color: Colors.white,
               ),
-              SizedBox(height: 25),
-              Text('Join us as a Volunteer!', style: TextStyle(fontSize: 20, color: Colors.white)),
-            ],
-          ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Join us as a Volunteer!',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'proxima',
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // General text field widget with outlined borders.
+  // General text field widget with design copied from Userregister.
   Widget _buildTextField(
     TextEditingController controller,
     String hint,
@@ -166,9 +183,14 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
         obscureText: obscureText,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
+        style: const TextStyle(fontFamily: 'proxima'),
         decoration: InputDecoration(
           hintText: hint,
-          prefixIcon: Icon(icon, color: Colors.grey),
+          hintStyle: TextStyle(
+            color: primaryColor,
+            fontFamily: 'proxima',
+          ),
+          prefixIcon: Icon(icon, color: primaryColor),
           border: OutlineInputBorder(
             borderSide: const BorderSide(color: Color.fromARGB(255, 214, 214, 214)),
             borderRadius: BorderRadius.circular(15),
@@ -188,7 +210,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     );
   }
 
-  // Location selector widget.
+  // Location selector widget updated to match Userregister styling.
   Widget _buildLocationSelector() {
     return InkWell(
       onTap: () async {
@@ -205,15 +227,15 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
         }
       },
       child: Container(
-        height: 55,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
+          color: Colors.transparent,
           border: Border.all(color: const Color.fromARGB(255, 235, 235, 235)),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(
           children: [
-            const Icon(Icons.location_on, color: Colors.grey, size: 22),
+            Icon(Icons.location_on, color: primaryColor, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -223,19 +245,20 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: _selectedLatLng != null ? Colors.black : Colors.grey.shade600,
+                  color: _selectedLatLng != null ? Colors.black : primaryColor,
+                  fontFamily: 'proxima',
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24),
+            Icon(Icons.keyboard_arrow_down, color: primaryColor, size: 24),
           ],
         ),
       ),
     );
   }
 
-  // Identity Card Picker widget.
+  // Identity Card Picker widget updated with the new styling.
   Widget _buildIdentityCardPicker() {
     return InkWell(
       onTap: _pickIdentityCardImage,
@@ -248,13 +271,18 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.image, color: Colors.grey, size: 22),
+            Icon(Icons.image, color: primaryColor, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: _identityCard == null
                   ? Text(
                       "Upload Identity Card",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: primaryColor,
+                        fontFamily: 'proxima',
+                      ),
                       overflow: TextOverflow.ellipsis,
                     )
                   : Row(
@@ -271,12 +299,17 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
                         const SizedBox(width: 10),
                         const Text(
                           "Identity Card Selected",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                            fontFamily: 'proxima',
+                          ),
                         ),
                       ],
                     ),
             ),
-            const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24),
+            Icon(Icons.keyboard_arrow_down, color: primaryColor, size: 24),
           ],
         ),
       ),
@@ -288,7 +321,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     return IconButton(
       icon: Icon(
         _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-        color: Colors.grey,
+        color: primaryColor,
       ),
       onPressed: () {
         setState(() {
@@ -307,11 +340,11 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
           child: Wrap(
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text("Camera"),
+                leading: Icon(Icons.camera_alt, color: primaryColor),
+                title: const Text("Camera", style: TextStyle(fontFamily: 'proxima')),
                 onTap: () async {
                   Navigator.pop(context);
-                  final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
+                  final pickedFile = await _picker.pickImage(source: ImageSource.camera);
                   if (pickedFile != null) {
                     setState(() {
                       _identityCard = File(pickedFile.path);
@@ -320,11 +353,11 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text("Gallery"),
+                leading: Icon(Icons.photo_library, color: primaryColor),
+                title: const Text("Gallery", style: TextStyle(fontFamily: 'proxima')),
                 onTap: () async {
                   Navigator.pop(context);
-                  final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                  final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
                   if (pickedFile != null) {
                     setState(() {
                       _identityCard = File(pickedFile.path);
@@ -339,7 +372,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     );
   }
 
-  // Registration function that saves volunteer data along with selected location and identity card.
+  // Registration function that keeps the volunteer-specific functionality.
   Future<void> _register() async {
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
@@ -391,7 +424,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration Successful!')),
       );
-      Navigator.pop(context); // Go back after successful registration.
+      Navigator.pop(context); // Navigate back after successful registration.
     } catch (e) {
       _showError(e.toString());
     }
@@ -399,6 +432,10 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
 
   // Helper function to display error messages.
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontFamily: 'proxima')),
+      ),
+    );
   }
 }

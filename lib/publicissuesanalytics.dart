@@ -20,7 +20,7 @@ class PublicIssuesAnalyticsPage extends StatefulWidget {
 
 class _PublicIssuesAnalyticsPageState extends State<PublicIssuesAnalyticsPage> {
   // Time period filter options.
-  String _selectedPeriod = '7 days';
+  String _selectedPeriod = '30 days';
   final List<String> _periodOptions = ['7 days', '30 days', 'All Time'];
 
   // Determine the starting date based on the selected period.
@@ -137,27 +137,48 @@ class _PublicIssuesAnalyticsPageState extends State<PublicIssuesAnalyticsPage> {
     const double oneDayMillis = 86400000.0; // One day in milliseconds
 
     return Scaffold(
-      appBar: AppBar(
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-        ),
-        title: const Text(
-          "Public Issues Analytics",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blueAccent, Colors.lightBlueAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      backgroundColor: const Color.fromARGB(238, 255, 255, 255),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
             ),
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+            centerTitle: true,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+            ),
+            title: const Text(
+              "Public Issues Analytics",
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            automaticallyImplyLeading: false,
           ),
         ),
       ),
@@ -259,7 +280,7 @@ class _PublicIssuesAnalyticsPageState extends State<PublicIssuesAnalyticsPage> {
               );
             },
           ),
-          // Detailed line chart (horizontally scrollable).
+          // Expanded chart area with horizontal scrolling (detailed line chart).
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance.collection('reports').snapshots(),
@@ -299,24 +320,12 @@ class _PublicIssuesAnalyticsPageState extends State<PublicIssuesAnalyticsPage> {
                 }
 
                 // Convert maps into sorted lists of ReportData.
-                List<ReportData> roadIncidentsData = roadIncidentsCounts.entries
-                    .map((e) => ReportData(e.key, e.value.toDouble()))
-                    .toList();
-                List<ReportData> ecoHazardData = ecoHazardCounts.entries
-                    .map((e) => ReportData(e.key, e.value.toDouble()))
-                    .toList();
-                List<ReportData> foodSafetyData = foodSafetyCounts.entries
-                    .map((e) => ReportData(e.key, e.value.toDouble()))
-                    .toList();
-                List<ReportData> hygieneIssuesData = hygieneIssuesCounts.entries
-                    .map((e) => ReportData(e.key, e.value.toDouble()))
-                    .toList();
-                List<ReportData> infrastructureIssuesData = infrastructureIssuesCounts.entries
-                    .map((e) => ReportData(e.key, e.value.toDouble()))
-                    .toList();
-                List<ReportData> transportationData = transportationCounts.entries
-                    .map((e) => ReportData(e.key, e.value.toDouble()))
-                    .toList();
+                List<ReportData> roadIncidentsData = roadIncidentsCounts.entries.map((e) => ReportData(e.key, e.value.toDouble())).toList();
+                List<ReportData> ecoHazardData = ecoHazardCounts.entries.map((e) => ReportData(e.key, e.value.toDouble())).toList();
+                List<ReportData> foodSafetyData = foodSafetyCounts.entries.map((e) => ReportData(e.key, e.value.toDouble())).toList();
+                List<ReportData> hygieneIssuesData = hygieneIssuesCounts.entries.map((e) => ReportData(e.key, e.value.toDouble())).toList();
+                List<ReportData> infrastructureIssuesData = infrastructureIssuesCounts.entries.map((e) => ReportData(e.key, e.value.toDouble())).toList();
+                List<ReportData> transportationData = transportationCounts.entries.map((e) => ReportData(e.key, e.value.toDouble())).toList();
 
                 roadIncidentsData.sort((a, b) => a.date.compareTo(b.date));
                 ecoHazardData.sort((a, b) => a.date.compareTo(b.date));
@@ -326,24 +335,12 @@ class _PublicIssuesAnalyticsPageState extends State<PublicIssuesAnalyticsPage> {
                 transportationData.sort((a, b) => a.date.compareTo(b.date));
 
                 // Convert ReportData to FlSpot (x: epoch ms, y: count).
-                List<FlSpot> roadIncidentsSpots = roadIncidentsData
-                    .map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count))
-                    .toList();
-                List<FlSpot> ecoHazardSpots = ecoHazardData
-                    .map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count))
-                    .toList();
-                List<FlSpot> foodSafetySpots = foodSafetyData
-                    .map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count))
-                    .toList();
-                List<FlSpot> hygieneIssuesSpots = hygieneIssuesData
-                    .map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count))
-                    .toList();
-                List<FlSpot> infrastructureIssuesSpots = infrastructureIssuesData
-                    .map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count))
-                    .toList();
-                List<FlSpot> transportationSpots = transportationData
-                    .map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count))
-                    .toList();
+                List<FlSpot> roadIncidentsSpots = roadIncidentsData.map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count)).toList();
+                List<FlSpot> ecoHazardSpots = ecoHazardData.map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count)).toList();
+                List<FlSpot> foodSafetySpots = foodSafetyData.map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count)).toList();
+                List<FlSpot> hygieneIssuesSpots = hygieneIssuesData.map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count)).toList();
+                List<FlSpot> infrastructureIssuesSpots = infrastructureIssuesData.map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count)).toList();
+                List<FlSpot> transportationSpots = transportationData.map((d) => FlSpot(d.date.millisecondsSinceEpoch.toDouble(), d.count)).toList();
 
                 double? minX = _findMinX([
                   roadIncidentsSpots,

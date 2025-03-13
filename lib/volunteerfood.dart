@@ -387,44 +387,47 @@ class _FoodDonationVolunteerPageState extends State<FoodDonationVolunteerPage>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          // Map view section.
-          Expanded(
-            flex: 1,
-            child: Stack(
-              children: [
-                GoogleMap(
-                  onMapCreated: _onMapCreated,
-                  initialCameraPosition: CameraPosition(
-                    target: _initialLocation,
-                    zoom: 15,
+  Widget build(BuildContext context) { 
+    return Theme(
+      data: ThemeData(fontFamily: 'proxima'),
+      child: Scaffold(
+        body: Column(
+          children: [
+            // Map view section.
+            Expanded(
+              flex: 1,
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    onMapCreated: _onMapCreated,
+                    initialCameraPosition: CameraPosition(
+                      target: _initialLocation,
+                      zoom: 15,
+                    ),
+                    markers: _markers,
+                    myLocationEnabled: true,
+                    zoomControlsEnabled: true,
                   ),
-                  markers: _markers,
-                  myLocationEnabled: true,
-                  zoomControlsEnabled: true,
-                ),
-                _buildFloatingAppBar(),
-              ],
+                  _buildFloatingAppBar(),
+                ],
+              ),
             ),
-          ),
-          // Donation requests list.
-          Expanded(
-            flex: 1,
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : _donations.isEmpty
-                    ? Center(child: Text("No donation requests available"))
-                    : ListView.builder(
-                        itemCount: _donations.length,
-                        itemBuilder: (context, index) {
-                          return _buildDonationCard(_donations[index]);
-                        },
-                      ),
-          ),
-        ],
+            // Donation requests list.
+            Expanded(
+              flex: 1,
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _donations.isEmpty
+                      ? Center(child: Text("No donation requests available"))
+                      : ListView.builder(
+                          itemCount: _donations.length,
+                          itemBuilder: (context, index) {
+                            return _buildDonationCard(_donations[index]);
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }

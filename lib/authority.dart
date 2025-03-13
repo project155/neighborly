@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:neighborly/AuthoritySendnotification.dart';
+import 'package:neighborly/Emergencycontacts.dart';
 import 'package:neighborly/Generatereports.dart';
 import 'package:neighborly/Notificationpage.dart';
 import 'package:neighborly/SOSpage.dart';
@@ -28,8 +30,9 @@ import 'package:neighborly/authorityreports/authorityroadincident.dart';
 import 'package:neighborly/authorityreports/authoritysexual.dart';
 import 'package:neighborly/authorityreports/authoritytheft.dart';
 import 'package:neighborly/authorityreports/authoritytransportation.dart';
+import 'package:neighborly/crimeanalytics.dart';
+import 'package:neighborly/disasteranalytics.dart';
 import 'package:neighborly/publicissuesanalytics.dart';
-
 
 class AuthorityHome extends StatefulWidget {
   @override
@@ -108,7 +111,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
         height: 200,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(35),
           boxShadow: [
             BoxShadow(
               color: Colors.white.withOpacity(0.3),
@@ -118,7 +121,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(35),
           child: _isLoading
               ? Center(child: CircularProgressIndicator())
               : PageView.builder(
@@ -150,7 +153,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
       {
         "title": "Categorized Reports",
         "icon": Icons.list,
-        "page": CategorizedReportsPage(), // Navigates to our new page.
+        "page": CategorizedReportsPage(),
       },
       {
         "title": "Send Alerts",
@@ -165,7 +168,17 @@ class _AuthorityHomeState extends State<AuthorityHome> {
       {
         "title": "Report Analytics",
         "icon": Icons.analytics,
-        "page": PublicIssuesAnalyticsPage(),
+        "page": PublicIssuesAnalyticsPage(), // This value will not be used.
+      },
+      {
+        "title": "Emergency Contacts",
+        "icon": Icons.phone,
+        "page": EmergencyContactsPage(userRole: 'Authority'),
+      },
+      {
+        "title": "d",
+        "icon": Icons.analytics,
+        "page": PublicIssuesAnalyticsPage(), // This value will not be used.
       },
     ];
 
@@ -190,13 +203,13 @@ class _AuthorityHomeState extends State<AuthorityHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text("Authority Actions",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, fontFamily: 'proxima')),
               SizedBox(height: 10),
               GridView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // two items per row
+                  crossAxisCount: 3, // three items per row
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                   childAspectRatio: 1,
@@ -208,10 +221,17 @@ class _AuthorityHomeState extends State<AuthorityHome> {
                     title: action["title"],
                     icon: action["icon"],
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => action["page"]),
-                      );
+                      if (action["title"] == "Report Analytics") {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ReportAnalyticsPopup(),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => action["page"]),
+                        );
+                      }
                     },
                   );
                 },
@@ -223,31 +243,38 @@ class _AuthorityHomeState extends State<AuthorityHome> {
     );
   }
 
-  /// Builds a clickable grid item for an authority action.
+  /// Builds a clickable grid item for an authority action using the same icon style as userhome.dart.
   Widget _buildActionItem({required String title, required IconData icon, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: (MediaQuery.of(context).size.width - 45) / 3,
+        width: (MediaQuery.of(context).size.width - 65) / 4,
         height: 150,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 60,
-              height: 50,
+              height: 60,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.grey.withOpacity(0.3),
                     blurRadius: 4,
-                    offset: Offset(0, 0),
+                    offset: Offset(0, 2),
                   ),
                 ],
               ),
-              child: Icon(icon, size: 30, color: Colors.blue),
+              child: Icon(icon, size: 30, color: Colors.white),
             ),
             SizedBox(height: 5),
             Text(
@@ -255,7 +282,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+              style: TextStyle(fontSize: 13, fontFamily: 'proxima', fontWeight: FontWeight.w100, color: Colors.black),
             ),
           ],
         ),
@@ -288,7 +315,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
               padding: const EdgeInsets.all(15.0),
               child: Text(
                 "SOS Reports",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, fontFamily: 'proxima'),
               ),
             ),
             // StreamBuilder to fetch SOS reports from Firestore
@@ -316,7 +343,6 @@ class _AuthorityHomeState extends State<AuthorityHome> {
                     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
                     String title = data['title'] ?? "No Title";
                     String description = data['description'] ?? "";
-                    // Assume location is stored as a map with 'latitude' and 'longitude'
                     Map<String, dynamic>? location = data['location'];
                     double latitude = location?['latitude'] ?? 0.0;
                     double longitude = location?['longitude'] ?? 0.0;
@@ -327,7 +353,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: ExpansionTile(
-                        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+                        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'proxima')),
                         subtitle: Text(
                           description,
                           maxLines: 2,
@@ -347,7 +373,6 @@ class _AuthorityHomeState extends State<AuthorityHome> {
                                   position: LatLng(latitude, longitude),
                                 ),
                               },
-                              // Disable map gestures for embedded preview.
                               zoomGesturesEnabled: false,
                               scrollGesturesEnabled: false,
                               rotateGesturesEnabled: false,
@@ -375,15 +400,22 @@ class _AuthorityHomeState extends State<AuthorityHome> {
       right: 20,
       bottom: 20,
       child: Container(
-        height: 70,
+        height: 60,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 95, 156, 255),
-          borderRadius: BorderRadius.circular(35),
+          gradient: LinearGradient(
+            colors: [
+              Color.fromARGB(238, 9, 59, 83),
+              Color.fromARGB(255, 0, 115, 168),
+            ],
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+          ),
+          borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.2),
               blurRadius: 10,
-              offset: Offset(0, 4),
+              offset: Offset(0, 7),
             ),
           ],
         ),
@@ -435,21 +467,74 @@ class _AuthorityHomeState extends State<AuthorityHome> {
             bottomRight: Radius.circular(30),
           ),
           child: AppBar(
-            title: Text("Authority Dashboard", style: TextStyle(color: Colors.white)),
-            backgroundColor: Color.fromARGB(255, 95, 156, 255),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.notifications_active_rounded, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationPage()));
-                },
+              backgroundColor: const Color.fromARGB(233, 0, 0, 0),
+              elevation: 0,
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 9, 60, 83),
+                      Color.fromARGB(255, 0, 97, 142),
+                    ],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
+                ),
               ),
-            ],
-            automaticallyImplyLeading: false,
-          ),
+              title: Row(
+                children: [
+                  Transform.translate(
+                    offset: Offset(-6, 0),
+                    child: SvgPicture.asset(
+                      'assets/icons/icon2.svg',
+                      height: 60,
+                      width: 50,
+                      colorFilter:
+                          ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    ),
+                  ),
+                  Transform.translate(
+                    offset: Offset(-13, 0),
+                    child: Text(
+                      "reportify",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'proxima',
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Transform.translate(
+                    offset: Offset(-9, 2),
+                    child: Text(
+                      "Authority",
+                      style: TextStyle(
+                        color: Color.fromARGB(179, 223, 223, 223),
+                        fontSize: 14,
+                        fontFamily: 'proxima',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.notifications_outlined, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => NotificationPage()),
+                    );
+                  },
+                ),
+              ],
+              automaticallyImplyLeading: false,
+            ),
         ),
       ),
-      backgroundColor: Colors.grey[200],
+      backgroundColor: const Color.fromARGB(238, 255, 255, 255),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -458,11 +543,10 @@ class _AuthorityHomeState extends State<AuthorityHome> {
               children: [
                 _buildNoticeSection(),
                 _buildAuthorityActionsSection(),
-                _buildSOSReportsSection(), // SOS Reports section.
+                _buildSOSReportsSection(),
               ],
             ),
           ),
-          // Added floating navigation bar
           _buildFloatingNavBar(),
         ],
       ),
@@ -470,18 +554,15 @@ class _AuthorityHomeState extends State<AuthorityHome> {
   }
 }
 
-/// Simple placeholder for the User Profile page.
-
-
 /// Simple placeholder for the Settings page.
 class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Settings"),
+        title: Text("Settings", style: TextStyle(fontFamily: 'proxima')),
       ),
-      body: Center(child: Text("Settings Page")),
+      body: Center(child: Text("Settings Page", style: TextStyle(fontFamily: 'proxima'))),
     );
   }
 }
@@ -492,14 +573,54 @@ class CategorizedReportsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final double cardHeight = 150;
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Categorized Reports"),
+      backgroundColor: const Color.fromARGB(238, 255, 255, 255),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              "Categorized Reports",
+              style: TextStyle(
+                fontFamily: 'proxima',
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                
+              ),
+            ),
+            automaticallyImplyLeading: false,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Big Card for Disaster Reports.
+            // Disaster Reports Card
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -518,12 +639,16 @@ class CategorizedReportsPage extends StatelessWidget {
                   padding: EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      Icon(Icons.warning, size: 60, color: Colors.red),
+                      Icon(Icons.warning, size: 60, color: const Color.fromARGB(255, 9, 60, 83)),
                       SizedBox(width: 20),
                       Expanded(
                         child: Text(
                           "Disaster Reports",
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'proxima',
+                          ),
                         ),
                       ),
                     ],
@@ -532,7 +657,7 @@ class CategorizedReportsPage extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20),
-            // Big Card for Public Issues Reports.
+            // Public Issues Reports Card
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -551,12 +676,16 @@ class CategorizedReportsPage extends StatelessWidget {
                   padding: EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      Icon(Icons.public, size: 60, color: Colors.green),
+                      Icon(Icons.public, size: 60, color: Color.fromARGB(255, 9, 60, 83)),
                       SizedBox(width: 20),
                       Expanded(
                         child: Text(
                           "Public Issues Reports",
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'proxima',
+                          ),
                         ),
                       ),
                     ],
@@ -565,7 +694,7 @@ class CategorizedReportsPage extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20),
-            // Big Card for Crimes Reports.
+            // Crimes Reports Card
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -584,12 +713,16 @@ class CategorizedReportsPage extends StatelessWidget {
                   padding: EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      Icon(Icons.gavel, size: 60, color: Colors.deepOrange),
+                      Icon(Icons.gavel, size: 60, color: Color.fromARGB(255, 9, 60, 83)),
                       SizedBox(width: 20),
                       Expanded(
                         child: Text(
                           "Crimes Reports",
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'proxima',
+                          ),
                         ),
                       ),
                     ],
@@ -633,15 +766,54 @@ class DisasterReportsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final double cardHeight = 150;
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Disaster Reports"),
+      backgroundColor: const Color.fromARGB(238, 255, 255, 255),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              "Disaster Reports",
+              style: TextStyle(
+                fontFamily: 'proxima',
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            automaticallyImplyLeading: false,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: GridView.builder(
           itemCount: disasters.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // Two cards per row
+            crossAxisCount: 2,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
             childAspectRatio: 1,
@@ -669,13 +841,17 @@ class DisasterReportsPage extends StatelessWidget {
                     children: [
                       Icon(
                         disaster["icon"],
-                        size: 60,
-                        color: Colors.blue,
+                        size: 50,
+                        color: Color.fromARGB(255, 9, 60, 83),
                       ),
                       SizedBox(height: 20),
                       Text(
                         disaster["title"],
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'proxima',
+                        ),
                       ),
                     ],
                   ),
@@ -689,20 +865,8 @@ class DisasterReportsPage extends StatelessWidget {
   }
 }
 
-/// Dummy page for Flood Reports.
-class FloodReportsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Flood Reports"),
-      ),
-      body: Center(
-        child: Text("Flood Reports Details Here"),
-      ),
-    );
-  }
-}
+
+
 
 /// Updated FireReportsPage with uploader details option.
 class FireReportsPage extends StatelessWidget {
@@ -710,7 +874,7 @@ class FireReportsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Fire Reports"),
+        title: Text("Fire Reports", style: TextStyle(fontFamily: 'proxima')),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -724,7 +888,7 @@ class FireReportsPage extends StatelessWidget {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Padding(
               padding: const EdgeInsets.all(15.0),
-              child: Center(child: Text("No Fire reports found.")),
+              child: Center(child: Text("No Fire reports found.", style: TextStyle(fontFamily: 'proxima'))),
             );
           }
           return ListView.builder(
@@ -734,12 +898,10 @@ class FireReportsPage extends StatelessWidget {
               Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
               String title = data['title'] ?? "No Title";
               String description = data['description'] ?? "";
-              // Assume location is stored as a map with 'latitude' and 'longitude'
               Map<String, dynamic>? location = data['location'];
               double latitude = location?['latitude'] ?? 0.0;
               double longitude = location?['longitude'] ?? 0.0;
 
-              // Uploader details fields (adjust key names as per your Firestore structure)
               String uploaderName = data['uploaderName'] ?? "Unknown";
               String uploaderContact = data['uploaderContact'] ?? "Not Provided";
 
@@ -750,14 +912,13 @@ class FireReportsPage extends StatelessWidget {
                 ),
                 child: ExpansionTile(
                   title: Text(title,
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'proxima')),
                   subtitle: Text(
                     description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   children: [
-                    // Map preview for the report location
                     Container(
                       height: 200,
                       child: GoogleMap(
@@ -778,26 +939,25 @@ class FireReportsPage extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 10),
-                    // Button to show uploader details
                     ElevatedButton(
                       onPressed: () {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: Text("Uploader Details"),
+                            title: Text("Uploader Details", style: TextStyle(fontFamily: 'proxima')),
                             content: Text(
-                                "Name: $uploaderName\nContact: $uploaderContact"),
+                                "Name: $uploaderName\nContact: $uploaderContact", style: TextStyle(fontFamily: 'proxima')),
                             actions: [
                               TextButton(
                                 onPressed: () =>
                                     Navigator.of(context).pop(),
-                                child: Text("Close"),
+                                child: Text("Close", style: TextStyle(fontFamily: 'proxima')),
                               ),
                             ],
                           ),
                         );
                       },
-                      child: Text("View Uploader Details"),
+                      child: Text("View Uploader Details", style: TextStyle(fontFamily: 'proxima')),
                     ),
                     SizedBox(height: 10),
                   ],
@@ -811,35 +971,9 @@ class FireReportsPage extends StatelessWidget {
   }
 }
 
-/// Dummy page for Landslide Reports.
-class LandslideReportsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Landslide Reports"),
-      ),
-      body: Center(
-        child: Text("Landslide Reports Details Here"),
-      ),
-    );
-  }
-}
 
-/// Dummy page for Drought Reports.
-class DroughtReportsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Drought Reports"),
-      ),
-      body: Center(
-        child: Text("Drought Reports Details Here"),
-      ),
-    );
-  }
-}
+
+
 
 /// Updated Public Issues Reports page with grid of cards.
 class PublicIssuesReportsPage extends StatelessWidget {
@@ -880,15 +1014,54 @@ class PublicIssuesReportsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final double cardHeight = 150;
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Public Issues Reports"),
+      backgroundColor: const Color.fromARGB(238, 255, 255, 255),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              "Public Issues Reports",
+              style: TextStyle(
+                fontFamily: 'proxima',
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            automaticallyImplyLeading: false,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: GridView.builder(
           itemCount: issues.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // Two cards per row
+            crossAxisCount: 2,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
             childAspectRatio: 1,
@@ -916,13 +1089,17 @@ class PublicIssuesReportsPage extends StatelessWidget {
                     children: [
                       Icon(
                         issue["icon"],
-                        size: 60,
-                        color: Colors.blue,
+                        size: 40,
+                        color:Color.fromARGB(255, 9, 60, 83)
                       ),
                       SizedBox(height: 20),
                       Text(
                         issue["title"],
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'proxima',
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -981,15 +1158,54 @@ class CrimesReportsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final double cardHeight = 150;
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Crimes Reports"),
+      backgroundColor: const Color.fromARGB(238, 255, 255, 255),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              "Crimes Reports",
+              style: TextStyle(
+                fontFamily: 'proxima',
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            automaticallyImplyLeading: false,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: GridView.builder(
           itemCount: crimeCategories.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // Two cards per row.
+            crossAxisCount: 2,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
             childAspectRatio: 1,
@@ -1018,12 +1234,16 @@ class CrimesReportsPage extends StatelessWidget {
                       Icon(
                         category["icon"],
                         size: 60,
-                        color: Colors.blue,
+                        color:Color.fromARGB(255, 9, 60, 83)
                       ),
                       SizedBox(height: 20),
                       Text(
                         category["title"],
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'proxima',
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -1034,6 +1254,144 @@ class CrimesReportsPage extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+
+/// Popup screen for Report Analytics – similar to Blood Donation popup.
+class ReportAnalyticsPopup extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: _buildDialogContent(context),
+    );
+  }
+
+  Widget _buildDialogContent(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      height: 250,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.rectangle,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10.0,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Report Analytics Options",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'proxima'),
+          ),
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildOption(
+                context,
+                label: "Public Issues",
+                icon: FontAwesomeIcons.earthAsia,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => PublicIssuesAnalyticsPage()));
+                },
+              ),
+              _buildOption(
+                context,
+                label: "Disaster",
+                icon: FontAwesomeIcons.houseFloodWater,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => DisasterAnalyticsPage()));
+                },
+              ),
+              _buildOption(
+                context,
+                label: "Crimes",
+                icon: FontAwesomeIcons.gun,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => CrimeAnalyticsPage()));
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption(BuildContext context,
+      {required String label, required IconData icon, required Color color, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 35, color: Color.fromARGB(255, 9, 60, 83)),
+          ),
+          SizedBox(height: 10),
+          Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'proxima')),
+        ],
+      ),
+    );
+  }
+}
+
+/// Placeholder page for Overview Analytics.
+class OverviewAnalyticsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Overview Analytics", style: TextStyle(fontFamily: 'proxima')),
+      ),
+      body: Center(child: Text("Overview Analytics Page", style: TextStyle(fontFamily: 'proxima'))),
+    );
+  }
+}
+
+/// Placeholder page for Trend Analysis.
+class TrendAnalyticsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Trend Analysis", style: TextStyle(fontFamily: 'proxima')),
+      ),
+      body: Center(child: Text("Trend Analysis Page", style: TextStyle(fontFamily: 'proxima'))),
+    );
+  }
+}
+
+/// Placeholder page for Detailed Reports.
+class DetailedAnalyticsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Detailed Reports", style: TextStyle(fontFamily: 'proxima')),
+      ),
+      body: Center(child: Text("Detailed Reports Page", style: TextStyle(fontFamily: 'proxima'))),
     );
   }
 }

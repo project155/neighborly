@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:neighborly/Volunteerhome.dart';
 import 'package:neighborly/volunteerregister.dart';
-import 'package:neighborly/userhome.dart';
 import 'package:neighborly/password.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,7 +24,6 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
 
   void _signIn() async {
     try {
-      // Sign in the user with email and password
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -33,7 +32,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
       if (userCredential.user != null) {
         String uid = userCredential.user!.uid;
 
-        // Retrieve the document for this volunteer from the "volunteers" collection
+        // Retrieve the volunteer document from the "volunteers" collection.
         DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
             .collection('volunteers')
             .doc(uid)
@@ -42,37 +41,52 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
         if (docSnapshot.exists) {
           var data = docSnapshot.data() as Map<String, dynamic>;
 
-          // Check if the account is approved
+          // Check if the account is approved.
           if (data['isApproved'] != true) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Your account is not approved yet.")),
+              const SnackBar(
+                content: Text(
+                  "Your account is not approved yet.",
+                  style: TextStyle(fontFamily: 'proxima'),
+                ),
+              ),
             );
             return;
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("No volunteer data found for this user.")),
+            const SnackBar(
+              content: Text(
+                "No volunteer data found for this user.",
+                style: TextStyle(fontFamily: 'proxima'),
+              ),
+            ),
           );
           return;
         }
 
-        // Get the OneSignal Player ID
+        // Get the OneSignal Player ID.
         final deviceState = await OneSignal.shared.getDeviceState();
         String? pId = deviceState?.userId;
 
-        // Update Firestore document with the OneSignal Player ID
+        // Update Firestore document with the OneSignal Player ID.
         await FirebaseFirestore.instance.collection('volunteers').doc(uid).update({
           'playerid': pId,
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login Successful")),
+          const SnackBar(
+            content: Text(
+              "Login Successful",
+              style: TextStyle(fontFamily: 'proxima'),
+            ),
+          ),
         );
 
         SharedPreferences pref = await SharedPreferences.getInstance();
         pref.setString('role', 'volunteer');
 
-        // Navigate to the VolunteerHome screen
+        // Navigate to the VolunteerHome screen.
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => VolunteerHome()),
@@ -81,7 +95,12 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}")),
+        SnackBar(
+          content: Text(
+            "Error: ${e.toString()}",
+            style: const TextStyle(fontFamily: 'proxima'),
+          ),
+        ),
       );
     }
   }
@@ -93,41 +112,74 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Top container with background image and welcome text.
-            Container(
-              height: MediaQuery.of(context).size.height * 0.45,
-              width: MediaQuery.of(context).size.width,
-              decoration: BoxDecoration(
-                image: const DecorationImage(
-                  image: AssetImage('assets/upperimage.png'),
-                  fit: BoxFit.fill,
+            // Top container with background image, welcome text, and SVG icon.
+            Stack(
+              clipBehavior: Clip.none, // Allow children to overflow if needed
+              children: [
+                Container(
+                  height: MediaQuery.of(context).size.height * 0.45,
+                  width: MediaQuery.of(context).size.width,
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage('assets/upperimage.png'),
+                      fit: BoxFit.fill,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Welcome to!',
+                          style: TextStyle(
+                            fontSize: 45,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'proxima',
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Reportify!',
+                          style: TextStyle(
+                            fontSize: 45,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'proxima',
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'Report, Stay Informed, and Make a Difference.!',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'proxima',
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(40),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Welcome Back!!',
-                      style: TextStyle(
-                        fontSize: 55,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                // Positioned SVG icon with the referenced snippet.
+                Positioned(
+                  top: 20, // Adjust vertical positioning as needed.
+                  right: 20, // Adjust horizontal positioning as needed.
+                  child: SvgPicture.asset(
+                    'assets/icons/icon2.svg',
+                    // Remove color override if you want to see original colors.
+                    // color: Colors.black,
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.contain,
+                    placeholderBuilder: (context) => Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Welcome back, we\'re glad to see you again!',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
             const SizedBox(height: 0),
             // Email TextField.
@@ -137,10 +189,15 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                 controller: _emailController,
                 decoration: InputDecoration(
                   hintText: 'Enter Email',
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  prefixIcon: const Icon(Icons.email, color: Colors.grey),
+                  hintStyle: const TextStyle(
+                    color: Color.fromARGB(255, 9, 60, 83),
+                    fontFamily: 'proxima',
+                  ),
+                  prefixIcon:
+                      const Icon(Icons.email, color: Color.fromARGB(255, 9, 60, 83)),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 ),
               ),
             ),
@@ -152,14 +209,19 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  hintStyle: const TextStyle(color: Color.fromARGB(255, 168, 168, 168)),
-                  prefixIcon: const Icon(Icons.lock, color: Colors.grey),
+                  hintStyle: const TextStyle(
+                    color: Color.fromARGB(255, 9, 60, 83),
+                    fontFamily: 'proxima',
+                  ),
+                  prefixIcon:
+                      const Icon(Icons.lock, color: Color.fromARGB(255, 9, 60, 83)),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                      color: Colors.grey,
+                      color: const Color.fromARGB(255, 9, 60, 83),
                     ),
                     onPressed: () {
                       setState(() {
@@ -185,8 +247,9 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                   child: const Text(
                     'Forgot Password?',
                     style: TextStyle(
-                      color: Colors.blue,
+                      color: Color.fromARGB(255, 0, 141, 206),
                       fontSize: 16,
+                      fontFamily: 'proxima',
                     ),
                   ),
                 ),
@@ -194,14 +257,14 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
             ),
             // Sign In button.
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 110, vertical: 50),
+              padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 50),
               child: ElevatedButton(
                 onPressed: _signIn,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 0, 111, 237),
-                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 70),
+                  backgroundColor: const Color.fromARGB(255, 9, 60, 83),
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 90),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(25),
                   ),
                 ),
                 child: const Text(
@@ -209,11 +272,12 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.white,
+                    fontFamily: 'proxima',
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 80),
+            const SizedBox(height: 20),
             // Register now button.
             Padding(
               padding: const EdgeInsets.only(bottom: 0),
@@ -222,7 +286,7 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                 children: [
                   const Text(
                     'Not a member?',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: Colors.grey, fontFamily: 'proxima'),
                   ),
                   TextButton(
                     onPressed: () {
@@ -234,7 +298,8 @@ class _VolunteerLoginPageState extends State<VolunteerLoginPage> {
                     child: const Text(
                       'Register now',
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: Color.fromARGB(255, 52, 109, 246),
+                        fontFamily: 'proxima',
                       ),
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,7 +7,6 @@ import 'dart:io';
 import 'package:neighborly/UserSelectionPage.dart';
 import 'package:neighborly/clodinary_upload.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:neighborly/Notificationpage.dart';
 
 class UserProfile extends StatefulWidget {
@@ -24,7 +24,7 @@ class _UserProfileState extends State<UserProfile> {
   String? userName;
   String? userEmail;
   String? userPhone;
-  String? userLocation;
+  String? userAddress;
   String? userRole;
   bool isLoading = true;
   late String collectionName;
@@ -35,24 +35,23 @@ class _UserProfileState extends State<UserProfile> {
     _fetchUserData();
   }
 
-  // Fetch user data for users, volunteers, and authorities
+  // Fetch user data from one of the collections (users, volunteers, authorities)
   Future<void> _fetchUserData() async {
     User? user = _auth.currentUser;
     if (user != null) {
       try {
         DocumentSnapshot userDoc;
-
-        // Check "users" collection
+        // Try "users" collection first
         userDoc = await _firestore.collection('users').doc(user.uid).get();
         if (userDoc.exists) {
           collectionName = 'users';
         } else {
-          // Check "volunteers" collection
+          // Try "volunteers"
           userDoc = await _firestore.collection('volunteers').doc(user.uid).get();
           if (userDoc.exists) {
             collectionName = 'volunteers';
           } else {
-            // Check "authorities" collection
+            // Try "authorities"
             userDoc = await _firestore.collection('authorities').doc(user.uid).get();
             if (userDoc.exists) {
               collectionName = 'authorities';
@@ -64,14 +63,38 @@ class _UserProfileState extends State<UserProfile> {
             }
           }
         }
+        // Debug print to check the fetched document data
+        print("Fetched document from $collectionName: ${userDoc.data()}");
 
+        // Safely cast document data to a Map
+        final data = userDoc.data() as Map<String, dynamic>;
+
+        // Determine default role based on collection
+        String defaultRole;
+        if (collectionName == 'volunteers') {
+          defaultRole = 'Volunteer';
+        } else if (collectionName == 'authorities') {
+          defaultRole = 'Authority';
+        } else {
+          defaultRole = 'User';
+        }
+
+        // Check if the fetched role is null or empty; if so, use the default.
+        String? fetchedRole = data['role'];
+        if (fetchedRole == null || (fetchedRole is String && fetchedRole.trim().isEmpty)) {
+          fetchedRole = defaultRole;
+        }
+        
+        print("Collection: $collectionName, Fetched role: '${data['role']}', Resolved role: '$fetchedRole'");
+        
         setState(() {
-          userName = userDoc.get('name') ?? 'No Name';
-          userEmail = userDoc.get('email') ?? 'No Email';
-          userPhone = userDoc.get('phone') ?? 'No Phone';
-          userLocation = userDoc.get('location') ?? 'No Location';
-          profileImageUrl = userDoc.get('profileImage') ?? '';
-          userRole = userDoc.get('role') ?? 'User';
+          userName = data['name'] != null ? data['name'].toString() : 'No Name';
+          userEmail = data['email'] != null ? data['email'].toString() : 'No Email';
+          userPhone = data['phone'] != null ? data['phone'].toString() : 'No Phone';
+          // Use the 'address' field instead of 'location'
+          userAddress = data['address'] != null ? data['address'].toString() : 'No Address';
+          profileImageUrl = data['profileImage'] != null ? data['profileImage'].toString() : '';
+          userRole = fetchedRole;
           isLoading = false;
         });
       } catch (e) {
@@ -83,10 +106,12 @@ class _UserProfileState extends State<UserProfile> {
     }
   }
 
-  // Upload image to Cloudinary
+  // Upload image to Cloudinary then update Firestore with new profile image URL
   Future<void> _uploadImage(File imageFile) async {
     final imageUrl = await getClodinaryUrl(imageFile.path);
-    _updateProfileImage(imageUrl ?? '');
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      await _updateProfileImage(imageUrl);
+    }
   }
 
   // Update profile image in Firestore
@@ -100,39 +125,148 @@ class _UserProfileState extends State<UserProfile> {
     }
   }
 
-  // Pick an image from gallery
+  // Pick an image from the gallery
   Future<void> _pickImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       File imageFile = File(pickedFile.path);
-      _uploadImage(imageFile);
+      await _uploadImage(imageFile);
     }
   }
 
-  // Sign out and return to login page
+  // Show a dialog with text fields to edit profile details
+  void _showEditProfileDialog() {
+    final nameController = TextEditingController(text: userName);
+    final emailController = TextEditingController(text: userEmail);
+    final phoneController = TextEditingController(text: userPhone);
+    final addressController = TextEditingController(text: userAddress);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Edit Profile", style: TextStyle(fontFamily: 'proxima')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Name"),
+                  style: const TextStyle(fontFamily: 'proxima'),
+                ),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: "Email"),
+                  // Making the email field uneditable
+                  enabled: false,
+                  style: const TextStyle(fontFamily: 'proxima'),
+                ),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: "Phone"),
+                  style: const TextStyle(fontFamily: 'proxima'),
+                ),
+                // Changed from Location to Address
+                TextField(
+                  controller: addressController,
+                  decoration: const InputDecoration(labelText: "Address"),
+                  style: const TextStyle(fontFamily: 'proxima'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel", style: TextStyle(fontFamily: 'proxima')),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await _updateProfileDetails(
+                  nameController.text,
+                  emailController.text,
+                  phoneController.text,
+                  addressController.text,
+                );
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 9, 60, 83),
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(fontFamily: 'proxima'),
+              ),
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      }
+    );
+  }
+
+  // Update profile details in Firestore and local state
+  Future<void> _updateProfileDetails(String name, String email, String phone, String address) async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      await _firestore.collection(collectionName).doc(user.uid).update({
+        'name': name,
+        // Email remains unchanged
+        'phone': phone,
+        // Update the 'address' field instead of 'location'
+        'address': address,
+      });
+      setState(() {
+        userName = name;
+        userPhone = phone;
+        userAddress = address;
+      });
+    }
+  }
+
+  // Sign out and navigate to the user selection page
   Future<void> _signOut() async {
     await _auth.signOut();
     SharedPreferences pref = await SharedPreferences.getInstance();
     await pref.remove('role');
-
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => UserSelectionPage()),
     );
   }
 
+  // Build a detail row with an icon and corresponding detail
+  Widget _buildDetailRow(IconData icon, String detail) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 20),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color.fromARGB(255, 9, 60, 83), size: 28),
+          const SizedBox(width: 15),
+          Text(
+            detail,
+            style: const TextStyle(fontSize: 18, fontFamily: 'proxima'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // matching userhome's background
+      backgroundColor: Colors.white,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(65),
+        preferredSize: const Size.fromHeight(65),
         child: ClipRRect(
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             bottomLeft: Radius.circular(30),
             bottomRight: Radius.circular(30),
           ),
           child: AppBar(
+            leading: IconButton(
+              icon: const Icon(CupertinoIcons.back, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
             backgroundColor: Colors.transparent,
             elevation: 0,
             flexibleSpace: Container(
@@ -147,7 +281,7 @@ class _UserProfileState extends State<UserProfile> {
                 ),
               ),
             ),
-            title: Text(
+            title: const Text(
               'User Profile',
               style: TextStyle(
                 color: Colors.white,
@@ -158,7 +292,7 @@ class _UserProfileState extends State<UserProfile> {
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.notifications_outlined, color: Colors.white),
+                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -177,71 +311,53 @@ class _UserProfileState extends State<UserProfile> {
               child: Column(
                 children: [
                   const SizedBox(height: 40),
-                  // Profile Image
+                  // Profile Image without camera icon
                   Center(
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 80,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
-                              ? NetworkImage(profileImageUrl!)
-                              : const AssetImage('assets/default_profile.png') as ImageProvider,
-                        ),
-                        Positioned(
-                          bottom: 8,
-                          right: 8,
-                          child: InkWell(
-                            onTap: _pickImage,
-                            child: const CircleAvatar(
-                              backgroundColor: Colors.blueAccent,
-                              radius: 20,
-                              child: Icon(Icons.camera_alt, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: CircleAvatar(
+                      radius: 80,
+                      backgroundColor: Colors.grey[300],
+                      backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
+                          ? NetworkImage(profileImageUrl!)
+                          : const AssetImage('assets/default_profile.png') as ImageProvider,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // User Details Card
-                  Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    elevation: 5,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            userName ?? "No Name",
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'proxima',
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            "📍 $userLocation",
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey[700],
-                              fontFamily: 'proxima',
-                            ),
-                          ),
-                          const Divider(thickness: 1, height: 30),
-                          _buildDetailRow(Icons.email, "Email", userEmail),
-                          const SizedBox(height: 10),
-                          _buildDetailRow(Icons.phone, "Phone", userPhone),
-                          const SizedBox(height: 10),
-                          _buildDetailRow(Icons.person, "Role", userRole),
-                        ],
+                  // Row with Edit Profile and Change Profile Picture Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _showEditProfileDialog,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 9, 60, 83),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          textStyle: const TextStyle(fontFamily: 'proxima'),
+                        ),
+                        child: const Text("Edit Profile"),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: _pickImage,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 9, 60, 83),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          textStyle: const TextStyle(fontFamily: 'proxima'),
+                        ),
+                        child: const Text("Change Profile Picture"),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
+                  // Display profile details with icons
+                  _buildDetailRow(Icons.person, "Name: ${userName ?? 'No Name'}"),
+                  _buildDetailRow(Icons.email, "Email: ${userEmail ?? 'No Email'}"),
+                  _buildDetailRow(Icons.phone, "Phone: ${userPhone ?? 'No Phone'}"),
+                  // Updated label from Location to Address
+                  _buildDetailRow(Icons.location_on, "Address: ${userAddress ?? 'No Address'}"),
+                  _buildDetailRow(Icons.badge, "Role: ${userRole ?? 'User'}"),
+                  const SizedBox(height: 30),
                   // Sign Out Button
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -253,7 +369,7 @@ class _UserProfileState extends State<UserProfile> {
                         style: TextStyle(fontSize: 18, color: Colors.white, fontFamily: 'proxima'),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
+                        backgroundColor: const Color.fromARGB(255, 9, 60, 83),
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 30),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -265,26 +381,6 @@ class _UserProfileState extends State<UserProfile> {
                 ],
               ),
             ),
-    );
-  }
-
-  // Widget for detail rows
-  Widget _buildDetailRow(IconData icon, String label, String? value) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.blueAccent, size: 28),
-        const SizedBox(width: 15),
-        Expanded(
-          child: Text(
-            value ?? "Not Available",
-            style: const TextStyle(
-              fontSize: 18,
-              color: Colors.black87,
-              fontFamily: 'proxima',
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

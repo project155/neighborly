@@ -115,7 +115,7 @@ class _BloodDonationFormPageState extends State<BloodDonationFormPage> {
                 gradient: LinearGradient(
                   colors: [
                     Color.fromARGB(255, 9, 60, 83),
-                    Color.fromARGB(255, 0, 115, 168),
+                     Color.fromARGB(255, 0, 97, 142),
                   ],
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,

@@ -44,7 +44,7 @@ class _LandSlideReportPageState extends State<LandSlideReportPage>
           desiredAccuracy: LocationAccuracy.high);
       final double userLat = position.latitude;
       final double userLng = position.longitude;
-      double radiusInMeters = 10000; // For example, a 10 km radius
+      double radiusInMeters = 10000; // 10 km radius
 
       var snapshot = await _firestore
           .collection('reports')
@@ -98,10 +98,8 @@ class _LandSlideReportPageState extends State<LandSlideReportPage>
       // Center the map on the first report's location (if available).
       if (_markers.isNotEmpty) {
         var firstReport = _reports.first;
-        double lat =
-            (firstReport['location']['latitude'] ?? 0).toDouble();
-        double lng =
-            (firstReport['location']['longitude'] ?? 0).toDouble();
+        double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
+        double lng = (firstReport['location']['longitude'] ?? 0).toDouble();
         _mapController.animateCamera(
           CameraUpdate.newLatLng(LatLng(lat, lng)),
         );
@@ -223,8 +221,7 @@ class _LandSlideReportPageState extends State<LandSlideReportPage>
               onPressed: () {
                 showSearch(
                   context: context,
-                  delegate:
-                      LandSlideReportSearchDelegate(reports: _reports),
+                  delegate: LandSlideReportSearchDelegate(reports: _reports),
                 );
               },
             ),
@@ -253,11 +250,10 @@ class _LandSlideReportPageState extends State<LandSlideReportPage>
     );
   }
 
-  // Handle likes.
+  // Original like functionality (retained for reference).
   void _handleLike(String docId, bool isLiked) {
     String userId = _auth.currentUser?.uid ?? "";
     if (userId.isEmpty) return;
-
     int index = _reports.indexWhere((report) => report['id'] == docId);
     if (index != -1) {
       setState(() {
@@ -275,13 +271,104 @@ class _LandSlideReportPageState extends State<LandSlideReportPage>
           _reports[index]['likedBy'] = likedBy;
         }
       });
+      _firestore.collection('reports').doc(docId).update({
+        'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
+        'likedBy': isLiked
+            ? FieldValue.arrayRemove([userId])
+            : FieldValue.arrayUnion([userId]),
+      });
     }
-    _firestore.collection('reports').doc(docId).update({
-      'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
-      'likedBy': isLiked
-          ? FieldValue.arrayRemove([userId])
-          : FieldValue.arrayUnion([userId]),
-    });
+  }
+
+  // New rating functions for upvote/downvote.
+  void _handleUpvote(String docId, bool isUpvoted) {
+    String userId = _auth.currentUser?.uid ?? "";
+    if (userId.isEmpty) return;
+    int index = _reports.indexWhere((report) => report['id'] == docId);
+    if (index != -1) {
+      setState(() {
+        if (isUpvoted) {
+          _reports[index]['upvotes'] =
+              ((_reports[index]['upvotes'] ?? 0) as int) - 1;
+          List upvotedBy = List.from(_reports[index]['upvotedBy'] ?? []);
+          upvotedBy.remove(userId);
+          _reports[index]['upvotedBy'] = upvotedBy;
+        } else {
+          _reports[index]['upvotes'] =
+              ((_reports[index]['upvotes'] ?? 0) as int) + 1;
+          List upvotedBy = List.from(_reports[index]['upvotedBy'] ?? []);
+          upvotedBy.add(userId);
+          _reports[index]['upvotedBy'] = upvotedBy;
+          // If user had downvoted, remove that vote.
+          if ((_reports[index]['downvotedBy'] ?? []).contains(userId)) {
+            _reports[index]['downvotes'] =
+                ((_reports[index]['downvotes'] ?? 0) as int) - 1;
+            List downvotedBy = List.from(_reports[index]['downvotedBy'] ?? []);
+            downvotedBy.remove(userId);
+            _reports[index]['downvotedBy'] = downvotedBy;
+          }
+        }
+      });
+      _firestore.collection('reports').doc(docId).update({
+        'upvotes': isUpvoted ? FieldValue.increment(-1) : FieldValue.increment(1),
+        'upvotedBy': isUpvoted
+            ? FieldValue.arrayRemove([userId])
+            : FieldValue.arrayUnion([userId]),
+        if (!isUpvoted && (_reports[index]['downvotedBy'] ?? []).contains(userId))
+          'downvotes': FieldValue.increment(-1),
+        if (!isUpvoted && (_reports[index]['downvotedBy'] ?? []).contains(userId))
+          'downvotedBy': FieldValue.arrayRemove([userId]),
+      });
+    }
+  }
+
+  void _handleDownvote(String docId, bool isDownvoted) {
+    String userId = _auth.currentUser?.uid ?? "";
+    if (userId.isEmpty) return;
+    int index = _reports.indexWhere((report) => report['id'] == docId);
+    if (index != -1) {
+      setState(() {
+        if (isDownvoted) {
+          _reports[index]['downvotes'] =
+              ((_reports[index]['downvotes'] ?? 0) as int) - 1;
+          List downvotedBy = List.from(_reports[index]['downvotedBy'] ?? []);
+          downvotedBy.remove(userId);
+          _reports[index]['downvotedBy'] = downvotedBy;
+        } else {
+          _reports[index]['downvotes'] =
+              ((_reports[index]['downvotes'] ?? 0) as int) + 1;
+          List downvotedBy = List.from(_reports[index]['downvotedBy'] ?? []);
+          downvotedBy.add(userId);
+          _reports[index]['downvotedBy'] = downvotedBy;
+          // If user had upvoted, remove that vote.
+          if ((_reports[index]['upvotedBy'] ?? []).contains(userId)) {
+            _reports[index]['upvotes'] =
+                ((_reports[index]['upvotes'] ?? 0) as int) - 1;
+            List upvotedBy = List.from(_reports[index]['upvotedBy'] ?? []);
+            upvotedBy.remove(userId);
+            _reports[index]['upvotedBy'] = upvotedBy;
+          }
+        }
+      });
+      _firestore.collection('reports').doc(docId).update({
+        'downvotes': isDownvoted ? FieldValue.increment(-1) : FieldValue.increment(1),
+        'downvotedBy': isDownvoted
+            ? FieldValue.arrayRemove([userId])
+            : FieldValue.arrayUnion([userId]),
+        if (!isDownvoted && (_reports[index]['upvotedBy'] ?? []).contains(userId))
+          'upvotes': FieldValue.increment(-1),
+        if (!isDownvoted && (_reports[index]['upvotedBy'] ?? []).contains(userId))
+          'upvotedBy': FieldValue.arrayRemove([userId]),
+      });
+    }
+  }
+
+  double _calculateLegitPercentage(Map<String, dynamic> report) {
+    int upvotes = report['upvotes'] ?? 0;
+    int downvotes = report['downvotes'] ?? 0;
+    int total = upvotes + downvotes;
+    if (total == 0) return 0;
+    return (upvotes / total) * 100;
   }
 
   // Display comments in a bottom sheet.
@@ -343,10 +430,7 @@ class _LandSlideReportPageState extends State<LandSlideReportPage>
                                   ..add(newComment);
                           });
                         }
-                        _firestore
-                            .collection('reports')
-                            .doc(docId)
-                            .update({
+                        _firestore.collection('reports').doc(docId).update({
                           'comments': FieldValue.arrayUnion([newComment]),
                         });
                         commentController.clear();
@@ -363,190 +447,246 @@ class _LandSlideReportPageState extends State<LandSlideReportPage>
   }
 
   // Share report using share_plus.
-  void _shareReport(String title, String description) {
-    Share.share('$title\n\n$description');
+  void _shareReport(String title, String description, String category, String location) {
+    Share.share('$title\n\n$description\n\nCategory: $category\nLocation: $location');
+  }
+
+  // _confirmDelete method to show a confirmation dialog before deleting a report.
+  void _confirmDelete(String reportId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Delete Report"),
+          content: Text("Are you sure you want to delete this report?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteReport(reportId);
+              },
+              child: Text("Delete", style: TextStyle(color: Colors.red)),
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  // Delete the report from Firestore and update the local state.
+  Future<void> _deleteReport(String reportId) async {
+    try {
+      await _firestore.collection('reports').doc(reportId).delete();
+      setState(() {
+        _reports.removeWhere((report) => report['id'] == reportId);
+      });
+      _showAnimatedSnackbar("Report deleted successfully!");
+    } catch (e) {
+      print("Error deleting report: $e");
+      _showAnimatedSnackbar("Failed to delete report!");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     String currentUserId = _auth.currentUser?.uid ?? "";
-    return Scaffold(
-      body: Column(
-        children: [
-          // Map section with the floating AppBar.
-          Expanded(
-            flex: 1,
-            child: Stack(
-              children: [
-                GoogleMap(
-                  onMapCreated: _onMapCreated,
-                  initialCameraPosition: CameraPosition(
-                    target: _initialLocation,
-                    zoom: 15,
+    return Theme(
+      data: ThemeData(fontFamily: 'proxima'),
+      child: Scaffold(
+        body: Column(
+          children: [
+            // Map section with the floating AppBar.
+            Expanded(
+              flex: 1,
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    onMapCreated: _onMapCreated,
+                    initialCameraPosition: CameraPosition(
+                      target: _initialLocation,
+                      zoom: 15,
+                    ),
+                    mapType: MapType.normal,
+                    myLocationEnabled: true,
+                    zoomControlsEnabled: true,
+                    markers: _markers,
                   ),
-                  mapType: MapType.normal,
-                  myLocationEnabled: true,
-                  zoomControlsEnabled: true,
-                  markers: _markers,
-                ),
-                _buildFloatingAppBar(),
-              ],
+                  _buildFloatingAppBar(),
+                ],
+              ),
             ),
-          ),
-          // Reports List section.
-          Expanded(
-            flex: 1,
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : _reports.isEmpty
-                    ? Center(child: Text("No reports available"))
-                    : ListView.builder(
-                        itemCount: _reports.length,
-                        itemBuilder: (context, index) {
-                          var report = _reports[index];
-                          List<String> imageUrls = [];
-                          if (report['imageUrl'] is List) {
-                            imageUrls = List<String>.from(report['imageUrl']);
-                          } else if (report['imageUrl'] is String &&
-                              report['imageUrl'].isNotEmpty) {
-                            imageUrls = [report['imageUrl']];
-                          }
+            // Reports List section.
+            Expanded(
+              flex: 1,
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _reports.isEmpty
+                      ? Center(child: Text("No reports available"))
+                      : ListView.builder(
+                          itemCount: _reports.length,
+                          itemBuilder: (context, index) {
+                            var report = _reports[index];
+                            String reportUserId = report['userId'] ??
+                                report['uid'] ??
+                                "none";
+                            List<String> imageUrls = [];
+                            if (report['imageUrl'] is List) {
+                              imageUrls =
+                                  List<String>.from(report['imageUrl']);
+                            } else if (report['imageUrl'] is String &&
+                                report['imageUrl'].isNotEmpty) {
+                              imageUrls = [report['imageUrl']];
+                            }
+                            String reportId = report['id'];
+                            String title = report['title'] ?? "No Title";
+                            String description =
+                                report['description'] ?? "No Description";
+                            String category = report['category'] ?? "Unknown";
+                            String urgency = report['urgency'] ?? "Normal";
+                            String? latitude =
+                                report['location']?['latitude']?.toString() ?? "";
+                            String? longitude =
+                                report['location']?['longitude']?.toString() ?? "";
+                            // Use rating system instead of simple like.
+                            List upvotedBy =
+                                List.from(report['upvotedBy'] ?? []);
+                            List downvotedBy =
+                                List.from(report['downvotedBy'] ?? []);
+                            bool isUpvoted = upvotedBy.contains(currentUserId);
+                            bool isDownvoted = downvotedBy.contains(currentUserId);
 
-                          String reportId = report['id'];
-                          String title = report['title'] ?? "No Title";
-                          String description =
-                              report['description'] ?? "No Description";
-                          String category = report['category'] ?? "Unknown";
-                          String urgency = report['urgency'] ?? "Normal";
-                          String? latitude =
-                              report['location']?['latitude']?.toString();
-                          String? longitude =
-                              report['location']?['longitude']?.toString();
-                          int likes = report['likes'] ?? 0;
-                          List likedBy =
-                              List<String>.from(report['likedBy'] ?? []);
-                          bool isLiked = likedBy.contains(currentUserId);
-
-                          return InkWell(
-                            onTap: () {
-                              // When tapping a report, animate the map to its location and show the marker info.
-                              if (report['location'] != null) {
-                                double lat = (report['location']['latitude'] ?? 0)
-                                    .toDouble();
-                                double lng = (report['location']
-                                            ['longitude'] ??
-                                        0)
-                                    .toDouble();
-                                _mapController.animateCamera(
-                                  CameraUpdate.newLatLngZoom(
-                                      LatLng(lat, lng), 18),
-                                );
-                                _mapController.showMarkerInfoWindow(
-                                    MarkerId(report['id']));
-                              }
-                            },
-                            child: Card(
-                              margin: EdgeInsets.symmetric(
-                                  vertical: 10, horizontal: 16),
-                              elevation: 5,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (imageUrls.isNotEmpty)
-                                    ImageCarousel(imageUrls: imageUrls),
-                                  Padding(
-                                    padding: EdgeInsets.all(10),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(title,
-                                            style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold)),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          description,
-                                          style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[700]),
-                                        ),
-                                        SizedBox(height: 5),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text("Category: $category",
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                            Text("Urgency: $urgency",
-                                                style: TextStyle(
-                                                    color: Colors.redAccent)),
-                                          ],
-                                        ),
-                                        if (latitude!.isNotEmpty &&
-                                            longitude!.isNotEmpty)
-                                          Text("Location: $latitude, $longitude",
+                            return InkWell(
+                              onTap: () {
+                                if (report['location'] != null) {
+                                  double lat = (report['location']['latitude'] ?? 0)
+                                      .toDouble();
+                                  double lng = (report['location']['longitude'] ?? 0)
+                                      .toDouble();
+                                  _mapController.animateCamera(
+                                    CameraUpdate.newLatLngZoom(
+                                        LatLng(lat, lng), 18),
+                                  );
+                                  _mapController.showMarkerInfoWindow(
+                                      MarkerId(report['id']));
+                                }
+                              },
+                              child: Card(
+                                margin: EdgeInsets.symmetric(
+                                    vertical: 10, horizontal: 16),
+                                elevation: 5,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (imageUrls.isNotEmpty)
+                                      ImageCarousel(imageUrls: imageUrls),
+                                    Padding(
+                                      padding: EdgeInsets.all(10),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(title,
                                               style: TextStyle(
-                                                  color:
-                                                      Colors.blueGrey,
-                                                      fontSize: 12,)),
-                                                      SizedBox(height: 5),
-                                        Text(
-                                          "Reported on: ${report['timestamp'] != null ? DateFormat('dd MMM yyyy, hh:mm a').format((report['timestamp'] as Timestamp).toDate()) : 'Unknown'}",
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey[600]),
-                                        ),
-                                        SizedBox(height: 10),
-                                        Row(
-                                          children: [
-                                            IconButton(
-                                              icon: Icon(
-                                                isLiked
-                                                    ? Icons.thumb_up
-                                                    : Icons.thumb_up_alt_outlined,
-                                                color: Colors.black,
-                                              ),
-                                              onPressed: () {
-                                                _handleLike(reportId, isLiked);
-                                                _showAnimatedSnackbar(isLiked
-                                                    ? "Like removed!"
-                                                    : "Liked!");
-                                              },
-                                            ),
-                                            Text("$likes Likes",
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold)),
+                                          SizedBox(height: 5),
+                                          Text(
+                                            description,
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey[700]),
+                                          ),
+                                          SizedBox(height: 5),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text("Category: $category",
+                                                  style: TextStyle(
+                                                      fontWeight: FontWeight.bold)),
+                                              Text("Urgency: $urgency",
+                                                  style: TextStyle(
+                                                      color: Colors.redAccent)),
+                                            ],
+                                          ),
+                                          if (latitude!.isNotEmpty && longitude!.isNotEmpty)
+                                            Text("Location: $latitude, $longitude",
                                                 style: TextStyle(
-                                                    color: Colors.black)),
-                                            IconButton(
-                                              icon: Icon(Icons.comment_outlined,
-                                                  color: Colors.black),
-                                              onPressed: () =>
-                                                  _showComments(context, reportId),
-                                            ),
-                                            IconButton(
-                                              icon: Icon(Icons.share_outlined,
-                                                  color: Colors.black),
-                                              onPressed: () =>
-                                                  _shareReport(title, description),
-                                            ),
-                                          ],
-                                        )
-                                      ],
-                                    ),
-                                  )
-                                ],
+                                                    color: Colors.blueGrey,
+                                                    fontSize: 12)),
+                                          SizedBox(height: 5),
+                                          Text(
+                                            "Reported on: ${report['timestamp'] != null ? DateFormat('dd MMM yyyy, hh:mm a').format((report['timestamp'] as Timestamp).toDate()) : 'Unknown'}",
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[600]),
+                                          ),
+                                          SizedBox(height: 10),
+                                          Row(
+                                            children: [
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.thumb_up,
+                                                  color: isUpvoted ? Colors.blue : Colors.grey,
+                                                ),
+                                                onPressed: () {
+                                                  _handleUpvote(reportId, isUpvoted);
+                                                  _showAnimatedSnackbar(isUpvoted ? "Upvote removed!" : "Upvoted!");
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.thumb_down,
+                                                  color: isDownvoted ? Colors.red : Colors.grey,
+                                                ),
+                                                onPressed: () {
+                                                  _handleDownvote(reportId, isDownvoted);
+                                                  _showAnimatedSnackbar(isDownvoted ? "Downvote removed!" : "Downvoted!");
+                                                },
+                                              ),
+                                              Text(
+                                                (_calculateLegitPercentage(report) > 0)
+                                                    ? "Legit: ${_calculateLegitPercentage(report).toStringAsFixed(0)}%"
+                                                    : "No votes yet",
+                                                style: TextStyle(color: Colors.black),
+                                              ),
+                                              IconButton(
+                                                icon: Icon(Icons.comment_outlined, color: Colors.black),
+                                                onPressed: () => _showComments(context, reportId),
+                                              ),
+                                              IconButton(
+                                                icon: Icon(Icons.share_outlined, color: Colors.black),
+                                                onPressed: () {
+                                                  String locationText = (latitude.isNotEmpty && longitude.isNotEmpty)
+                                                      ? '$latitude, $longitude'
+                                                      : 'Location not available';
+                                                  _shareReport(title, description, category, locationText);
+                                                },
+                                              ),
+                                              if ((report['userId'] ?? report['uid']) == currentUserId)
+                                                IconButton(
+                                                  icon: Icon(Icons.delete, color: Colors.red),
+                                                  onPressed: () => _confirmDelete(reportId),
+                                                ),
+                                            ],
+                                          )
+                                        ],
+                                      ),
+                                    )
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-          ),
-        ],
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -606,8 +746,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
             return Container(
               width: 8.0,
               height: 8.0,
-              margin:
-                  EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+              margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _current == entry.key
@@ -625,9 +764,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
 // Custom SearchDelegate for landslide reports.
 class LandSlideReportSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> reports;
-
   LandSlideReportSearchDelegate({required this.reports});
-
   @override
   List<Widget> buildActions(BuildContext context) {
     return [
@@ -640,24 +777,21 @@ class LandSlideReportSearchDelegate extends SearchDelegate {
         )
     ];
   }
-
   @override
   Widget buildLeading(BuildContext context) {
     return IconButton(
       icon: Icon(Icons.arrow_back),
       onPressed: () {
-        close(context, null); // Close search delegate
+        close(context, null);
       },
     );
   }
-
   @override
   Widget buildResults(BuildContext context) {
     final results = reports.where((report) {
       final title = report['title']?.toLowerCase() ?? '';
       return title.contains(query.toLowerCase());
     }).toList();
-
     return ListView.builder(
       itemCount: results.length,
       itemBuilder: (context, index) {
@@ -680,14 +814,12 @@ class LandSlideReportSearchDelegate extends SearchDelegate {
       },
     );
   }
-
   @override
   Widget buildSuggestions(BuildContext context) {
     final suggestions = reports.where((report) {
       final title = report['title']?.toLowerCase() ?? '';
       return title.contains(query.toLowerCase());
     }).toList();
-
     return ListView.builder(
       itemCount: suggestions.length,
       itemBuilder: (context, index) {
@@ -705,12 +837,10 @@ class LandSlideReportSearchDelegate extends SearchDelegate {
   }
 }
 
-// A basic detail page for a landslide report.
+// Detail page for a landslide report.
 class LandSlideReportDetailPage extends StatelessWidget {
   final Map<String, dynamic> report;
-
   LandSlideReportDetailPage({required this.report});
-
   @override
   Widget build(BuildContext context) {
     List<String> imageUrls = [];
@@ -720,49 +850,52 @@ class LandSlideReportDetailPage extends StatelessWidget {
         report['imageUrl'].isNotEmpty) {
       imageUrls = [report['imageUrl']];
     }
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.brown,
-        title: Text(report['title'] ?? "Report Details"),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (imageUrls.isNotEmpty)
-              ImageCarousel(imageUrls: imageUrls),
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    report['title'] ?? "No Title",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+    return Theme(
+      data: ThemeData(fontFamily: 'proxima'),
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.brown,
+          title: Text(report['title'] ?? "Report Details"),
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (imageUrls.isNotEmpty)
+                ImageCarousel(imageUrls: imageUrls),
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      report['title'] ?? "No Title",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    report['description'] ?? "No Description",
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    "Category: ${report['category'] ?? "Unknown"}",
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    "Urgency: ${report['urgency'] ?? "Normal"}",
-                    style: TextStyle(fontSize: 16, color: Colors.redAccent),
-                  ),
-                ],
-              ),
-            )
-          ],
+                    SizedBox(height: 10),
+                    Text(
+                      report['description'] ?? "No Description",
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Category: ${report['category'] ?? "Unknown"}",
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      "Urgency: ${report['urgency'] ?? "Normal"}",
+                      style: TextStyle(fontSize: 16, color: Colors.redAccent),
+                    ),
+                  ],
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -772,23 +905,24 @@ class LandSlideReportDetailPage extends StatelessWidget {
 // Full screen image view page.
 class FullScreenImagePage extends StatelessWidget {
   final String imageUrl;
-
   FullScreenImagePage({required this.imageUrl});
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
-      ),
-      body: Center(
-        child: InteractiveViewer(
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.contain,
+    return Theme(
+      data: ThemeData(fontFamily: 'proxima'),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        body: Center(
+          child: InteractiveViewer(
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ),

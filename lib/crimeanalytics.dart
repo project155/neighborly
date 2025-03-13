@@ -28,7 +28,7 @@ class CrimeAnalyticsPage extends StatefulWidget {
 
 class _CrimeAnalyticsPageState extends State<CrimeAnalyticsPage> {
   // Time period filter options.
-  String _selectedPeriod = '7 days';
+  String _selectedPeriod = '30 days';
   final List<String> _periodOptions = ['7 days', '30 days', 'All Time'];
 
   // Determine the starting date based on the selected period.
@@ -157,27 +157,44 @@ class _CrimeAnalyticsPageState extends State<CrimeAnalyticsPage> {
     const double oneDayMillis = 86400000.0; // One day in milliseconds
 
     return Scaffold(
-      appBar: AppBar(
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-        ),
-        title: const Text(
-          "Crime Analytics",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blueAccent, Colors.lightBlueAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      backgroundColor: const Color.fromARGB(238, 255, 255, 255),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
             ),
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+            centerTitle: true,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: const Text(
+              "Crime Analytics",
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            automaticallyImplyLeading: false,
           ),
         ),
       ),
@@ -376,7 +393,7 @@ class _CrimeAnalyticsPageState extends State<CrimeAnalyticsPage> {
                       child: LineChart(
                         LineChartData(
                           minY: 0,
-                          maxY: 10,
+                          maxY: 30,
                           lineTouchData: LineTouchData(enabled: true),
                           gridData: FlGridData(show: true),
                           titlesData: FlTitlesData(

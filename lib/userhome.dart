@@ -8,26 +8,34 @@ import 'package:neighborly/Animalabuse.dart';
 import 'package:neighborly/ChildAbuse.dart';
 import 'package:neighborly/Drought.dart';
 import 'package:neighborly/Ecohazard.dart';
+import 'package:neighborly/Emergencycontacts.dart';
 import 'package:neighborly/Fooddonation.dart';
 import 'package:neighborly/Foodsafety.dart';
 import 'package:neighborly/Hygieneissues.dart';
 import 'package:neighborly/Infrastructureissues.dart';
 import 'package:neighborly/Landslide.dart';
+import 'package:neighborly/MedicalDonation.dart';
 import 'package:neighborly/Narcotics.dart';
 import 'package:neighborly/Notificationpage.dart';
 import 'package:neighborly/Roadincidents.dart';
 import 'package:neighborly/SOSpage.dart';
 import 'package:neighborly/Theft.dart';
 import 'package:neighborly/Transportation.dart';
+//import 'package:neighborly/addcamp.dart';
 import 'package:neighborly/alcohol.dart';
 import 'package:neighborly/authority.dart';
+import 'package:neighborly/bloodrequestreports.dart';
 import 'package:neighborly/bloodrerequest.dart';
 import 'package:neighborly/bloodsignup.dart';
 import 'package:neighborly/bribery.dart';
+//import 'package:neighborly/camp.dart';
 import 'package:neighborly/crimeanalytics.dart';
 import 'package:neighborly/disasteranalytics.dart';
+import 'package:neighborly/feed_page.dart';
+import 'package:neighborly/feedback.dart';
 import 'package:neighborly/flood.dart';
 import 'package:neighborly/loginuser.dart';
+import 'package:neighborly/medicaldonationform.dart';
 import 'package:neighborly/newreport.dart';
 import 'package:neighborly/Sexualabuse.dart';
 import 'package:neighborly/Userprofile.dart';
@@ -82,6 +90,10 @@ class _UserhomeState extends State<Userhome> {
     "Food Donation",
     "Lost & Found",
     "Blood Donation",
+    "Medical Charity",
+    "Emergency Contacts",
+    "Feedback"
+    "camp"
   ];
 
   List<String> noticeImages = [];
@@ -275,7 +287,7 @@ class _UserhomeState extends State<Userhome> {
                   gradient: LinearGradient(
                     colors: [
                       Color.fromARGB(255, 9, 60, 83),
-                      Color.fromARGB(255, 0, 115, 168),
+                      Color.fromARGB(255, 0, 97, 142),
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
@@ -572,6 +584,7 @@ class _UserhomeState extends State<Userhome> {
       "Theft": FontAwesomeIcons.peopleRobbery,
       "Child Abuse": FontAwesomeIcons.childReaching,
       "Blood Donation": Icons.bloodtype,
+      "Medical Charity": Icons.medical_services,
     };
 
     return GestureDetector(
@@ -602,13 +615,38 @@ class _UserhomeState extends State<Userhome> {
               MaterialPageRoute(builder: (context) => AnimalabuseReportPage()));
         } else if (title == "Bribery") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => BriberyReportPage()));
+              MaterialPageRoute(builder: (context) => AddDonationPage()));
         } else if (title == "Food Safety") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => FoodsafetyReportPage()));
+               } else if (title == "Feedback") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => FeedbackPage()));
         } else if (title == "Hygiene Issues") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => HygieneissuesReportPage()));
+              MaterialPageRoute(builder: (context) => FeedPage()));
+        } else if (title == "Medical Charity") {
+          showGeneralDialog(
+            context: context,
+            barrierDismissible: true,
+            barrierLabel: "MedicalCharityOptions",
+            transitionDuration: Duration(milliseconds: 250),
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return Center(child: MedicalCharityPopup());
+            },
+            transitionBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: animation,
+                  child: child,
+                ),
+              );
+            },
+          );
+        } else if (title == "Emergency Contacts") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => EmergencyContactsPage(userRole: 'User',)));
         } else if (title == "Lost & Found") {
           // Show popup instead of full page.
           showGeneralDialog(
@@ -769,7 +807,7 @@ class BloodDonationPopup extends StatelessWidget {
                 context,
                 label: "Request Blood",
                 icon: Icons.bloodtype,
-                color: Colors.red,
+                color: Colors.blue,
                 onTap: () {
                   Navigator.of(context).pop();
                   Navigator.push(
@@ -780,14 +818,133 @@ class BloodDonationPopup extends StatelessWidget {
               ),
               _buildOption(
                 context,
-                label: "Donation Sign Up",
+                label: "Sign Up",
                 icon: Icons.person_add_alt_rounded,
-                color: Colors.green,
+                color: Colors.blue,
                 onTap: () {
                   Navigator.of(context).pop();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => BloodDonationFormPage()),
+                  );
+                },
+              ),
+               _buildOption(
+                context,
+                label: "Request List",
+                icon: Icons.list_alt_outlined,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => BloodRequestListPage()),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption(BuildContext context,
+      {required String label,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 40,
+              color: Color.fromARGB(255, 9, 60, 83),
+            ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------
+// MedicalCharityPopup widget definition.
+// ---------------------
+class MedicalCharityPopup extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: _buildDialogContent(context),
+    );
+  }
+
+  Widget _buildDialogContent(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      height: 250,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.rectangle,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10.0,
+            offset: Offset(0.0, 10.0),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Medical Charity Options",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildOption(
+                context,
+                label: "Medical Donations",
+                icon: Icons.medical_services,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MedicalDonationsPage()),
+                  );
+                },
+              ),
+              _buildOption(
+                context,
+                label: "Add Donations",
+                icon: Icons.add_box,
+                color: Colors.green,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AddDonationPage()),
                   );
                 },
               ),

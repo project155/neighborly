@@ -17,13 +17,11 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late GoogleMapController _mapController;
-  Set<Marker> _markers = Set();
+  Set<Marker> _markers = {};
   List<Map<String, dynamic>> _reports = [];
   bool _isLoading = true;
-
   // Set to true to force trash icon display for debugging.
   bool forceShowTrashIcon = false;
-
   final LatLng _initialLocation = LatLng(11.194249397596916, 75.85098108272076);
 
   @override
@@ -41,40 +39,36 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
   Future<void> _fetchReports() async {
     try {
       // Get user's current position.
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       final double userLat = position.latitude;
       final double userLng = position.longitude;
-      // Define a radius in meters (e.g., 10000m for 10 km).
-      double radiusInMeters = 10000;
+      double radiusInMeters = 10000; // 10 km radius
 
-      // Fetch all 'infrastructure' reports.
+      // Fetch all 'Infrastructure Issues' reports.
       var snapshot = await _firestore
           .collection('reports')
           .where('category', isEqualTo: 'Infrastructure Issues')
           .orderBy('timestamp', descending: true)
           .get();
 
-      // Convert snapshot to a list of reports.
       List<Map<String, dynamic>> allReports = snapshot.docs.map((doc) {
         var data = doc.data();
         data['id'] = doc.id;
         return data;
       }).toList();
 
-      // Filter reports based on distance from the user.
+      // Filter reports based on distance.
       _reports = allReports.where((report) {
         if (report['location'] != null) {
           double reportLat = (report['location']['latitude'] ?? 0).toDouble();
           double reportLng = (report['location']['longitude'] ?? 0).toDouble();
-          double distanceInMeters =
-              Geolocator.distanceBetween(userLat, userLng, reportLat, reportLng);
-          return distanceInMeters <= radiusInMeters;
+          double distance = Geolocator.distanceBetween(userLat, userLng, reportLat, reportLng);
+          return distance <= radiusInMeters;
         }
         return false;
       }).toList();
 
-      // Update markers for each report.
+      // Clear and add markers.
       _markers.clear();
       for (var report in _reports) {
         if (report['location'] != null) {
@@ -85,8 +79,10 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
               markerId: MarkerId(report['id']),
               position: LatLng(lat, lng),
               infoWindow: InfoWindow(
-                  title: report['title'], snippet: report['description']),
-              // Using a different hue for infrastructure markers.
+                title: report['title'],
+                snippet: report['description'],
+              ),
+              // Use an orange hue for infrastructure markers.
               icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
             ),
           );
@@ -98,11 +94,8 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
         var firstReport = _reports.first;
         double lat = (firstReport['location']['latitude'] ?? 0).toDouble();
         double lng = (firstReport['location']['longitude'] ?? 0).toDouble();
-        _mapController.animateCamera(
-          CameraUpdate.newLatLng(LatLng(lat, lng)),
-        );
+        _mapController.animateCamera(CameraUpdate.newLatLng(LatLng(lat, lng)));
       }
-
       setState(() {
         _isLoading = false;
       });
@@ -123,9 +116,7 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
     Animation<Offset> offsetAnimation = Tween<Offset>(
       begin: Offset(0, -1),
       end: Offset(0, 0),
-    ).animate(
-      CurvedAnimation(parent: controller, curve: Curves.easeOut),
-    );
+    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
 
     OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -149,8 +140,7 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
                   Expanded(
                     child: Text(
                       message,
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -171,7 +161,7 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
     });
   }
 
-  // Floating AppBar widget over the map.
+  // Floating AppBar widget.
   Widget _buildFloatingAppBar() {
     return Positioned(
       top: 40,
@@ -182,9 +172,7 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
-          ],
+          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -192,9 +180,7 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
             // Back Button.
             IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.black87),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
             // Title with Infrastructure Icon.
             Row(
@@ -204,10 +190,7 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
                 SizedBox(width: 8),
                 Text(
                   "Infrastructure Reports",
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
                 ),
               ],
             ),
@@ -231,10 +214,7 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
   Widget _buildTappableImage(String imageUrl) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: imageUrl)),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: imageUrl)));
       },
       child: Image.network(
         imageUrl,
@@ -245,7 +225,7 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
     );
   }
 
-  // Show a confirmation dialog before deleting a report.
+  // Show a confirmation dialog before deletion.
   void _confirmDelete(String reportId) {
     showDialog(
       context: context,
@@ -254,24 +234,20 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
           title: Text("Delete Report"),
           content: Text("Are you sure you want to delete this report?"),
           actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: Text("Cancel")),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteReport(reportId);
-              },
-              child: Text("Delete", style: TextStyle(color: Colors.red)),
-            )
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _deleteReport(reportId);
+                },
+                child: Text("Delete", style: TextStyle(color: Colors.red))),
           ],
         );
       },
     );
   }
 
-  // Delete the report from Firestore and update the local state.
+  // Delete the report from Firestore and update local state.
   Future<void> _deleteReport(String reportId) async {
     try {
       await _firestore.collection('reports').doc(reportId).delete();
@@ -285,7 +261,7 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
     }
   }
 
-  // Handle likes.
+  // Original like functionality.
   void _handleLike(String docId, bool isLiked) {
     String userId = _auth.currentUser?.uid ?? "";
     if (userId.isEmpty) return;
@@ -293,36 +269,108 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
     if (index != -1) {
       setState(() {
         if (isLiked) {
-          _reports[index]['likes'] =
-              ((_reports[index]['likes'] ?? 0) as int) - 1;
+          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) - 1;
           List likedBy = List.from(_reports[index]['likedBy'] ?? []);
           likedBy.remove(userId);
           _reports[index]['likedBy'] = likedBy;
         } else {
-          _reports[index]['likes'] =
-              ((_reports[index]['likes'] ?? 0) as int) + 1;
+          _reports[index]['likes'] = ((_reports[index]['likes'] ?? 0) as int) + 1;
           List likedBy = List.from(_reports[index]['likedBy'] ?? []);
           likedBy.add(userId);
           _reports[index]['likedBy'] = likedBy;
         }
       });
+      _firestore.collection('reports').doc(docId).update({
+        'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
+        'likedBy': isLiked ? FieldValue.arrayRemove([userId]) : FieldValue.arrayUnion([userId]),
+      });
     }
-    _firestore.collection('reports').doc(docId).update({
-      'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
-      'likedBy': isLiked
-          ? FieldValue.arrayRemove([userId])
-          : FieldValue.arrayUnion([userId]),
-    });
+  }
+
+  // New rating functions for upvote/downvote.
+  void _handleUpvote(String docId, bool isUpvoted) {
+    String userId = _auth.currentUser?.uid ?? "";
+    if (userId.isEmpty) return;
+    int index = _reports.indexWhere((report) => report['id'] == docId);
+    if (index != -1) {
+      setState(() {
+        if (isUpvoted) {
+          _reports[index]['upvotes'] = ((_reports[index]['upvotes'] ?? 0) as int) - 1;
+          List upvotedBy = List.from(_reports[index]['upvotedBy'] ?? []);
+          upvotedBy.remove(userId);
+          _reports[index]['upvotedBy'] = upvotedBy;
+        } else {
+          _reports[index]['upvotes'] = ((_reports[index]['upvotes'] ?? 0) as int) + 1;
+          List upvotedBy = List.from(_reports[index]['upvotedBy'] ?? []);
+          upvotedBy.add(userId);
+          _reports[index]['upvotedBy'] = upvotedBy;
+          if ((_reports[index]['downvotedBy'] ?? []).contains(userId)) {
+            _reports[index]['downvotes'] = ((_reports[index]['downvotes'] ?? 0) as int) - 1;
+            List downvotedBy = List.from(_reports[index]['downvotedBy'] ?? []);
+            downvotedBy.remove(userId);
+            _reports[index]['downvotedBy'] = downvotedBy;
+          }
+        }
+      });
+      _firestore.collection('reports').doc(docId).update({
+        'upvotes': isUpvoted ? FieldValue.increment(-1) : FieldValue.increment(1),
+        'upvotedBy': isUpvoted ? FieldValue.arrayRemove([userId]) : FieldValue.arrayUnion([userId]),
+        if (!isUpvoted && (_reports[index]['downvotedBy'] ?? []).contains(userId))
+          'downvotes': FieldValue.increment(-1),
+        if (!isUpvoted && (_reports[index]['downvotedBy'] ?? []).contains(userId))
+          'downvotedBy': FieldValue.arrayRemove([userId]),
+      });
+    }
+  }
+
+  void _handleDownvote(String docId, bool isDownvoted) {
+    String userId = _auth.currentUser?.uid ?? "";
+    if (userId.isEmpty) return;
+    int index = _reports.indexWhere((report) => report['id'] == docId);
+    if (index != -1) {
+      setState(() {
+        if (isDownvoted) {
+          _reports[index]['downvotes'] = ((_reports[index]['downvotes'] ?? 0) as int) - 1;
+          List downvotedBy = List.from(_reports[index]['downvotedBy'] ?? []);
+          downvotedBy.remove(userId);
+          _reports[index]['downvotedBy'] = downvotedBy;
+        } else {
+          _reports[index]['downvotes'] = ((_reports[index]['downvotes'] ?? 0) as int) + 1;
+          List downvotedBy = List.from(_reports[index]['downvotedBy'] ?? []);
+          downvotedBy.add(userId);
+          _reports[index]['downvotedBy'] = downvotedBy;
+          if ((_reports[index]['upvotedBy'] ?? []).contains(userId)) {
+            _reports[index]['upvotes'] = ((_reports[index]['upvotes'] ?? 0) as int) - 1;
+            List upvotedBy = List.from(_reports[index]['upvotedBy'] ?? []);
+            upvotedBy.remove(userId);
+            _reports[index]['upvotedBy'] = upvotedBy;
+          }
+        }
+      });
+      _firestore.collection('reports').doc(docId).update({
+        'downvotes': isDownvoted ? FieldValue.increment(-1) : FieldValue.increment(1),
+        'downvotedBy': isDownvoted ? FieldValue.arrayRemove([userId]) : FieldValue.arrayUnion([userId]),
+        if (!isDownvoted && (_reports[index]['upvotedBy'] ?? []).contains(userId))
+          'upvotes': FieldValue.increment(-1),
+        if (!isDownvoted && (_reports[index]['upvotedBy'] ?? []).contains(userId))
+          'upvotedBy': FieldValue.arrayRemove([userId]),
+      });
+    }
+  }
+
+  double _calculateLegitPercentage(Map<String, dynamic> report) {
+    int upvotes = report['upvotes'] ?? 0;
+    int downvotes = report['downvotes'] ?? 0;
+    int total = upvotes + downvotes;
+    if (total == 0) return 0;
+    return (upvotes / total) * 100;
   }
 
   // Display comments in a bottom sheet.
   void _showComments(BuildContext context, String docId) {
     int reportIndex = _reports.indexWhere((report) => report['id'] == docId);
-    List<dynamic> comments = reportIndex != -1
-        ? List.from(_reports[reportIndex]['comments'] ?? [])
-        : [];
+    List<dynamic> comments = reportIndex != -1 ? List.from(_reports[reportIndex]['comments'] ?? []) : [];
     TextEditingController commentController = TextEditingController();
-
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -337,10 +385,10 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
                       children: comments.map((comment) {
                         if (comment is Map && comment.containsKey('name')) {
                           return ListTile(
-                            title: Text(
-                              comment['name'],
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                            leading: CircleAvatar(
+                              backgroundImage: AssetImage('assets/images/anonymous_avatar.png'),
                             ),
+                            title: Text(comment['name'], style: TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Text(comment['comment'] ?? ""),
                           );
                         } else {
@@ -354,18 +402,14 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
                     decoration: InputDecoration(hintText: "Add a comment..."),
                     onSubmitted: (text) {
                       if (text.isNotEmpty) {
-                        var newComment = {
-                          'name': 'Anonymous',
-                          'comment': text
-                        };
+                        var newComment = {'name': 'Anonymous', 'comment': text};
                         setModalState(() {
                           comments.add(newComment);
                         });
                         if (reportIndex != -1) {
                           setState(() {
                             _reports[reportIndex]['comments'] =
-                                List.from(_reports[reportIndex]['comments'] ?? [])
-                                  ..add(newComment);
+                                List.from(_reports[reportIndex]['comments'] ?? [])..add(newComment);
                           });
                         }
                         _firestore.collection('reports').doc(docId).update({
@@ -385,178 +429,183 @@ class _InfrastructureReportPageState extends State<InfrastructureReportPage>
   }
 
   // Share report using share_plus.
-  void _shareReport(String title, String description) {
-    Share.share('$title\n\n$description');
+  void _shareReport(String title, String description, String category, String location) {
+    Share.share('$title\n\n$description\n\nCategory: $category\nLocation: $location');
   }
 
   @override
   Widget build(BuildContext context) {
     String currentUserId = _auth.currentUser?.uid ?? "";
-    return Scaffold(
-      body: Column(
-        children: [
-          // Map section with the floating AppBar.
-          Expanded(
-            flex: 1,
-            child: Stack(
-              children: [
-                GoogleMap(
-                  onMapCreated: _onMapCreated,
-                  initialCameraPosition: CameraPosition(
-                    target: _initialLocation,
-                    zoom: 15,
+    return Theme(
+      data: ThemeData(fontFamily: 'proxima'),
+      child: Scaffold(
+        body: Column(
+          children: [
+            // Map section with floating AppBar.
+            Expanded(
+              flex: 1,
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    onMapCreated: _onMapCreated,
+                    initialCameraPosition: CameraPosition(
+                      target: _initialLocation,
+                      zoom: 15,
+                    ),
+                    mapType: MapType.normal,
+                    myLocationEnabled: true,
+                    zoomControlsEnabled: true,
+                    markers: _markers,
                   ),
-                  mapType: MapType.normal,
-                  myLocationEnabled: true,
-                  zoomControlsEnabled: true,
-                  markers: _markers,
-                ),
-                _buildFloatingAppBar(),
-              ],
+                  _buildFloatingAppBar(),
+                ],
+              ),
             ),
-          ),
-          // Reports List section.
-          Expanded(
-            flex: 1,
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : _reports.isEmpty
-                    ? Center(child: Text("No reports available"))
-                    : ListView.builder(
-                        itemCount: _reports.length,
-                        itemBuilder: (context, index) {
-                          var report = _reports[index];
-                          // Debug: print report userId and current user id.
-                          String reportUserId =
-                              report['userId'] ?? report['uid'] ?? "none";
-                          print(
-                              "Report id: ${report['id']}, report userId: $reportUserId, current user id: $currentUserId");
+            // Reports List section.
+            Expanded(
+              flex: 1,
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _reports.isEmpty
+                      ? Center(child: Text("No reports available"))
+                      : ListView.builder(
+                          itemCount: _reports.length,
+                          itemBuilder: (context, index) {
+                            var report = _reports[index];
+                            String reportUserId = report['userId'] ?? report['uid'] ?? "none";
+                            print("Report id: ${report['id']}, report userId: $reportUserId, current user id: $currentUserId");
 
-                          List<String> imageUrls = [];
-                          if (report['imageUrl'] is List) {
-                            imageUrls = List<String>.from(report['imageUrl']);
-                          } else if (report['imageUrl'] is String &&
-                              report['imageUrl'].isNotEmpty) {
-                            imageUrls = [report['imageUrl']];
-                          }
+                            List<String> imageUrls = [];
+                            if (report['imageUrl'] is List) {
+                              imageUrls = List<String>.from(report['imageUrl']);
+                            } else if (report['imageUrl'] is String && report['imageUrl'].isNotEmpty) {
+                              imageUrls = [report['imageUrl']];
+                            }
 
-                          String reportId = report['id'];
-                          String title = report['title'] ?? "No Title";
-                          String description = report['description'] ?? "No Description";
-                          String category = report['category'] ?? "Unknown";
-                          String urgency = report['urgency'] ?? "Normal";
-                          String? latitude = report['location']?['latitude']?.toString();
-                          String? longitude = report['location']?['longitude']?.toString();
-                          int likes = report['likes'] ?? 0;
+                            String reportId = report['id'];
+                            String title = report['title'] ?? "No Title";
+                            String description = report['description'] ?? "No Description";
+                            String category = report['category'] ?? "Unknown";
+                            String urgency = report['urgency'] ?? "Normal";
+                            String? latitude = report['location']?['latitude']?.toString() ?? "";
+                            String? longitude = report['location']?['longitude']?.toString() ?? "";
+                            int likes = report['likes'] ?? 0;
+                            List likedBy = List<String>.from(report['likedBy'] ?? []);
+                            bool isLiked = likedBy.contains(currentUserId);
 
-                          List likedBy = List<String>.from(report['likedBy'] ?? []);
-                          bool isLiked = likedBy.contains(currentUserId);
+                            // Rating system.
+                            List upvotedBy = List.from(report['upvotedBy'] ?? []);
+                            List downvotedBy = List.from(report['downvotedBy'] ?? []);
+                            bool isUpvoted = upvotedBy.contains(currentUserId);
+                            bool isDownvoted = downvotedBy.contains(currentUserId);
 
-                          return InkWell(
-                            onTap: () {
-                              // When tapping a report, animate the map to its location and show its info window.
-                              if (report['location'] != null) {
-                                double lat = (report['location']['latitude'] ?? 0).toDouble();
-                                double lng = (report['location']['longitude'] ?? 0).toDouble();
-                                _mapController.animateCamera(
-                                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 18),
-                                );
-                                _mapController.showMarkerInfoWindow(MarkerId(report['id']));
-                              }
-                            },
-                            child: Card(
-                              margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                              elevation: 5,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (imageUrls.isNotEmpty)
-                                    ImageCarousel(imageUrls: imageUrls),
-                                  Padding(
-                                    padding: EdgeInsets.all(10),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(title,
-                                            style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold)),
-                                        SizedBox(height: 5),
-                                        Text(description,
-                                            style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.grey[700])),
-                                        SizedBox(height: 5),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text("Category: $category",
-                                                style: TextStyle(fontWeight: FontWeight.bold)),
-                                            Text("Urgency: $urgency",
-                                                style: TextStyle(color: Colors.blueAccent)),
-                                          ],
-                                        ),
-                                       if (latitude!.isNotEmpty &&
-                                            longitude!.isNotEmpty)
-                                          Text("Location: $latitude, $longitude",
-                                              style: TextStyle(
-                                                  color:
-                                                      Colors.blueGrey,
-                                                      fontSize: 12,)),
-                                                      SizedBox(height: 5),
-                                        Text(
-                                          "Reported on: ${report['timestamp'] != null ? DateFormat('dd MMM yyyy, hh:mm a').format((report['timestamp'] as Timestamp).toDate()) : 'Unknown'}",
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey[600]),
-                                        ),
-                                        SizedBox(height: 10),
-                                        Row(
-                                          children: [
-                                            IconButton(
-                                              icon: Icon(
-                                                isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
-                                                color: Colors.black,
-                                              ),
-                                              onPressed: () {
-                                                _handleLike(reportId, isLiked);
-                                                _showAnimatedSnackbar(isLiked
-                                                    ? "Like removed!"
-                                                    : "Liked!");
-                                              },
-                                            ),
-                                            Text("$likes Likes", style: TextStyle(color: Colors.black)),
-                                            IconButton(
-                                              icon: Icon(Icons.comment_outlined, color: Colors.black),
-                                              onPressed: () => _showComments(context, reportId),
-                                            ),
-                                            IconButton(
-                                              icon: Icon(Icons.share_outlined, color: Colors.black),
-                                              onPressed: () => _shareReport(title, description),
-                                            ),
-                                            // Show trash icon if forced or if the report's owner matches the current user.
-                                            if (forceShowTrashIcon ||
-                                                ((report['userId'] ?? report['uid']) == currentUserId))
+                            return InkWell(
+                              onTap: () async {
+                                if (report['location'] != null) {
+                                  double lat = (report['location']['latitude'] ?? 0).toDouble();
+                                  double lng = (report['location']['longitude'] ?? 0).toDouble();
+                                  await _mapController.animateCamera(
+                                    CameraUpdate.newLatLngZoom(LatLng(lat, lng), 18),
+                                  );
+                                  _mapController.showMarkerInfoWindow(MarkerId(report['id']));
+                                }
+                              },
+                              child: Card(
+                                margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                                elevation: 5,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (imageUrls.isNotEmpty) ImageCarousel(imageUrls: imageUrls),
+                                    Padding(
+                                      padding: EdgeInsets.all(10),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                          SizedBox(height: 5),
+                                          Text(
+                                            description,
+                                            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                          ),
+                                          SizedBox(height: 5),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text("Category: $category", style: TextStyle(fontWeight: FontWeight.bold)),
+                                              Text("Urgency: $urgency", style: TextStyle(color: Colors.blueAccent)),
+                                            ],
+                                          ),
+                                          if (latitude!.isNotEmpty && longitude!.isNotEmpty)
+                                            Text("Location: $latitude, $longitude",
+                                                style: TextStyle(color: Colors.blueGrey, fontSize: 12)),
+                                          SizedBox(height: 5),
+                                          Text(
+                                            "Reported on: ${report['timestamp'] != null ? DateFormat('dd MMM yyyy, hh:mm a').format((report['timestamp'] as Timestamp).toDate()) : 'Unknown'}",
+                                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                          ),
+                                          SizedBox(height: 10),
+                                          Row(
+                                            children: [
                                               IconButton(
-                                                icon: Icon(Icons.delete, color: Colors.red),
-                                                onPressed: () => _confirmDelete(reportId),
+                                                icon: Icon(
+                                                  Icons.thumb_up,
+                                                  color: isUpvoted ? Colors.blue : Colors.grey,
+                                                ),
+                                                onPressed: () {
+                                                  _handleUpvote(reportId, isUpvoted);
+                                                  _showAnimatedSnackbar(isUpvoted ? "Upvote removed!" : "Upvoted!");
+                                                },
                                               ),
-                                          ],
-                                        )
-                                      ],
-                                    ),
-                                  )
-                                ],
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.thumb_down,
+                                                  color: isDownvoted ? Colors.red : Colors.grey,
+                                                ),
+                                                onPressed: () {
+                                                  _handleDownvote(reportId, isDownvoted);
+                                                  _showAnimatedSnackbar(isDownvoted ? "Downvote removed!" : "Downvoted!");
+                                                },
+                                              ),
+                                              Text(
+                                                (_calculateLegitPercentage(report) > 0)
+                                                    ? "Legit: ${_calculateLegitPercentage(report).toStringAsFixed(0)}%"
+                                                    : "No votes yet",
+                                                style: TextStyle(color: Colors.black),
+                                              ),
+                                              IconButton(
+                                                icon: Icon(Icons.comment_outlined, color: Colors.black),
+                                                onPressed: () => _showComments(context, reportId),
+                                              ),
+                                              IconButton(
+                                                icon: Icon(Icons.share_outlined, color: Colors.black),
+                                                onPressed: () {
+                                                  String locationText = (latitude.isNotEmpty && longitude.isNotEmpty)
+                                                      ? '$latitude, $longitude'
+                                                      : 'Location not available';
+                                                  _shareReport(title, description, category, locationText);
+                                                },
+                                              ),
+                                              if ((report['userId'] ?? report['uid']) == currentUserId)
+                                                IconButton(
+                                                  icon: Icon(Icons.delete, color: Colors.red),
+                                                  onPressed: () => _confirmDelete(reportId),
+                                                ),
+                                            ],
+                                          )
+                                        ],
+                                      ),
+                                    )
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-          ),
-        ],
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -592,10 +641,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
               borderRadius: BorderRadius.circular(10),
               child: GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: image)),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => FullScreenImagePage(imageUrl: image)));
                 },
                 child: Image.network(
                   image,
@@ -627,42 +673,30 @@ class _ImageCarouselState extends State<ImageCarousel> {
   }
 }
 
-// Custom SearchDelegate for infrastructure reports.
+// Updated SearchDelegate for infrastructure reports.
 class InfrastructureReportSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> reports;
-
   InfrastructureReportSearchDelegate({required this.reports});
-
+  
   @override
   List<Widget> buildActions(BuildContext context) {
     return [
       if (query.isNotEmpty)
-        IconButton(
-          icon: Icon(Icons.clear),
-          onPressed: () {
-            query = '';
-          },
-        )
+        IconButton(icon: Icon(Icons.clear), onPressed: () => query = '')
     ];
   }
-
+  
   @override
   Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null); // Close search delegate.
-      },
-    );
+    return IconButton(icon: Icon(Icons.arrow_back), onPressed: () => close(context, null));
   }
-
+  
   @override
   Widget buildResults(BuildContext context) {
     final results = reports.where((report) {
       final title = report['title']?.toLowerCase() ?? '';
       return title.contains(query.toLowerCase());
     }).toList();
-
     return ListView.builder(
       itemCount: results.length,
       itemBuilder: (context, index) {
@@ -673,25 +707,19 @@ class InfrastructureReportSearchDelegate extends SearchDelegate {
           subtitle: Text(report['description'] ?? "No Description"),
           onTap: () {
             close(context, null);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => InfrastructureReportDetailPage(report: report),
-              ),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => InfrastructureReportDetailPage(report: report)));
           },
         );
       },
     );
   }
-
+  
   @override
   Widget buildSuggestions(BuildContext context) {
     final suggestions = reports.where((report) {
       final title = report['title']?.toLowerCase() ?? '';
       return title.contains(query.toLowerCase());
     }).toList();
-
     return ListView.builder(
       itemCount: suggestions.length,
       itemBuilder: (context, index) {
@@ -709,12 +737,11 @@ class InfrastructureReportSearchDelegate extends SearchDelegate {
   }
 }
 
-// Detail page for an infrastructure report.
+// Updated Detail page for infrastructure report.
 class InfrastructureReportDetailPage extends StatelessWidget {
   final Map<String, dynamic> report;
-
   InfrastructureReportDetailPage({required this.report});
-
+  
   @override
   Widget build(BuildContext context) {
     List<String> imageUrls = [];
@@ -726,7 +753,7 @@ class InfrastructureReportDetailPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.orangeAccent,
-        title: Text(report['title'] ?? "Infrastructure Report Details"),
+        title: Text(report['title'] ?? "Report Details"),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -738,25 +765,16 @@ class InfrastructureReportDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    report['title'] ?? "No Title",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
+                  Text(report['title'] ?? "No Title",
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   SizedBox(height: 10),
-                  Text(
-                    report['description'] ?? "No Description",
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  Text(report['description'] ?? "No Description", style: TextStyle(fontSize: 16)),
                   SizedBox(height: 10),
-                  Text(
-                    "Category: ${report['category'] ?? "Unknown"}",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
+                  Text("Category: ${report['category'] ?? "Unknown"}",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                   SizedBox(height: 5),
-                  Text(
-                    "Urgency: ${report['urgency'] ?? "Normal"}",
-                    style: TextStyle(fontSize: 16, color: Colors.blueAccent),
-                  ),
+                  Text("Urgency: ${report['urgency'] ?? "Normal"}",
+                      style: TextStyle(fontSize: 16, color: Colors.orangeAccent)),
                 ],
               ),
             )
@@ -767,26 +785,25 @@ class InfrastructureReportDetailPage extends StatelessWidget {
   }
 }
 
-// Full screen image view.
+// Full screen image view page.
 class FullScreenImagePage extends StatelessWidget {
   final String imageUrl;
-
   FullScreenImagePage({required this.imageUrl});
-
+  
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
-      ),
-      body: Center(
-        child: InteractiveViewer(
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.contain,
+    return Theme(
+      data: ThemeData(fontFamily: 'proxima'),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        body: Center(
+          child: InteractiveViewer(
+            child: Image.network(imageUrl, fit: BoxFit.contain),
           ),
         ),
       ),

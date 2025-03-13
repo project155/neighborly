@@ -1,14 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart'; // For iOS-style back button.
+import 'package:flutter_svg/flutter_svg.dart'; // For SVG support.
 import 'package:neighborly/UserSelectionPage.dart';
 import 'package:neighborly/manageAuthorities.dart';
 import 'package:neighborly/manageVolunteer.dart';
+import 'package:neighborly/viewfeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// Import your UserSelectionPage file here, e.g.:
-// import 'package:neighborly/userSelectionPage.dart';
 
-// Page to view all users from the 'users' collection.
+/// Page to view all users from the 'users' collection.
 class ViewUsersPage extends StatefulWidget {
   @override
   _ViewUsersPageState createState() => _ViewUsersPageState();
@@ -20,9 +21,45 @@ class _ViewUsersPageState extends State<ViewUsersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("View Users"),
-        backgroundColor: Colors.teal,
+      // AppBar with gradient background, rounded corners, and iOS back button.
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            leading: CupertinoNavigationBarBackButton(
+              color: Colors.white,
+              onPressed: () => Navigator.pop(context),
+            ),
+            backgroundColor: Color.fromARGB(233, 0, 0, 0),
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142)
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              "View Users",
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            automaticallyImplyLeading: false,
+          ),
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore.collection('users').snapshots(),
@@ -62,7 +99,7 @@ class _ViewUsersPageState extends State<ViewUsersPage> {
   }
 }
 
-// Page to view all volunteers from the 'volunteers' collection.
+/// Page to view all volunteers from the 'volunteers' collection.
 class ViewVolunteersPage extends StatefulWidget {
   @override
   _ViewVolunteersPageState createState() => _ViewVolunteersPageState();
@@ -74,9 +111,45 @@ class _ViewVolunteersPageState extends State<ViewVolunteersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("View Volunteers"),
-        backgroundColor: Colors.teal,
+      // AppBar with gradient background, rounded corners, and iOS back button.
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            leading: CupertinoNavigationBarBackButton(
+              color: Colors.white,
+              onPressed: () => Navigator.pop(context),
+            ),
+            backgroundColor: Color.fromARGB(233, 0, 0, 0),
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142)
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              "View Volunteers",
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            automaticallyImplyLeading: false,
+          ),
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore.collection('volunteers').snapshots(),
@@ -116,7 +189,7 @@ class _ViewVolunteersPageState extends State<ViewVolunteersPage> {
   }
 }
 
-// Page to view all authorities from the 'authorities' collection.
+/// Page to view all authorities from the 'authorities' collection.
 class ViewAuthoritiesPage extends StatefulWidget {
   @override
   _ViewAuthoritiesPageState createState() => _ViewAuthoritiesPageState();
@@ -128,9 +201,45 @@ class _ViewAuthoritiesPageState extends State<ViewAuthoritiesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("View Authorities"),
-        backgroundColor: Colors.teal,
+      // AppBar with gradient background, rounded corners, and iOS back button.
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            leading: CupertinoNavigationBarBackButton(
+              color: Colors.white,
+              onPressed: () => Navigator.pop(context),
+            ),
+            backgroundColor: Color.fromARGB(233, 0, 0, 0),
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142)
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              "View Authorities",
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            automaticallyImplyLeading: false,
+          ),
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore.collection('authorities').snapshots(),
@@ -172,14 +281,15 @@ class _ViewAuthoritiesPageState extends State<ViewAuthoritiesPage> {
   }
 }
 
-// Updated Admin Dashboard with a Sign Out card and custom _signOut logic.
+/// Page to view all feedbacks from the 'feedbacks' collection.
+
+
+/// Updated Admin Dashboard (Landing Page) with the SVG icon in the AppBar.
 class AdminHome extends StatelessWidget {
   AdminHome({Key? key}) : super(key: key);
 
-  // FirebaseAuth instance.
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Custom sign out function using the provided code.
   Future<void> _signOut(BuildContext context) async {
     await _auth.signOut();
     SharedPreferences pref = await SharedPreferences.getInstance();
@@ -190,7 +300,6 @@ class AdminHome extends StatelessWidget {
     );
   }
 
-  // Navigation functions.
   void _navigateToViewUsers(BuildContext context) {
     Navigator.push(
       context,
@@ -212,6 +321,13 @@ class AdminHome extends StatelessWidget {
     );
   }
 
+  void _navigateToViewFeedbacks(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ViewFeedbacksPage()),
+    );
+  }
+
   void _navigateToManageVolunteers(BuildContext context) {
     Navigator.push(
       context,
@@ -226,7 +342,6 @@ class AdminHome extends StatelessWidget {
     );
   }
 
-  // Show a dialog to confirm sign out.
   void _showSignOutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -241,7 +356,7 @@ class AdminHome extends StatelessWidget {
             ),
             TextButton(
               onPressed: () async {
-                Navigator.pop(context); // Close the dialog.
+                Navigator.pop(context);
                 await _signOut(context);
               },
               child: Text("Sign Out"),
@@ -252,7 +367,6 @@ class AdminHome extends StatelessWidget {
     );
   }
 
-  // Build a card for a given option.
   Widget _buildOptionCard({
     required BuildContext context,
     required String title,
@@ -274,7 +388,9 @@ class AdminHome extends StatelessWidget {
               Icon(
                 icon,
                 size: 40,
-                color: title == "Sign Out" ? Colors.red : Colors.blue,
+                color: title == "Sign Out"
+                    ? Color.fromARGB(255, 9, 60, 83)
+                    : Color.fromARGB(255, 9, 60, 83),
               ),
               SizedBox(height: 12),
               Text(
@@ -300,10 +416,58 @@ class AdminHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Admin Dashboard"),
-        centerTitle: true,
-        backgroundColor: Colors.teal,
+      // AdminHome AppBar includes the SVG icon.
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Color.fromARGB(233, 0, 0, 0),
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142)
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Row(
+              children: [
+                Transform.translate(
+                  offset: Offset(-6, 0),
+                  child: SvgPicture.asset(
+                    'assets/icons/icon2.svg',
+                    height: 60,
+                    width: 50,
+                    colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  ),
+                ),
+                Transform.translate(
+                  offset: Offset(-13, 0),
+                  child: Text(
+                    "Admin Dashboard",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'proxima',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            centerTitle: true,
+            automaticallyImplyLeading: false,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -332,6 +496,12 @@ class AdminHome extends StatelessWidget {
             ),
             _buildOptionCard(
               context: context,
+              title: "View Feedbacks",
+              icon: Icons.feedback,
+              onTap: () => _navigateToViewFeedbacks(context),
+            ),
+            _buildOptionCard(
+              context: context,
               title: "Manage Volunteers",
               icon: Icons.volunteer_activism,
               onTap: () => _navigateToManageVolunteers(context),
@@ -343,7 +513,6 @@ class AdminHome extends StatelessWidget {
               icon: Icons.admin_panel_settings,
               onTap: () => _navigateToManageAuthorities(context),
             ),
-            // Sign Out card.
             _buildOptionCard(
               context: context,
               title: "Sign Out",
@@ -361,6 +530,5 @@ void main() {
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
     home: AdminHome(),
-    // Define your routes or additional configuration here.
   ));
 }

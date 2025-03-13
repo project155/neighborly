@@ -614,101 +614,104 @@ class _FoodDonationPageState extends State<FoodDonationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color.fromARGB(255, 240, 242, 255),
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(65),
-        child: ClipRRect(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(30),
-            bottomRight: Radius.circular(30),
-          ),
-          child: AppBar(
-            backgroundColor: Color.fromARGB(233, 0, 0, 0),
-            elevation: 0,
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color.fromARGB(255, 9, 60, 83),
-                    Color.fromARGB(255, 0, 115, 168),
-                  ],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
+    return Theme(
+      data: ThemeData(fontFamily: 'proxima'),
+      child: Scaffold(
+        backgroundColor: Color.fromARGB(255, 240, 242, 255),
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(65),
+          child: ClipRRect(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
+            child: AppBar(
+              backgroundColor: Color.fromARGB(233, 0, 0, 0),
+              elevation: 0,
+              flexibleSpace: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 9, 60, 83),
+                      Color.fromARGB(255, 0, 97, 142),
+                    ],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
                 ),
               ),
-            ),
-            title: Text(
-              'Food Donation',
-              style: TextStyle(
-                fontFamily: 'proxima',
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              title: Text(
+                'Food Donation',
+                style: TextStyle(
+                  fontFamily: 'proxima',
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            centerTitle: true,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-              onPressed: () {
-                if (_showForm) {
-                  setState(() {
-                    _showForm = false;
-                  });
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
+              centerTitle: true,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+                onPressed: () {
+                  if (_showForm) {
+                    setState(() {
+                      _showForm = false;
+                    });
+                  } else {
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
             ),
           ),
         ),
-      ),
-      // AnimatedSwitcher for smooth transition between form and landing page.
-      body: AnimatedSwitcher(
-        duration: Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) =>
-            FadeTransition(opacity: animation, child: child),
-        child: _showForm ? _buildDonationForm() : _buildLandingPage(),
-      ),
-      // Custom Floating Action Button with a rounded rectangle shape.
-      floatingActionButton: _showForm
-          ? null
-          : Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF093C53),
-                    Color(0xFF0075A8),
-                  ],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                shape: RoundedRectangleBorder(
+        // AnimatedSwitcher for smooth transition between form and landing page.
+        body: AnimatedSwitcher(
+          duration: Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: _showForm ? _buildDonationForm() : _buildLandingPage(),
+        ),
+        // Custom Floating Action Button with a rounded rectangle shape.
+        floatingActionButton: _showForm
+            ? null
+            : Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF093C53),
+                      Color(0xFF0075A8),
+                    ],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: IconButton(
-                  icon: Icon(FluentIcons.add_20_regular, color: Colors.white),
-                  onPressed: () {
-                    setState(() {
-                      _showForm = true;
-                    });
-                  },
+                child: Material(
+                  color: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: IconButton(
+                    icon: Icon(FluentIcons.add_20_regular, color: Colors.white),
+                    onPressed: () {
+                      setState(() {
+                        _showForm = true;
+                      });
+                    },
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }
