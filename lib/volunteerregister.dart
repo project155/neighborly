@@ -372,7 +372,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     );
   }
 
-  // Registration function that keeps the volunteer-specific functionality.
+  // Registration function with validations for email, password length, and phone number.
   Future<void> _register() async {
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
@@ -380,6 +380,7 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
 
+    // Check if all required fields are provided.
     if (name.isEmpty ||
         email.isEmpty ||
         phone.isEmpty ||
@@ -390,10 +391,31 @@ class _VolunteerRegisterState extends State<VolunteerRegister> {
       _showError('All fields are required, including your identity card.');
       return;
     }
+
+    // Validate email format.
+    if (!RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$").hasMatch(email)) {
+      _showError('Please enter a valid email.');
+      return;
+    }
+
+    // Validate password length.
+    if (password.length < 8) {
+      _showError('Password must be at least 8 characters.');
+      return;
+    }
+
+    // Validate phone number length.
+    if (phone.length != 10) {
+      _showError('Phone number must be exactly 10 digits.');
+      return;
+    }
+
+    // Check if passwords match.
     if (password != confirmPassword) {
       _showError('Passwords do not match.');
       return;
     }
+
     try {
       // Create a new user with Firebase Auth.
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(

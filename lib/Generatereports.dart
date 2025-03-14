@@ -27,8 +27,8 @@ class GenerateReports extends StatelessWidget {
   // Fetch data from the "reports" collection.
   Future<List<Map<String, dynamic>>> fetchData() async {
     try {
-      QuerySnapshot snapshot =
-          await FirebaseFirestore.instance.collection('reports')
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('reports')
           .orderBy('timestamp', descending: true)
           .get();
       return snapshot.docs
@@ -58,15 +58,57 @@ class GenerateReports extends StatelessWidget {
     final data = await fetchData();
     final pdf = pw.Document();
 
+    // Define theme colors using PdfColor.
+    final primaryColor = PdfColor.fromInt(0xFF093C53); // ARGB(255, 9,60,83)
+    final secondaryColor = PdfColor.fromInt(0xFF0073A8); // ARGB(255, 0,115,168)
+    final backgroundColor = PdfColor.fromInt(0xFFF0F2FF); // ARGB(255,240,242,255)
+
     pdf.addPage(
       pw.MultiPage(
         build: (pw.Context context) {
           List<pw.Widget> widgets = [];
-          widgets.add(pw.Text('All Reports Data',
-              style: pw.TextStyle(fontSize: 24)));
+
+          // Header.
+          widgets.add(
+            pw.Container(
+              width: double.infinity,
+              height: 50,
+              decoration: pw.BoxDecoration(
+                gradient: pw.LinearGradient(
+                  begin: pw.Alignment.bottomCenter,
+                  end: pw.Alignment.topCenter,
+                  colors: [primaryColor, secondaryColor],
+                ),
+                borderRadius: pw.BorderRadius.circular(10),
+              ),
+              child: pw.Center(
+                child: pw.Text(
+                  'Reports PDF Generator',
+                  style: pw.TextStyle(
+                    color: PdfColor.fromInt(0xFFFFFFFF),
+                    fontSize: 20,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          );
           widgets.add(pw.SizedBox(height: 20));
 
-          // Iterate through each report document.
+          // Page Title.
+          widgets.add(
+            pw.Text(
+              'All Reports Data',
+              style: pw.TextStyle(
+                fontSize: 24,
+                fontWeight: pw.FontWeight.bold,
+                color: primaryColor,
+              ),
+            ),
+          );
+          widgets.add(pw.SizedBox(height: 20));
+
+          // List of reports.
           for (var report in data) {
             final title = report['title'] ?? 'No Title';
             final category = report['category'] ?? 'No Category';
@@ -83,15 +125,23 @@ class GenerateReports extends StatelessWidget {
 
             widgets.add(
               pw.Container(
+                padding: pw.EdgeInsets.all(10),
                 margin: pw.EdgeInsets.symmetric(vertical: 10),
+                decoration: pw.BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: pw.BorderRadius.circular(10),
+                ),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text('Title: $title',
                         style: pw.TextStyle(
-                            fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                            fontSize: 18,
+                            fontWeight: pw.FontWeight.bold,
+                            color: primaryColor)),
                     pw.SizedBox(height: 5),
-                    pw.Text('Category: $category'),
+                    pw.Text('Category: $category',
+                        style: pw.TextStyle(color: primaryColor)),
                     pw.Text('Date: $date'),
                     pw.Text('Time: $time'),
                     pw.Text('Timestamp: $timestamp'),
@@ -106,7 +156,6 @@ class GenerateReports extends StatelessWidget {
               ),
             );
 
-            // Optionally include the first image URL.
             if (imageUrls.isNotEmpty && imageUrls[0] is String) {
               widgets.add(
                 pw.Padding(
@@ -122,7 +171,6 @@ class GenerateReports extends StatelessWidget {
       ),
     );
 
-    // Save and preview the PDF file.
     final pdfBytes = await pdf.save();
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdfBytes,
@@ -132,20 +180,46 @@ class GenerateReports extends StatelessWidget {
   // Generate a PDF for a specific category.
   Future<void> generatePdfByCategory(String categoryFilter) async {
     final data = await fetchData();
-    // Filter reports by the given category.
     final filteredData =
         data.where((report) => report['category'] == categoryFilter).toList();
     final pdf = pw.Document();
+
+    final primaryColor = PdfColor.fromInt(0xFF093C53);
+    final secondaryColor = PdfColor.fromInt(0xFF0073A8);
+    final backgroundColor = PdfColor.fromInt(0xFFF0F2FF);
 
     pdf.addPage(
       pw.MultiPage(
         build: (pw.Context context) {
           List<pw.Widget> widgets = [];
-          widgets.add(pw.Text('$categoryFilter Reports',
-              style: pw.TextStyle(fontSize: 24)));
+
+          // Header.
+          widgets.add(
+            pw.Container(
+              width: double.infinity,
+              height: 50,
+              decoration: pw.BoxDecoration(
+                gradient: pw.LinearGradient(
+                  begin: pw.Alignment.bottomCenter,
+                  end: pw.Alignment.topCenter,
+                  colors: [primaryColor, secondaryColor],
+                ),
+                borderRadius: pw.BorderRadius.circular(10),
+              ),
+              child: pw.Center(
+                child: pw.Text(
+                  '$categoryFilter Reports',
+                  style: pw.TextStyle(
+                    color: PdfColor.fromInt(0xFFFFFFFF),
+                    fontSize: 20,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          );
           widgets.add(pw.SizedBox(height: 20));
 
-          // Iterate through each filtered report.
           for (var report in filteredData) {
             final title = report['title'] ?? 'No Title';
             final date = report['date'] ?? 'No Date';
@@ -161,13 +235,20 @@ class GenerateReports extends StatelessWidget {
 
             widgets.add(
               pw.Container(
+                padding: pw.EdgeInsets.all(10),
                 margin: pw.EdgeInsets.symmetric(vertical: 10),
+                decoration: pw.BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: pw.BorderRadius.circular(10),
+                ),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text('Title: $title',
                         style: pw.TextStyle(
-                            fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                            fontSize: 18,
+                            fontWeight: pw.FontWeight.bold,
+                            color: primaryColor)),
                     pw.SizedBox(height: 5),
                     pw.Text('Date: $date'),
                     pw.Text('Time: $time'),
@@ -194,22 +275,23 @@ class GenerateReports extends StatelessWidget {
             widgets.add(pw.Divider());
           }
           if (filteredData.isEmpty) {
-            widgets.add(pw.Text('No reports found for $categoryFilter.'));
+            widgets.add(
+              pw.Text('No reports found for $categoryFilter.'),
+            );
           }
           return widgets;
         },
       ),
     );
 
-    // Save and preview the PDF file.
     final pdfBytes = await pdf.save();
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdfBytes,
     );
   }
 
-  // Helper widget to build a card for each option.
-  Widget _buildCard(BuildContext context, String title, VoidCallback onTap) {
+  // Helper widget to build a card with an icon.
+  Widget _buildCard(BuildContext context, String title, IconData icon, VoidCallback onTap) {
     return Card(
       elevation: 2,
       child: InkWell(
@@ -217,10 +299,17 @@ class GenerateReports extends StatelessWidget {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 40, color: Color.fromARGB(255, 9, 60, 83)),
+                SizedBox(height: 8),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
             ),
           ),
         ),
@@ -231,8 +320,47 @@ class GenerateReports extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Reports PDF Generator'),
+      backgroundColor: Color.fromARGB(255, 240, 242, 255),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            title: Text(
+              'Reports PDF Generator',
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: true,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -241,97 +369,24 @@ class GenerateReports extends StatelessWidget {
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,
           children: [
-           _buildCard(
-  context,
-  'Generate All Reports PDF',
-  () => generatePdf(),
-),
-_buildCard(
-  context,
-  'Generate Flood Reports PDF',
-  () => generatePdfByCategory('flood'),
-),
-_buildCard(
-  context,
-  'Generate Drought Reports PDF',
-  () => generatePdfByCategory('Drought'),
-),
-_buildCard(
-  context,
-  'Generate Landslide Reports PDF',
-  () => generatePdfByCategory('Landslide'),
-),
-_buildCard(
-  context,
-  'Generate Fire Reports PDF',
-  () => generatePdfByCategory('Fire'),
-),
-_buildCard(
-  context,
-  'Generate Sexual Abuse Reports PDF',
-  () => generatePdfByCategory('Sexual Abuse'),
-),
-_buildCard(
-  context,
-  'Generate Narcotics Reports PDF',
-  () => generatePdfByCategory('Narcotics'),
-),
-_buildCard(
-  context,
-  'Generate Road Incidents Reports PDF',
-  () => generatePdfByCategory('Road Incidents'),
-),
-_buildCard(
-  context,
-  'Generate Eco Hazard Reports PDF',
-  () => generatePdfByCategory('Eco Hazard'),
-),
-_buildCard(
-  context,
-  'Generate Alcohol Reports PDF',
-  () => generatePdfByCategory('Alcohol'),
-),
-_buildCard(
-  context,
-  'Generate Animal Abuse Reports PDF',
-  () => generatePdfByCategory('Animal Abuse'),
-),
-_buildCard(
-  context,
-  'Generate Bribery Reports PDF',
-  () => generatePdfByCategory('Bribery'),
-),
-_buildCard(
-  context,
-  'Generate Food Safety Reports PDF',
-  () => generatePdfByCategory('Food Safety'),
-),
-_buildCard(
-  context,
-  'Generate Hygiene Issues Reports PDF',
-  () => generatePdfByCategory('Hygiene Issues'),
-),
-_buildCard(
-  context,
-  'Generate Infrastructure Issues Reports PDF',
-  () => generatePdfByCategory('Infrastructure Issues'),
-),
-_buildCard(
-  context,
-  'Generate Transportation Reports PDF',
-  () => generatePdfByCategory('Transportation'),
-),
-_buildCard(
-  context,
-  'Generate Theft Reports PDF',
-  () => generatePdfByCategory('Theft'),
-),
-_buildCard(
-  context,
-  'Generate Child Abuse Reports PDF',
-  () => generatePdfByCategory('Child Abuse'),
-),
-
+            _buildCard(context, 'All', Icons.picture_as_pdf, () => generatePdf()),
+            _buildCard(context, 'Flood', Icons.opacity, () => generatePdfByCategory('flood')),
+            _buildCard(context, 'Drought', Icons.wb_sunny, () => generatePdfByCategory('Drought')),
+            _buildCard(context, 'Landslide', Icons.terrain, () => generatePdfByCategory('Landslide')),
+            _buildCard(context, 'Fire', Icons.local_fire_department, () => generatePdfByCategory('Fire')),
+            _buildCard(context, 'Sexual Abuse', Icons.report, () => generatePdfByCategory('Sexual Abuse')),
+            _buildCard(context, 'Narcotics', Icons.medication, () => generatePdfByCategory('Narcotics')),
+            _buildCard(context, 'Road Incidents', Icons.traffic, () => generatePdfByCategory('Road Incidents')),
+            _buildCard(context, 'Eco Hazard', Icons.eco, () => generatePdfByCategory('Eco Hazard')),
+            _buildCard(context, 'Alcohol', Icons.local_bar, () => generatePdfByCategory('Alcohol')),
+            _buildCard(context, 'Animal Abuse', Icons.pets, () => generatePdfByCategory('Animal Abuse')),
+            _buildCard(context, 'Bribery', Icons.money, () => generatePdfByCategory('Bribery')),
+            _buildCard(context, 'Food Safety', Icons.restaurant, () => generatePdfByCategory('Food Safety')),
+            _buildCard(context, 'Hygiene', Icons.clean_hands, () => generatePdfByCategory('Hygiene Issues')),
+            _buildCard(context, 'Infrastructure', Icons.build, () => generatePdfByCategory('Infrastructure Issues')),
+            _buildCard(context, 'Transportation', Icons.directions_car, () => generatePdfByCategory('Transportation')),
+            _buildCard(context, 'Theft', Icons.security_rounded, () => generatePdfByCategory('Theft')),
+            _buildCard(context, 'Child Abuse', Icons.child_care, () => generatePdfByCategory('Child Abuse')),
           ],
         ),
       ),

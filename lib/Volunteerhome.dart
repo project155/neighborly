@@ -32,12 +32,17 @@ import 'package:neighborly/crimeanalytics.dart';
 import 'package:neighborly/disasteranalytics.dart';
 import 'package:neighborly/feed_page.dart';
 import 'package:neighborly/flood.dart';
+import 'package:neighborly/found.dart';
+import 'package:neighborly/infopage.dart';
 import 'package:neighborly/loginuser.dart';
+import 'package:neighborly/lost.dart';
+import 'package:neighborly/lostandfoundreport.dart';
 import 'package:neighborly/medicaldonationform.dart';
 import 'package:neighborly/newreport.dart';
 import 'package:neighborly/Sexualabuse.dart';
 import 'package:neighborly/Userprofile.dart';
 import 'package:neighborly/publicissuesanalytics.dart';
+import 'package:neighborly/viewblooddonors.dart';
 import 'package:neighborly/wildfire.dart';
 import 'package:neighborly/Lostandfound.dart';
 import 'package:neighborly/volunteerfood.dart';
@@ -90,8 +95,10 @@ class _VolunteerHomeState extends State<VolunteerHome> {
     "Food Donation",
     "Lost & Found",
     "Blood Donation",
+    "View Donors",
     "Medical Charity",
-    "Emergency Contacts"
+    "Emergency Contacts",
+    "Relief Camp"
   ];
   final List<String> notificationBanner = ["Change Banner"];
 
@@ -381,6 +388,8 @@ class _VolunteerHomeState extends State<VolunteerHome> {
       "Medical Charity": Icons.medical_services,
       "Emergency Contacts": Icons.phone_in_talk,
       "Change Banner": Icons.image,
+      "Relief Camp": FontAwesomeIcons.peopleGroup,
+      "View Donors": Icons.list_alt_rounded,
     };
 
     return GestureDetector(
@@ -423,7 +432,7 @@ class _VolunteerHomeState extends State<VolunteerHome> {
               MaterialPageRoute(builder: (context) => FoodsafetyReportPage()));
         } else if (title == "Hygiene Issues") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => FeedPage()));
+              MaterialPageRoute(builder: (context) => HygieneissuesReportPage()));
         } else if (title == "Infrastructure Issues") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => InfrastructureReportPage()));
@@ -436,13 +445,34 @@ class _VolunteerHomeState extends State<VolunteerHome> {
         } else if (title == "Child Abuse") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => ChildAbuseReportPage()));
-        }
-        else if (title == "Food Donation") {
+        } else if (title == "Relief Camp") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => FeedPage()));  
+        } else if (title == "View Donors") {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => BloodDonorsPage()));              
+        } else if (title == "Food Donation") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => FoodDonationVolunteerPage()));
         } else if (title == "Lost & Found") {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => LostAndFoundPage()));
+          showGeneralDialog(
+            context: context,
+            barrierDismissible: true,
+            barrierLabel: "LostFoundOptions",
+            transitionDuration: Duration(milliseconds: 250),
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return Center(child: LostFoundPopup());
+            },
+            transitionBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: animation,
+                  child: child,
+                ),
+              );
+            },
+          );
         } else if (title == "Blood Donation") {
           showGeneralDialog(
             context: context,
@@ -658,7 +688,7 @@ class _VolunteerHomeState extends State<VolunteerHome> {
                 right: 20,
                 bottom: 20,
                 child: Container(
-                  height: 60,
+                  height: 65,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -681,10 +711,10 @@ class _VolunteerHomeState extends State<VolunteerHome> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       IconButton(
-                        icon: Icon(FluentIcons.home_20_regular, color: Colors.white),
+                        icon: Icon(FluentIcons.info_24_regular, color: Colors.white),
                         onPressed: () {
                           Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => LoginUser()));
+                              MaterialPageRoute(builder: (context) => InfoPage()));
                         },
                       ),
                       IconButton(
@@ -821,6 +851,7 @@ class BloodDonationPopup extends StatelessWidget {
                   );
                 },
               ),
+              
             ],
           ),
         ],
@@ -967,10 +998,127 @@ class MedicalCharityPopup extends StatelessWidget {
 }
 
 // ---------------------
+// LostFoundPopup widget definition (inspired by BloodDonationPopup)
+// ---------------------
+class LostFoundPopup extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: _buildDialogContent(context),
+    );
+  }
+
+  Widget _buildDialogContent(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      height: 250,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.rectangle,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10.0,
+            offset: Offset(0.0, 10.0),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Lost & Found Options",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildOption(
+                context,
+                label: "Lost Items",
+                icon: FontAwesomeIcons.search,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => LostItemsPage()),
+                  );
+                },
+              ),
+              _buildOption(
+                context,
+                label: "Found Items",
+                icon: Icons.check_circle_outline,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => FoundItemsPage()),
+                  );
+                },
+              ),
+              _buildOption(
+                context,
+                label: "Add New",
+                icon: Icons.add_box,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CreateLostFoundItemPage()),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption(BuildContext context,
+      {required String label,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 40,
+              color: Color.fromARGB(255, 9, 60, 83),
+            ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------
 // ChangeNotificationBannerPage widget definition.
 // ---------------------
-
-
 
 class ChangeNotificationBannerPage extends StatefulWidget {
   @override
@@ -1130,6 +1278,48 @@ class _ChangeNotificationBannerPageState
           ],
         ),
       ),
+    );
+  }
+}
+
+// ---------------------
+// Placeholder pages for LostFound navigation.
+// ---------------------
+class LostItdemsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Lost Items"),
+        backgroundColor: Color.fromARGB(255, 9, 60, 83),
+      ),
+      body: Center(child: Text("List of Lost Items")),
+    );
+  }
+}
+
+class FoundItedmsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Found Items"),
+        backgroundColor: Color.fromARGB(255, 9, 60, 83),
+      ),
+      body: Center(child: Text("List of Found Items")),
+    );
+  }
+}
+
+class AddLostFodundPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Add New Lost/Found"),
+        backgroundColor: Color.fromARGB(255, 9, 60, 83),
+      ),
+      body: Center(child: Text("Form to add a new lost/found item")),
     );
   }
 }

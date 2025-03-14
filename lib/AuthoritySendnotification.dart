@@ -7,10 +7,12 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  // Builds the MaterialApp with our custom theme.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Notification Demo',
+      debugShowCheckedModeBanner: false,
       home: SendNotificationPage(),
     );
   }
@@ -35,11 +37,9 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
 
   Future<List<String>> getAllPlayerIds() async {
     try {
-      // Fetch player IDs from 'users' collection
+      // Fetch player IDs from 'users' and 'volunteers' collections.
       QuerySnapshot usersSnapshot =
           await FirebaseFirestore.instance.collection('users').get();
-
-      // Fetch player IDs from 'volunteers' collection
       QuerySnapshot volunteersSnapshot =
           await FirebaseFirestore.instance.collection('volunteers').get();
 
@@ -54,11 +54,9 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
             .toList();
       }
 
-      // Extract player IDs from both collections
+      // Combine and filter IDs.
       List<String> userPlayerIds = extractPlayerIds(usersSnapshot);
       List<String> volunteerPlayerIds = extractPlayerIds(volunteersSnapshot);
-
-      // Combine lists and remove duplicates
       Set<String> playerIds = {
         ...userPlayerIds,
         ...volunteerPlayerIds,
@@ -77,13 +75,11 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
       String title = _titleController.text;
       String description = _descriptionController.text;
 
-      // Retrieve player IDs
+      // Retrieve player IDs and send the notification.
       List<String> pidlist = await getAllPlayerIds();
-
-      // Send the notification using your existing function
       sendNotificationToSpecificUsers(pidlist, description, title);
 
-      // Save a copy of the notification in Firestore
+      // Save a copy of the notification in Firestore.
       await FirebaseFirestore.instance.collection('notifications').add({
         'title': title,
         'description': description,
@@ -94,7 +90,7 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
         SnackBar(content: Text('Notification Sent!')),
       );
 
-      // Optionally clear the form fields
+      // Clear the form fields.
       _titleController.clear();
       _descriptionController.clear();
     }
@@ -103,43 +99,106 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Send Notification'),
+      backgroundColor: const Color.fromARGB(255, 240, 242, 255),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            title: Text(
+              'Send Notification',
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: true,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            elevation: 0,
+          ),
+        ),
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
             children: [
-              // Title input field
+              // Title input field.
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
                   labelText: 'Title',
-                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Please enter a title' : null,
               ),
               SizedBox(height: 16.0),
-              
-              // Description input field
+              // Description input field.
               TextFormField(
                 controller: _descriptionController,
+                maxLines: 3,
                 decoration: InputDecoration(
                   labelText: 'Description',
-                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter a description'
                     : null,
               ),
               SizedBox(height: 32.0),
-              // Send Notification button
+              // Send Notification button.
               ElevatedButton(
                 onPressed: _sendNotification,
-                child: Text('Send Notification'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 9, 60, 83),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                child: Text(
+                  'Send Notification',
+                  style: TextStyle(
+                    fontFamily: 'proxima',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),

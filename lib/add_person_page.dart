@@ -11,75 +11,106 @@ class AddPersonPage extends StatefulWidget {
 
 class _AddPersonPageState extends State<AddPersonPage> {
   final _formKey = GlobalKey<FormState>();
-  String _name = '';
-  int _age = 0;
-  String _additionalInfo = '';
+  String name = '';
+  int age = 0;
+  String additionalInfo = '';
 
-  Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      // Reference to the top-level "people" collection.
-      CollectionReference people = FirebaseFirestore.instance.collection('people');
-
-      // Add person to the top-level collection with a reference to the campId.
-      await people.add({
-        'campId': widget.campId,
-        'name': _name,
-        'age': _age,
-        'additionalInfo': _additionalInfo,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      // Update peopleCount in the camp document.
-      DocumentReference campRef =
-          FirebaseFirestore.instance.collection('camps').doc(widget.campId);
-      DocumentSnapshot campSnapshot = await campRef.get();
-      int currentCount = campSnapshot.get('peopleCount') ?? 0;
-      await campRef.update({'peopleCount': currentCount + 1});
-
-      Navigator.pop(context);
-    }
+  InputDecoration _buildInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(fontFamily: 'proxima'),
+      filled: true,
+      fillColor: Colors.grey[200],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Person'),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              'Add Person',
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
               TextFormField(
-                decoration: InputDecoration(labelText: 'Name'),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Please enter name' : null,
-                onSaved: (value) => _name = value!,
+                decoration: _buildInputDecoration('Name'),
+                onSaved: (val) => name = val!,
+                validator: (val) =>
+                    (val == null || val.isEmpty) ? 'Please enter a name' : null,
               ),
               SizedBox(height: 10),
               TextFormField(
-                decoration: InputDecoration(labelText: 'Age'),
+                decoration: _buildInputDecoration('Age'),
                 keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Please enter age';
-                  if (int.tryParse(value) == null) return 'Enter a valid number';
-                  return null;
-                },
-                onSaved: (value) => _age = int.parse(value!),
+                onSaved: (val) => age = int.tryParse(val!) ?? 0,
+                validator: (val) =>
+                    (val == null || val.isEmpty) ? 'Please enter age' : null,
               ),
               SizedBox(height: 10),
               TextFormField(
-                decoration: InputDecoration(labelText: 'Additional Info'),
-                maxLines: 2,
-                onSaved: (value) => _additionalInfo = value ?? '',
+                decoration: _buildInputDecoration('Additional Info'),
+                onSaved: (val) => additionalInfo = val ?? '',
               ),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _submitForm,
+                onPressed: _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color.fromARGB(255, 9, 60, 83),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: TextStyle(
+                    fontFamily: 'proxima',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 child: Text('Add Person'),
               ),
             ],
@@ -87,5 +118,33 @@ class _AddPersonPageState extends State<AddPersonPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      // Reference to the people subcollection for this camp.
+      CollectionReference people = FirebaseFirestore.instance
+          .collection('camps')
+          .doc(widget.campId)
+          .collection('people');
+
+      await people.add({
+        'name': name,
+        'age': age,
+        'additionalInfo': additionalInfo,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      // Optionally update the people count in the camp document.
+      DocumentReference campDoc = FirebaseFirestore.instance
+          .collection('camps')
+          .doc(widget.campId);
+      campDoc.update({
+        'peopleCount': FieldValue.increment(1),
+      });
+
+      Navigator.pop(context);
+    }
   }
 }

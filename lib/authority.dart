@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/svg.dart';
@@ -8,10 +9,11 @@ import 'package:neighborly/AuthoritySendnotification.dart';
 import 'package:neighborly/Emergencycontacts.dart';
 import 'package:neighborly/Generatereports.dart';
 import 'package:neighborly/Notificationpage.dart';
-import 'package:neighborly/SOSpage.dart';
 import 'package:neighborly/Sosreports.dart';
+// Removed the import for Sosreports.dart since it's no longer used.
 import 'package:neighborly/Userlogin.dart';
 import 'package:neighborly/Userprofile.dart';
+//import 'package:neighborly/addcamp.dart';
 import 'package:neighborly/authorityreports/authorityflood.dart';
 import 'package:neighborly/authorityreports/authorityChildabuse.dart';
 import 'package:neighborly/authorityreports/authorityalcohol.dart';
@@ -32,6 +34,8 @@ import 'package:neighborly/authorityreports/authoritytheft.dart';
 import 'package:neighborly/authorityreports/authoritytransportation.dart';
 import 'package:neighborly/crimeanalytics.dart';
 import 'package:neighborly/disasteranalytics.dart';
+import 'package:neighborly/feed_page.dart';
+import 'package:neighborly/infopage.dart';
 import 'package:neighborly/publicissuesanalytics.dart';
 
 class AuthorityHome extends StatefulWidget {
@@ -143,7 +147,6 @@ class _AuthorityHomeState extends State<AuthorityHome> {
 
   /// Builds the Authority Actions section with grid items.
   Widget _buildAuthorityActionsSection() {
-    // Define authority actions
     final List<Map<String, dynamic>> actions = [
       {
         "title": "Urgent SOS",
@@ -168,7 +171,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
       {
         "title": "Report Analytics",
         "icon": Icons.analytics,
-        "page": PublicIssuesAnalyticsPage(), // This value will not be used.
+        "page": PublicIssuesAnalyticsPage(),
       },
       {
         "title": "Emergency Contacts",
@@ -176,9 +179,9 @@ class _AuthorityHomeState extends State<AuthorityHome> {
         "page": EmergencyContactsPage(userRole: 'Authority'),
       },
       {
-        "title": "d",
+        "title": "Relief Camps",
         "icon": Icons.analytics,
-        "page": PublicIssuesAnalyticsPage(), // This value will not be used.
+        "page": FeedPage(),
       },
     ];
 
@@ -209,7 +212,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, // three items per row
+                  crossAxisCount: 3,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                   childAspectRatio: 1,
@@ -243,7 +246,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
     );
   }
 
-  /// Builds a clickable grid item for an authority action using the same icon style as userhome.dart.
+  /// Builds a clickable grid item for an authority action.
   Widget _buildActionItem({required String title, required IconData icon, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -290,117 +293,16 @@ class _AuthorityHomeState extends State<AuthorityHome> {
     );
   }
 
-  /// Builds the SOS Reports section which fetches SOS reports from Firestore.
-  Widget _buildSOSReportsSection() {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
-              blurRadius: 4,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section header
-            Padding(
-              padding: const EdgeInsets.all(15.0),
-              child: Text(
-                "SOS Reports",
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, fontFamily: 'proxima'),
-              ),
-            ),
-            // StreamBuilder to fetch SOS reports from Firestore
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('sos_reports')
-                  .orderBy('reportedAt', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(15.0),
-                    child: Text("No SOS reports found."),
-                  );
-                }
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    DocumentSnapshot doc = snapshot.data!.docs[index];
-                    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-                    String title = data['title'] ?? "No Title";
-                    String description = data['description'] ?? "";
-                    Map<String, dynamic>? location = data['location'];
-                    double latitude = location?['latitude'] ?? 0.0;
-                    double longitude = location?['longitude'] ?? 0.0;
+  // Note: The _buildSOSReportsSection() method has been completely removed.
 
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: ExpansionTile(
-                        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'proxima')),
-                        subtitle: Text(
-                          description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        children: [
-                          Container(
-                            height: 200,
-                            child: GoogleMap(
-                              initialCameraPosition: CameraPosition(
-                                target: LatLng(latitude, longitude),
-                                zoom: 14,
-                              ),
-                              markers: {
-                                Marker(
-                                  markerId: MarkerId(doc.id),
-                                  position: LatLng(latitude, longitude),
-                                ),
-                              },
-                              zoomGesturesEnabled: false,
-                              scrollGesturesEnabled: false,
-                              rotateGesturesEnabled: false,
-                              tiltGesturesEnabled: false,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Adds the floating navigation bar at the bottom using userhome.dart style.
+  /// Adds the floating navigation bar at the bottom.
   Widget _buildFloatingNavBar() {
     return Positioned(
       left: 20,
       right: 20,
-      bottom: 20,
+      bottom: 0,
       child: Container(
-        height: 60,
+        height: 65,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -423,32 +325,26 @@ class _AuthorityHomeState extends State<AuthorityHome> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             IconButton(
-              icon: Icon(Icons.post_add_rounded, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => GenerateReports()),
-                );
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.person, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => UserProfile()),
-                );
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.settings, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SettingsPage()),
-                );
-              },
-            ),
+                        icon: Icon(FluentIcons.info_24_regular, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) => InfoPage()));
+                        },
+                      ),
+          IconButton(
+                        icon: Icon(FluentIcons.person_20_regular, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) => UserProfile()));
+                        },
+                      ),
+           IconButton(
+                        icon: Icon(FluentIcons.home_24_regular, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) => AuthorityHome()));
+                        },
+                      ),
           ],
         ),
       ),
@@ -467,71 +363,69 @@ class _AuthorityHomeState extends State<AuthorityHome> {
             bottomRight: Radius.circular(30),
           ),
           child: AppBar(
-              backgroundColor: const Color.fromARGB(233, 0, 0, 0),
-              elevation: 0,
-              flexibleSpace: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 9, 60, 83),
-                      Color.fromARGB(255, 0, 97, 142),
-                    ],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                  ),
+            backgroundColor: const Color.fromARGB(233, 0, 0, 0),
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
                 ),
               ),
-              title: Row(
-                children: [
-                  Transform.translate(
-                    offset: Offset(-6, 0),
-                    child: SvgPicture.asset(
-                      'assets/icons/icon2.svg',
-                      height: 60,
-                      width: 50,
-                      colorFilter:
-                          ColorFilter.mode(Colors.white, BlendMode.srcIn),
+            ),
+            title: Row(
+              children: [
+                Transform.translate(
+                  offset: Offset(-6, 0),
+                  child: SvgPicture.asset(
+                    'assets/icons/icon2.svg',
+                    height: 60,
+                    width: 50,
+                    colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  ),
+                ),
+                Transform.translate(
+                  offset: Offset(-13, 0),
+                  child: Text(
+                    "reportify",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'proxima',
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Transform.translate(
-                    offset: Offset(-13, 0),
-                    child: Text(
-                      "reportify",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'proxima',
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                ),
+                Transform.translate(
+                  offset: Offset(-9, 2),
+                  child: Text(
+                    "Authority",
+                    style: TextStyle(
+                      color: Color.fromARGB(179, 223, 223, 223),
+                      fontSize: 14,
+                      fontFamily: 'proxima',
                     ),
                   ),
-                  Transform.translate(
-                    offset: Offset(-9, 2),
-                    child: Text(
-                      "Authority",
-                      style: TextStyle(
-                        color: Color.fromARGB(179, 223, 223, 223),
-                        fontSize: 14,
-                        fontFamily: 'proxima',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.notifications_outlined, color: Colors.white),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => NotificationPage()),
-                    );
-                  },
                 ),
               ],
-              automaticallyImplyLeading: false,
             ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.notifications_outlined, color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => NotificationPage()),
+                  );
+                },
+              ),
+            ],
+            automaticallyImplyLeading: false,
+          ),
         ),
       ),
       backgroundColor: const Color.fromARGB(238, 255, 255, 255),
@@ -543,7 +437,7 @@ class _AuthorityHomeState extends State<AuthorityHome> {
               children: [
                 _buildNoticeSection(),
                 _buildAuthorityActionsSection(),
-                _buildSOSReportsSection(),
+                // SOS Reports section removed as requested.
               ],
             ),
           ),
@@ -609,7 +503,6 @@ class CategorizedReportsPage extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                
               ),
             ),
             automaticallyImplyLeading: false,
@@ -865,9 +758,6 @@ class DisasterReportsPage extends StatelessWidget {
   }
 }
 
-
-
-
 /// Updated FireReportsPage with uploader details option.
 class FireReportsPage extends StatelessWidget {
   @override
@@ -970,10 +860,6 @@ class FireReportsPage extends StatelessWidget {
     );
   }
 }
-
-
-
-
 
 /// Updated Public Issues Reports page with grid of cards.
 class PublicIssuesReportsPage extends StatelessWidget {
@@ -1090,7 +976,7 @@ class PublicIssuesReportsPage extends StatelessWidget {
                       Icon(
                         issue["icon"],
                         size: 40,
-                        color:Color.fromARGB(255, 9, 60, 83)
+                        color: Color.fromARGB(255, 9, 60, 83),
                       ),
                       SizedBox(height: 20),
                       Text(
@@ -1234,7 +1120,7 @@ class CrimesReportsPage extends StatelessWidget {
                       Icon(
                         category["icon"],
                         size: 60,
-                        color:Color.fromARGB(255, 9, 60, 83)
+                        color: Color.fromARGB(255, 9, 60, 83),
                       ),
                       SizedBox(height: 20),
                       Text(
@@ -1257,7 +1143,6 @@ class CrimesReportsPage extends StatelessWidget {
     );
   }
 }
-
 
 /// Popup screen for Report Analytics – similar to Blood Donation popup.
 class ReportAnalyticsPopup extends StatelessWidget {

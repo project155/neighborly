@@ -49,7 +49,7 @@ class _MedicalDonationsPageState extends State<MedicalDonationsPage>
 
       // Fetch donations from Firestore from collection "donationRequests".
       var snapshot = await _firestore
-          .collection('donationRequests')
+          .collection('MedicalCharity')
           .orderBy('timestamp', descending: true)
           .get();
 
@@ -268,7 +268,7 @@ class _MedicalDonationsPageState extends State<MedicalDonationsPage>
   // Delete the donation from Firestore and update local state.
   Future<void> _deleteDonation(String donationId) async {
     try {
-      await _firestore.collection('donationRequests').doc(donationId).delete();
+      await _firestore.collection('MedicalCharity').doc(donationId).delete();
       setState(() {
         _donations.removeWhere((donation) => donation['id'] == donationId);
       });

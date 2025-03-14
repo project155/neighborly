@@ -15,10 +15,11 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
 
+  final Color primaryColor = const Color.fromARGB(255, 9, 60, 83);
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _designationController = TextEditingController();
   final _departmentController = TextEditingController();
   final _organizationController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -32,7 +33,7 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
         children: [
           _buildHeader(),
           Expanded(
-            flex: 2,
+            flex: 1,
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -50,20 +51,14 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
                   ),
                   const SizedBox(height: 10),
                   _buildTextField(
-                    _designationController,
-                    'Designation (e.g., Inspector, Officer)',
-                    Icons.badge,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildTextField(
                     _departmentController,
-                    'Department (e.g., Police, Health, Fire)',
+                    'Department',
                     Icons.apartment,
                   ),
                   const SizedBox(height: 10),
                   _buildTextField(
                     _organizationController,
-                    'Organization Name (e.g., XYZ Municipality)',
+                    'Organization Name',
                     Icons.business,
                   ),
                   const SizedBox(height: 10),
@@ -81,21 +76,28 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
                     Icons.lock,
                     obscureText: true,
                   ),
-                  const SizedBox(height: 20),
-                  _buildRoleDisplay(),
                   const SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: _register,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6495ED),
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
+                  Center(
+                    child: Container(
+                      width: 250,
+                      child: ElevatedButton(
+                        onPressed: _register,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: const Text(
+                          'Register',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontFamily: 'proxima',
+                          ),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Register',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                   ),
                 ],
@@ -107,32 +109,47 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
     );
   }
 
+  // Header widget using an asset image and similar style as in Userregister.dart.
   Widget _buildHeader() {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.3,
+      height: MediaQuery.of(context).size.height * 0.45,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 7, 135, 255),
-        borderRadius: BorderRadius.circular(15),
+        image: DecorationImage(
+          image: AssetImage('assets/upperimage.png'),
+          fit: BoxFit.fill,
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: const [
             Text(
               'Authority Registration',
-              style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 45,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'proxima',
+                color: Colors.white,
+              ),
             ),
-            SizedBox(height: 20),
-            Text('Register to manage and respond to reports.', style: TextStyle(fontSize: 18, color: Colors.white)),
+            SizedBox(height: 10),
+            Text(
+              'Register to manage and respond to reports.',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'proxima',
+                color: Colors.white,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
+  // Text field widget with outlined border styling similar to Userregister.dart.
   Widget _buildTextField(
     TextEditingController controller,
     String hint,
@@ -142,18 +159,33 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
   }) {
-    return Container(
-      height: 55,
-      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(25)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
+        style: const TextStyle(fontFamily: 'proxima'),
         decoration: InputDecoration(
           hintText: hint,
-          prefixIcon: Icon(icon, color: Colors.grey),
-          border: InputBorder.none,
+          hintStyle: TextStyle(
+            color: primaryColor,
+            fontFamily: 'proxima',
+          ),
+          prefixIcon: Icon(icon, color: primaryColor),
+          border: OutlineInputBorder(
+            borderSide: const BorderSide(color: Color.fromARGB(255, 214, 214, 214)),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Color.fromARGB(255, 235, 235, 235)),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.blue),
+            borderRadius: BorderRadius.circular(15),
+          ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
           suffixIcon: suffixIcon,
         ),
@@ -161,23 +193,13 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
     );
   }
 
-  Widget _buildRoleDisplay() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(15)),
-      child: Row(
-        children: const [
-          Icon(Icons.shield, color: Colors.grey),
-          SizedBox(width: 10),
-          Text('Role: Authority', style: TextStyle(color: Colors.black)),
-        ],
-      ),
-    );
-  }
-
+  // Password visibility toggle icon styled similarly.
   Widget _buildPasswordVisibilityIcon() {
     return IconButton(
-      icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.grey),
+      icon: Icon(
+        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+        color: primaryColor,
+      ),
       onPressed: () {
         setState(() {
           _isPasswordVisible = !_isPasswordVisible;
@@ -190,16 +212,15 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
     String phone = _phoneController.text.trim();
-    String designation = _designationController.text.trim();
     String department = _departmentController.text.trim();
     String organization = _organizationController.text.trim();
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
 
+    // Check if all fields are provided.
     if (name.isEmpty ||
         email.isEmpty ||
         phone.isEmpty ||
-        designation.isEmpty ||
         department.isEmpty ||
         organization.isEmpty ||
         password.isEmpty ||
@@ -207,10 +228,31 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
       _showError('All fields are required.');
       return;
     }
+
+    // Validate email format.
+    if (!RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$").hasMatch(email)) {
+      _showError('Please enter a valid email.');
+      return;
+    }
+
+    // Validate password length.
+    if (password.length < 8) {
+      _showError('Password must be at least 8 characters.');
+      return;
+    }
+
+    // Validate phone number length.
+    if (phone.length != 10) {
+      _showError('Phone number must be exactly 10 digits.');
+      return;
+    }
+
+    // Check if passwords match.
     if (password != confirmPassword) {
       _showError('Passwords do not match.');
       return;
     }
+
     try {
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -220,25 +262,25 @@ class _AuthorityRegisterState extends State<AuthorityRegister> {
         'name': name,
         'email': email,
         'phone': phone,
-        'designation': designation,
         'department': department,
         'organization': organization,
         'role': 'Authority',
         'isApproved': false,
-
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration Successful!')),
       );
 
-      Navigator.pop(context); // Go back after success
+      Navigator.pop(context); // Navigate back on successful registration.
     } catch (e) {
       _showError(e.toString());
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message, style: const TextStyle(fontFamily: 'proxima'))),
+    );
   }
 }

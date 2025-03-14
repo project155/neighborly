@@ -385,7 +385,7 @@ class _SosReportPageState extends State<SosReportPage>
                           String name = report['user']['name'] ?? "No Name";
                           String email = report['user']['email'] ?? "N/A";
                           String phone = report['user']['phone'] ?? "N/A";
-                          String locationText = report['location'] ?? "No Location";
+                          String locationText = report['user']['location'] ?? "No Location";
                           int likes = report['likes'] ?? 0;
                           List likedBy = List<String>.from(report['likedBy'] ?? []);
                           bool isLiked = likedBy.contains(currentUserId);

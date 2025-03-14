@@ -7,7 +7,6 @@ import 'dart:io';
 import 'package:neighborly/UserSelectionPage.dart';
 import 'package:neighborly/clodinary_upload.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:neighborly/Notificationpage.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -263,6 +262,7 @@ class _UserProfileState extends State<UserProfile> {
             bottomRight: Radius.circular(30),
           ),
           child: AppBar(
+            centerTitle: true, // Center the title text
             leading: IconButton(
               icon: const Icon(CupertinoIcons.back, color: Colors.white),
               onPressed: () => Navigator.of(context).pop(),
@@ -290,17 +290,7 @@ class _UserProfileState extends State<UserProfile> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => NotificationPage()),
-                  );
-                },
-              ),
-            ],
+            // Notification icon removed
             automaticallyImplyLeading: false,
           ),
         ),

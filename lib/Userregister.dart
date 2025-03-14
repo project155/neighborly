@@ -271,7 +271,7 @@ class _UserRegisterState extends State<Userregister> {
     );
   }
 
-  // Registration function with validations and email verification.
+  // Registration function with validations for email, password, and phone number.
   Future<void> _register() async {
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
@@ -279,6 +279,7 @@ class _UserRegisterState extends State<Userregister> {
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
 
+    // Check if all fields are provided.
     if (name.isEmpty ||
         email.isEmpty ||
         phone.isEmpty ||
@@ -288,18 +289,28 @@ class _UserRegisterState extends State<Userregister> {
       _showError('All fields are required.');
       return;
     }
-    if (password != confirmPassword) {
-      _showError('Passwords do not match.');
+
+    // Validate email format.
+    if (!RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$").hasMatch(email)) {
+      _showError('Please enter a valid email.');
       return;
     }
+
+    // Validate password length (at least 8 characters).
+    if (password.length < 8) {
+      _showError('Password must be at least 8 characters.');
+      return;
+    }
+
     // Validate phone number to be exactly 10 digits.
     if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
       _showError('Phone number must have exactly 10 digits.');
       return;
     }
-    // Validate password to be exactly 8 digits.
-    if (!RegExp(r'^\d{8}$').hasMatch(password)) {
-      _showError('Password must have exactly 8 digits.');
+
+    // Check if passwords match.
+    if (password != confirmPassword) {
+      _showError('Passwords do not match.');
       return;
     }
 

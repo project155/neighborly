@@ -74,16 +74,67 @@ class _AddCampPageState extends State<AddCampPage> {
 
       Navigator.pop(context);
     } else if (_selectedLocation == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Please pick a location")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please pick a location")),
+      );
     }
+  }
+
+  InputDecoration _buildInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(fontFamily: 'proxima'),
+      filled: true,
+      fillColor: Colors.grey[200],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Relief Camp'),
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              'Add Relief Camp',
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
@@ -92,31 +143,31 @@ class _AddCampPageState extends State<AddCampPage> {
           child: Column(
             children: [
               TextFormField(
-                decoration: InputDecoration(labelText: 'Camp Name'),
+                decoration: _buildInputDecoration('Camp Name'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Please enter camp name' : null,
                 onSaved: (value) => _campName = value!,
               ),
               SizedBox(height: 10),
               TextFormField(
-                decoration: InputDecoration(labelText: 'Address'),
+                decoration: _buildInputDecoration('Address'),
                 onSaved: (value) => _address = value ?? '',
               ),
               SizedBox(height: 10),
               TextFormField(
-                decoration: InputDecoration(labelText: 'Contact Number'),
+                decoration: _buildInputDecoration('Contact Number'),
                 keyboardType: TextInputType.phone,
                 onSaved: (value) => _contactNumber = value ?? '',
               ),
               SizedBox(height: 10),
               TextFormField(
-                decoration: InputDecoration(labelText: 'Camp Description/Facilities'),
+                decoration: _buildInputDecoration('Camp Description/Facilities'),
                 maxLines: 3,
                 onSaved: (value) => _description = value ?? '',
               ),
               SizedBox(height: 10),
               TextFormField(
-                decoration: InputDecoration(labelText: 'Capacity (Number of People)'),
+                decoration: _buildInputDecoration('Capacity (Number of People)'),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Please enter capacity';
@@ -135,11 +186,20 @@ class _AddCampPageState extends State<AddCampPage> {
                       _selectedLocation == null
                           ? "No location selected"
                           : "Location: ${_selectedLocation!.latitude.toStringAsFixed(4)}, ${_selectedLocation!.longitude.toStringAsFixed(4)}",
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(fontFamily: 'proxima', fontSize: 16),
                     ),
                   ),
                   ElevatedButton(
                     onPressed: _pickLocation,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color.fromARGB(255, 9, 60, 83),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      textStyle: TextStyle(fontFamily: 'proxima'),
+                    ),
                     child: Text("Pick Location"),
                   ),
                 ],
@@ -149,9 +209,18 @@ class _AddCampPageState extends State<AddCampPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Upload Images", style: TextStyle(fontSize: 16)),
+                  Text("Upload Images", style: TextStyle(fontFamily: 'proxima', fontSize: 16)),
                   ElevatedButton(
                     onPressed: _pickImages,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color.fromARGB(255, 9, 60, 83),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      textStyle: TextStyle(fontFamily: 'proxima'),
+                    ),
                     child: Text("Pick Images"),
                   ),
                 ],
@@ -162,18 +231,34 @@ class _AddCampPageState extends State<AddCampPage> {
                       spacing: 8,
                       runSpacing: 8,
                       children: _images
-                          .map((img) => Image.file(
-                                img,
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
+                          .map((img) => ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.file(
+                                  img,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
                               ))
                           .toList(),
                     )
-                  : Text("No images selected"),
+                  : Text("No images selected", style: TextStyle(fontFamily: 'proxima')),
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color.fromARGB(255, 9, 60, 83),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: TextStyle(
+                    fontFamily: 'proxima',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 child: Text('Add Relief Camp'),
               ),
             ],

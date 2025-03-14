@@ -5,6 +5,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:neighborly/notification_sos.dart';
 
+/// Define your primary theme color for non-SOS elements.
+const Color primaryColor = Color.fromARGB(255, 9, 60, 83);
+
 /// SosPage allows users to send an emergency SOS alert along with their current location.
 class SosPage extends StatefulWidget {
   const SosPage({Key? key}) : super(key: key);
@@ -16,55 +19,49 @@ class SosPage extends StatefulWidget {
 class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
   Position? _currentPosition;
   bool _isFetchingLocation = false;
+  // Internal status used for debugging (not shown in the AppBar).
   String _statusMessage = 'Need Emergency Help?';
 
   // Controller for the 15-second countdown.
   late AnimationController _animationController;
-  // Controller for the pulsating glow effect.
-  late AnimationController _glowController;
+  // Controller for the ripple effect.
+  late AnimationController _rippleController;
 
   @override
   void initState() {
     super.initState();
     _determinePosition();
 
-    // Set up the 15-second countdown animation.
+    // Countdown controller.
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
     );
-
-    // When the countdown completes, send the SOS.
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _sendSOS();
       }
     });
 
-    // Pulsating glow effect.
-    _glowController = AnimationController(
+    // Ripple effect controller.
+    _rippleController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat(reverse: true);
+      duration: const Duration(seconds: 2),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _glowController.dispose();
+    _rippleController.dispose();
     super.dispose();
   }
 
-  /// Request location permission and get the current position.
   Future<void> _determinePosition() async {
     setState(() {
       _isFetchingLocation = true;
     });
-
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       setState(() {
         _statusMessage = 'Location services are disabled.';
@@ -72,8 +69,7 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
       });
       return;
     }
-
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
@@ -84,7 +80,6 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
         return;
       }
     }
-
     if (permission == LocationPermission.deniedForever) {
       setState(() {
         _statusMessage = 'Location permissions are permanently denied.';
@@ -92,7 +87,6 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
       });
       return;
     }
-
     try {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -110,7 +104,6 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
     }
   }
 
-  /// Fetch user details and send an SOS report.
   Future<void> _sendSOS() async {
     if (_currentPosition == null) {
       setState(() {
@@ -118,7 +111,6 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
       });
       return;
     }
-
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       setState(() {
@@ -126,7 +118,6 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
       });
       return;
     }
-
     DocumentSnapshot<Map<String, dynamic>> userDoc;
     try {
       userDoc = await FirebaseFirestore.instance
@@ -140,11 +131,9 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
       return;
     }
     final userData = userDoc.data() ?? {};
-
     try {
       QuerySnapshot authoritiesSnapshot =
           await FirebaseFirestore.instance.collection('authorities').get();
-
       List<String> extractPlayerIds(QuerySnapshot snapshot) {
         return snapshot.docs
             .map((doc) => doc.data() as Map<String, dynamic>)
@@ -155,19 +144,14 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
             .map((data) => data['playerid'] as String)
             .toList();
       }
-
       List<String> authorityPlayerIds = extractPlayerIds(authoritiesSnapshot);
-      print(authorityPlayerIds);
-
       await Notification_sos(authorityPlayerIds, 'SOS Alert', 'Emergency');
-
       await FirebaseFirestore.instance.collection('sos_reports').add({
         'latitude': _currentPosition!.latitude,
         'longitude': _currentPosition!.longitude,
         'user': userData,
         'timestamp': FieldValue.serverTimestamp(),
       });
-
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -191,7 +175,6 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
     }
   }
 
-  /// Called when the SOS button is tapped.
   void _onSOSButtonPressed() {
     if (_animationController.isAnimating) return;
     setState(() {
@@ -200,7 +183,6 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
     _animationController.forward(from: 0.0);
   }
 
-  /// Cancels the SOS request.
   void _cancelSOS() {
     if (_animationController.isAnimating) {
       _animationController.reset();
@@ -210,7 +192,6 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
     }
   }
 
-  /// Returns the remaining seconds based on the animation value.
   int get _remainingSeconds {
     return (15 * (1 - _animationController.value)).ceil();
   }
@@ -218,167 +199,202 @@ class _SosPageState extends State<SosPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar with gradient background.
-      appBar: AppBar(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: const Radius.circular(20)),
-        ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.redAccent, Colors.red],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      // AppBar always shows "Emergency SOS".
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            centerTitle: true,
+            title: const Text(
+              'Emergency SOS',
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            borderRadius:
-                const BorderRadius.vertical(bottom: Radius.circular(20)),
-          ),
-        ),
-        centerTitle: true,
-        title: Text(
-          _statusMessage,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      // Body with gradient background.
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.white, Colors.red.shade100],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-            child: Column(
-              children: [
-                if (_isFetchingLocation)
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                const Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-                  child: Text(
-                    'Tap the red button to start a 15-second SOS alert. Swipe the slider to cancel before time runs out.',
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontSize: 16,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    primaryColor,
+                    Color.fromARGB(255, 0, 115, 168),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
                 ),
-                const Spacer(),
-                // SOS button with a circular timer overlay.
-                Center(
-                  child: GestureDetector(
-                    onTap: _onSOSButtonPressed,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Pulsating glow.
-                        AnimatedBuilder(
-                          animation: _glowController,
-                          builder: (context, child) {
-                            double scale = 1 + _glowController.value * 0.2;
-                            return Container(
-                              width: 160 * scale,
-                              height: 160 * scale,
+              ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+          ),
+        ),
+      ),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+          child: Column(
+            children: [
+              SizedBox(height: 40,),
+              // New big text under the AppBar.
+              const Padding(
+                padding: EdgeInsets.only(bottom: 20.0),
+                child: Text(
+                  'Are you in an Unusual Situation?',
+                  style: TextStyle(
+                    fontFamily: 'proxima',
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              if (_isFetchingLocation)
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: CircularProgressIndicator(),
+                ),
+              const Padding(
+                padding:
+                    EdgeInsets.symmetric(horizontal: 8.0, vertical: 10.0),
+                child: Text(
+                  'Tap the red button to start a 15-second SOS alert. Swipe the slider to cancel before time runs out.',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 16,
+                    fontFamily: 'proxima',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: 120,),
+              //const Spacer(),
+              // SOS button with full red circle, ripple effect, and timer overlay.
+              Center(
+                child: GestureDetector(
+                  onTap: _onSOSButtonPressed,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Ripple effect: an expanding red border.
+                      AnimatedBuilder(
+                        animation: _rippleController,
+                        builder: (context, child) {
+                          double scale = 1 + _rippleController.value * 0.5;
+                          return Transform.scale(
+                            scale: scale,
+                            child: Container(
+                              width: 160,
+                              height: 160,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.redAccent.withOpacity(
-                                    0.3 * (1 - _glowController.value)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.redAccent.withOpacity(
-                                        0.5 * (1 - _glowController.value)),
-                                    blurRadius:
-                                        20 * _glowController.value,
-                                    spreadRadius: 5,
-                                  )
-                                ],
+                                border: Border.all(
+                                  color: Colors.red,
+                                  width: 2,
+                                ),
                               ),
+                            ),
+                          );
+                        },
+                      ),
+                      // Full red circle background.
+                      Container(
+                        width: 160,
+                        height: 160,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.red,
+                        ),
+                      ),
+                      // Custom circular timer overlay.
+                      SizedBox(
+                        width: 160,
+                        height: 160,
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return CustomPaint(
+                              painter: CircleTimerPainter(
+                                progress: _animationController.value,
+                                backgroundColor: Colors.grey.shade300,
+                                progressColor: Colors.red,
+                              ),
+                              child: const SizedBox.expand(),
                             );
                           },
                         ),
-                        // Custom circular timer drawn with CustomPaint.
-                        SizedBox(
-                          width: 160,
-                          height: 160,
-                          child: AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              return CustomPaint(
-                                painter: CircleTimerPainter(
-                                  progress: _animationController.value,
-                                  backgroundColor: Colors.grey.shade300,
-                                  progressColor: Colors.red,
-                                ),
-                                child: const SizedBox.expand(),
-                              );
-                            },
+                      ),
+                      // Transparent clickable layer.
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _onSOSButtonPressed,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: const CircleBorder(),
+                          ),
+                          child: const SizedBox.shrink(),
+                        ),
+                      ),
+                      // "SOS" text on top.
+                      const Center(
+                        child: Text(
+                          'SOS',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontFamily: 'proxima',
                           ),
                         ),
-                        // Transparent clickable layer.
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                          child: ElevatedButton(
-                            onPressed: _onSOSButtonPressed,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: const CircleBorder(),
-                            ),
-                            child: const SizedBox.shrink(),
-                          ),
-                        ),
-                        // "SOS" text on top.
-                        const Center(
-                          child: Text(
-                            'SOS',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                const Spacer(),
-                // Attractive swipe-to-cancel slider with animated background.
-                if (_animationController.isAnimating)
-                  SwipeToCancel(
-                    onSwipeCompleted: _cancelSOS,
-                  ),
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    'Tap the button to send an SOS alert after 15 seconds unless canceled.',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
+              ),
+              const Spacer(),
+              // Show the swipe-to-cancel slider only when the countdown animation is active.
+              if (_animationController.isAnimating)
+                Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    SwipeToCancel(
+                      onSwipeCompleted: () {
+                        _cancelSOS();
+                      },
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Tap the button to send an SOS alert after 15 seconds unless canceled.',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontFamily: 'proxima',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -403,20 +419,16 @@ class CircleTimerPainter extends CustomPainter {
     final strokeWidth = 8.0;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (min(size.width, size.height) - strokeWidth) / 2;
-
     final backgroundPaint = Paint()
       ..color = backgroundColor
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
-
     final progressPaint = Paint()
       ..color = progressColor
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-
     canvas.drawCircle(center, radius, backgroundPaint);
-
     double sweepAngle = 2 * pi * progress;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
@@ -434,158 +446,117 @@ class CircleTimerPainter extends CustomPainter {
 }
 
 /// A custom swipe-to-cancel widget that mimics a swipe-to-unlock UI.
+/// The widget uses LayoutBuilder to constrain the thumb within the available width.
+/// The slider width has been reduced to 80% of the parent's width.
 class SwipeToCancel extends StatefulWidget {
-  final VoidCallback onSwipeCompleted;
-  const SwipeToCancel({Key? key, required this.onSwipeCompleted})
-      : super(key: key);
+  final VoidCallback? onSwipeCompleted;
+  const SwipeToCancel({Key? key, this.onSwipeCompleted}) : super(key: key);
 
   @override
   State<SwipeToCancel> createState() => _SwipeToCancelState();
 }
 
-class _SwipeToCancelState extends State<SwipeToCancel>
-    with SingleTickerProviderStateMixin {
+class _SwipeToCancelState extends State<SwipeToCancel> {
   double _dragPosition = 0.0;
-  late AnimationController _shimmerController;
-
-  @override
-  void initState() {
-    super.initState();
-    _shimmerController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _shimmerController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    // Compute available width as screen width minus total horizontal margin of 40.
-    final double availableWidth = MediaQuery.of(context).size.width - 40;
-    const double sliderHeight = 55.0;
-    const double thumbDiameter = 50.0;
+    return LayoutBuilder(builder: (context, constraints) {
+      // Set sliderWidth to 80% of available width.
+      final double sliderWidth = constraints.maxWidth * 0.8;
+      final double availableWidth = sliderWidth;
+      const double sliderHeight = 55.0;
+      const double thumbDiameter = 50.0;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20.0),
-      width: availableWidth,
-      height: sliderHeight,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(sliderHeight / 2),
-        color: Colors.red.shade50,
-      ),
-      child: Stack(
-        alignment: Alignment.centerLeft,
-        children: [
-          // Animated background fill behind the thumb.
-          Positioned(
-            left: 0,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 100),
-              width: _dragPosition + thumbDiameter,
-              height: sliderHeight,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(sliderHeight / 2),
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.redAccent.withOpacity(0.5),
-                    Colors.redAccent.withOpacity(0.0)
-                  ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+      return Center(
+        child: Container(
+          width: sliderWidth,
+          height: sliderHeight,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(sliderHeight / 2),
+            color: primaryColor.withOpacity(0.1),
+          ),
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              // Background fill behind the thumb.
+              Positioned(
+                left: 0,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: _dragPosition + thumbDiameter,
+                  height: sliderHeight,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(sliderHeight / 2),
+                    color: primaryColor.withOpacity(0.5),
+                  ),
                 ),
               ),
-            ),
-          ),
-          // Shimmer effect overlay behind the text.
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _shimmerController,
-              builder: (context, child) {
-                return FractionallySizedBox(
-                  widthFactor: 0.3,
-                  alignment: Alignment(_shimmerController.value * 2 - 1, 0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.white.withOpacity(0.0),
-                          Colors.white.withOpacity(0.3),
-                          Colors.white.withOpacity(0.0)
-                        ],
-                        stops: const [0.0, 0.5, 1.0],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
+              // Centered label.
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: thumbDiameter / 2),
+                  child: Center(
+                    child: Text(
+                      'Swipe to cancel SOS',
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'proxima',
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-          // Background label with side padding.
-          Positioned.fill(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: thumbDiameter / 2),
-              child: Center(
-                child: Text(
-                  'Swipe to cancel SOS',
-                  style: TextStyle(
-                    color: Colors.red.shade700,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                ),
+              ),
+              // Draggable thumb.
+              Positioned(
+                left: _dragPosition,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    setState(() {
+                      _dragPosition += details.delta.dx;
+                      _dragPosition = _dragPosition.clamp(0.0, availableWidth - thumbDiameter);
+                    });
+                  },
+                  onHorizontalDragEnd: (details) {
+                    if (_dragPosition >= availableWidth - thumbDiameter) {
+                      if (widget.onSwipeCompleted != null) widget.onSwipeCompleted!();
+                      setState(() {
+                        _dragPosition = 0.0;
+                      });
+                    } else {
+                      setState(() {
+                        _dragPosition = 0.0;
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: thumbDiameter,
+                    height: thumbDiameter,
+                    decoration: BoxDecoration(
+                      color: primaryColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withOpacity(0.5),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward,
+                      color: Colors.white,
+                      size: 32,
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-          // Draggable circular thumb.
-          Positioned(
-            left: _dragPosition,
-            child: GestureDetector(
-              onHorizontalDragUpdate: (details) {
-                setState(() {
-                  _dragPosition += details.delta.dx;
-                  _dragPosition = _dragPosition.clamp(0.0, availableWidth - thumbDiameter);
-                });
-              },
-              onHorizontalDragEnd: (details) {
-                if (_dragPosition > availableWidth * 0.6) {
-                  widget.onSwipeCompleted();
-                } else {
-                  setState(() {
-                    _dragPosition = 0.0;
-                  });
-                }
-              },
-              child: Container(
-                width: thumbDiameter,
-                height: thumbDiameter,
-                decoration: BoxDecoration(
-                  color: Colors.redAccent,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.redAccent.withOpacity(0.5),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: const Icon(
-                  Icons.arrow_forward,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+    });
   }
 }

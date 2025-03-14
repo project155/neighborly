@@ -34,6 +34,7 @@ import 'package:neighborly/disasteranalytics.dart';
 import 'package:neighborly/feed_page.dart';
 import 'package:neighborly/feedback.dart';
 import 'package:neighborly/flood.dart';
+import 'package:neighborly/infopage.dart';
 import 'package:neighborly/loginuser.dart';
 import 'package:neighborly/medicaldonationform.dart';
 import 'package:neighborly/newreport.dart';
@@ -92,8 +93,7 @@ class _UserhomeState extends State<Userhome> {
     "Blood Donation",
     "Medical Charity",
     "Emergency Contacts",
-    "Feedback"
-    "camp"
+    "Relief Camp",
   ];
 
   List<String> noticeImages = [];
@@ -370,7 +370,7 @@ class _UserhomeState extends State<Userhome> {
                 right: 20,
                 bottom: 20,
                 child: Container(
-                  height: 60,
+                  height: 65,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -393,11 +393,11 @@ class _UserhomeState extends State<Userhome> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       IconButton(
-                        icon: Icon(FluentIcons.home_20_regular, color: Colors.white),
+                        icon: Icon(FluentIcons.info_24_regular, color: Colors.white),
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => LoginUser()),
+                            MaterialPageRoute(builder: (context) => InfoPage()),
                           );
                         },
                       ),
@@ -585,6 +585,8 @@ class _UserhomeState extends State<Userhome> {
       "Child Abuse": FontAwesomeIcons.childReaching,
       "Blood Donation": Icons.bloodtype,
       "Medical Charity": Icons.medical_services,
+      "Emergency Contacts":FontAwesomeIcons.phone,
+      "Relief Camp":FontAwesomeIcons.peopleGroup,
     };
 
     return GestureDetector(
@@ -619,12 +621,14 @@ class _UserhomeState extends State<Userhome> {
         } else if (title == "Food Safety") {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => FoodsafetyReportPage()));
-               } else if (title == "Feedback") {
+        } else if (title == "Relief Camp") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => FeedbackPage()));
+              MaterialPageRoute(builder: (context) => FeedPage()));      
+        
+        
         } else if (title == "Hygiene Issues") {
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => FeedPage()));
+              MaterialPageRoute(builder: (context) => HygieneissuesReportPage()));
         } else if (title == "Medical Charity") {
           showGeneralDialog(
             context: context,

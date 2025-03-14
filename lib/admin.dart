@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart'; // For iOS-style back button.
 import 'package:flutter_svg/flutter_svg.dart'; // For SVG support.
 import 'package:neighborly/UserSelectionPage.dart';
+import 'package:neighborly/crimeanalytics.dart';
+import 'package:neighborly/disasteranalytics.dart';
 import 'package:neighborly/manageAuthorities.dart';
 import 'package:neighborly/manageVolunteer.dart';
+import 'package:neighborly/publicissuesanalytics.dart';
 import 'package:neighborly/viewfeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -281,8 +284,172 @@ class _ViewAuthoritiesPageState extends State<ViewAuthoritiesPage> {
   }
 }
 
-/// Page to view all feedbacks from the 'feedbacks' collection.
+/// New page to view food donations from the 'food_donations' collection.
+/// This page displays each donation as a card with images (if available) and details.
+class ViewFoodDonationsPage extends StatelessWidget {
+  // Helper widget to build a donation card.
+  Widget _buildDonationCard(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    String expiryDateStr = data['expiryDate'] ?? '';
+    String expiryTimeStr = data['expiryTime'] ?? '';
+    String pickupLocationStr = '';
+    if (data['pickupLocation'] != null) {
+      var loc = data['pickupLocation'];
+      pickupLocationStr =
+          '(${(loc['latitude'] as double).toStringAsFixed(4)}, ${(loc['longitude'] as double).toStringAsFixed(4)})';
+    }
+    List<dynamic> imageUrls = data['imageUrls'] ?? [];
+    String orderStatus = data['orderStatus'] ?? 'Pending';
 
+    // Change card background if order is completed.
+    Color cardBackgroundColor = orderStatus.toLowerCase() == 'completed'
+        ? Colors.green.shade50
+        : Colors.white;
+
+    return Card(
+      color: cardBackgroundColor,
+      margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 0.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 5,
+      child: Padding(
+        padding: EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Display images if available.
+            imageUrls.isNotEmpty
+                ? Container(
+                    height: 100,
+                    margin: EdgeInsets.only(bottom: 8),
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: imageUrls.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: EdgeInsets.only(right: 8.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              imageUrls[index],
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : SizedBox.shrink(),
+            Text('Food Type: ${data['foodType'] ?? ''}',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            SizedBox(height: 4),
+            Text('Food Name: ${data['foodName'] ?? ''}', style: TextStyle(fontSize: 15)),
+            SizedBox(height: 4),
+            Text('Description: ${data['description'] ?? ''}', style: TextStyle(fontSize: 14)),
+            SizedBox(height: 4),
+            Text('Quantity: ${data['quantity'] ?? ''}', style: TextStyle(fontSize: 14)),
+            SizedBox(height: 4),
+            Text('Expiry Date: $expiryDateStr', style: TextStyle(fontSize: 14)),
+            SizedBox(height: 4),
+            Text('Expiry Time: $expiryTimeStr', style: TextStyle(fontSize: 14)),
+            SizedBox(height: 4),
+            Text('Pickup Location: $pickupLocationStr', style: TextStyle(fontSize: 14)),
+            SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Contact: ${data['contact'] ?? ''}', style: TextStyle(fontSize: 14)),
+                ),
+                Expanded(
+                  child: Text('Donator: ${data['donatorName'] ?? ''}', style: TextStyle(fontSize: 14)),
+                ),
+              ],
+            ),
+            SizedBox(height: 4),
+            Text('Instructions: ${data['instructions'] ?? ''}', style: TextStyle(fontSize: 14)),
+            SizedBox(height: 8),
+            // You can add a status indicator similar to your donation form if needed.
+            Text('Status: $orderStatus', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+          child: AppBar(
+            backgroundColor: Color.fromARGB(233, 0, 0, 0),
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 9, 60, 83),
+                    Color.fromARGB(255, 0, 97, 142),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            title: Text(
+              'Food Donations',
+              style: TextStyle(
+                fontFamily: 'proxima',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: true,
+            leading: CupertinoNavigationBarBackButton(
+              color: Colors.white,
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ),
+      ),
+      backgroundColor: Color.fromARGB(255, 240, 242, 255),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('food_donations')
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting)
+              return Center(child: CircularProgressIndicator());
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(
+                child: Text(
+                  'No food donations found.',
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+            return ListView.builder(
+              itemCount: snapshot.data!.docs.length,
+              itemBuilder: (context, index) {
+                return _buildDonationCard(snapshot.data!.docs[index]);
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 
 /// Updated Admin Dashboard (Landing Page) with the SVG icon in the AppBar.
 class AdminHome extends StatelessWidget {
@@ -388,9 +555,7 @@ class AdminHome extends StatelessWidget {
               Icon(
                 icon,
                 size: 40,
-                color: title == "Sign Out"
-                    ? Color.fromARGB(255, 9, 60, 83)
-                    : Color.fromARGB(255, 9, 60, 83),
+                color: Color.fromARGB(255, 9, 60, 83),
               ),
               SizedBox(height: 12),
               Text(
@@ -513,6 +678,30 @@ class AdminHome extends StatelessWidget {
               icon: Icons.admin_panel_settings,
               onTap: () => _navigateToManageAuthorities(context),
             ),
+            // New Admin Analytics card with popup option.
+            _buildOptionCard(
+              context: context,
+              title: "Admin Analytics",
+              icon: Icons.analytics,
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AdminAnalyticsPopup(),
+                );
+              },
+            ),
+            // New card: View Food Donations.
+            _buildOptionCard(
+              context: context,
+              title: "View Food Donations",
+              icon: Icons.food_bank,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ViewFoodDonationsPage()),
+                );
+              },
+            ),
             _buildOptionCard(
               context: context,
               title: "Sign Out",
@@ -522,6 +711,140 @@ class AdminHome extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Popup screen for Admin Analytics – similar to the Report Analytics popup.
+class AdminAnalyticsPopup extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: _buildDialogContent(context),
+    );
+  }
+
+  Widget _buildDialogContent(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      height: 250,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.rectangle,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10.0,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Admin Analytics Options",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'proxima'),
+          ),
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildOption(
+                context,
+                label: "Overview",
+                icon: Icons.pie_chart,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => OverviewAnalyticsPage()));
+                },
+              ),
+              _buildOption(
+                context,
+                label: "Trend",
+                icon: Icons.show_chart,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => TrendAnalyticsPage()));
+                },
+              ),
+              _buildOption(
+                context,
+                label: "Detailed",
+                icon: Icons.details,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => DetailedAnalyticsPage()));
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption(BuildContext context,
+      {required String label, required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 35, color: Color.fromARGB(255, 9, 60, 83)),
+          ),
+          SizedBox(height: 10),
+          Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'proxima')),
+        ],
+      ),
+    );
+  }
+}
+
+/// Placeholder page for Overview Analytics.
+class OverviewAnalyticsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Overview Analytics", style: TextStyle(fontFamily: 'proxima')),
+      ),
+      body: Center(child: Text("Overview Analytics Page", style: TextStyle(fontFamily: 'proxima'))),
+    );
+  }
+}
+
+/// Placeholder page for Trend Analytics.
+class TrendAnalyticsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Trend Analytics", style: TextStyle(fontFamily: 'proxima')),
+      ),
+      body: Center(child: Text("Trend Analytics Page", style: TextStyle(fontFamily: 'proxima'))),
+    );
+  }
+}
+
+/// Placeholder page for Detailed Analytics.
+class DetailedAnalyticsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Detailed Analytics", style: TextStyle(fontFamily: 'proxima')),
+      ),
+      body: Center(child: Text("Detailed Analytics Page", style: TextStyle(fontFamily: 'proxima'))),
     );
   }
 }

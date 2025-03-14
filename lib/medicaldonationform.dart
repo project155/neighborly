@@ -108,7 +108,7 @@ class _AddDonationPageState extends State<AddDonationPage> {
         }
       }
 
-      await FirebaseFirestore.instance.collection('donationRequests').add({
+      await FirebaseFirestore.instance.collection('MedicalCharity').add({
         'title': _equipmentController.text,
         'description': _descriptionController.text,
         'category': _selectedCategory,
